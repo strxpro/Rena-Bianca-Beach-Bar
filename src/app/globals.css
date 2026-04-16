@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────
+   RENA BIANCA — Design System
+   Modern Mediterranean / Oceanic
+   ───────────────────────────────────────────── */
+
+@theme {
+  /* ── Colors ── */
+  --color-navy: #0A192F;
+  --color-navy-light: #112240;
+  --color-sand: #FDFBF7;
+  --color-sand-warm: #FAF5EE;
+  --color-slate-mist: #F0F4F8;
+  --color-ocean: #3B82C4;
+  --color-ocean-light: #7CB9E8;
+  --color-ocean-muted: #B4D5E0;
+  --color-stone: #8892A0;
+  --color-stone-light: #CCD6E0;
+
+  /* ── Typography ── */
+  --font-heading: "Playfair Display", serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+
+  /* ── Spacing (negative space driven) ── */
+  --spacing-section: 10rem;
+  --spacing-section-sm: 6rem;
+  --spacing-gutter: 2.5rem;
+}
+
+/* ── Base Resets ── */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-navy);
+  background-color: var(--color-sand);
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: var(--color-ocean-muted);
+  color: var(--color-navy);
+}
+
+/* ── Heading defaults ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+/* ── Utility classes ── */
+.section-padding {
+  padding-top: var(--spacing-section);
+  padding-bottom: var(--spacing-section);
+}
+
+@media (max-width: 768px) {
+  .section-padding {
+    padding-top: var(--spacing-section-sm);
+    padding-bottom: var(--spacing-section-sm);
+  }
+}
+
+.container-wide {
+  width: 100%;
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-gutter);
+  padding-right: var(--spacing-gutter);
+}
+
+/* ── Smooth transitions for all interactive elements ── */
+a, button {
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ── Utility: hide scrollbar completely (for drag-scroll rows) ── */
+.scrollbar-hide,
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* ── Scrollbar styling ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-sand);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-stone-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-stone);
+}
+
+/* ── Intro section — geometric shape drift ── */
+@keyframes squareDrift {
+  0%   { transform: translateX(-50%) rotate(45deg) translateY(0); }
+  100% { transform: translateX(-50%) rotate(55deg) translateY(20px); }
+}
+
+@keyframes circleDrift {
+  0%   { transform: translateX(-50%) translateY(0) scale(1); }
+  100% { transform: translateX(-50%) translateY(-15px) scale(1.08); }
+}
+
+/* ── Header nav — marker/pen highlight sweep ── */
+@keyframes marker-sweep {
+  0%   { transform: scaleX(0); transform-origin: left; }
+  100% { transform: scaleX(1); transform-origin: left; }
+}
+
+/* ── Sunset Scene Animations (ContactOrbitTransition) ── */
+@keyframes sunset-wave {
+  0%   { transform: translateY(0) scale(1) rotate(0deg); }
+  50%  { transform: translateY(40px) scale(0.5) rotate(5deg); }
+  100% { transform: translateY(30px) scale(0) rotate(-40deg); }
+}
+
+@keyframes bird-fly {
+  0%   { opacity: 0; transform: translateZ(500px); }
+  20%  { opacity: 1; transform: translateZ(400px); }
+  100% { transform: translateZ(0px) scale(0); }
+}
+
+@keyframes wing-left {
+  0%   { transform: rotateZ(30deg); }
+  100% { transform: rotateZ(-20deg); }
+}
+
+@keyframes wing-right {
+  0%   { transform: rotateZ(-30deg); }
+  100% { transform: rotateZ(20deg); }
+}
+
+@keyframes ocean-shimmer {
+  0%, 100% { opacity: 0.15; }
+  50%      { opacity: 0.35; }
+}
+
+/* ── Language switch smooth fade ── */
+@keyframes lang-fade-in {
+  0%   { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+.animate-lang-fade {
+  animation: lang-fade-in 0.4s ease-out;
+}
