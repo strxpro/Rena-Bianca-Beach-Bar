@@ -46,6 +46,14 @@ export default function SpatialScrollTransition({ topSection, bottomSection }: P
           pin: true,
           scrub: 0.4,
           anticipatePin: 1,
+          invalidateOnRefresh: true,
+          /* Join the shared `"pinned"` group with the other
+             ScrollTrigger pins on the page (panorama, gallery,
+             location) so they never overlap, and clamp fast
+             swipes so the spatial push always plays through on
+             phones. */
+          fastScrollEnd: true,
+          preventOverlaps: "pinned",
           snap: {
             snapTo(progress: number) {
               if (progress < 0.17) return 0;

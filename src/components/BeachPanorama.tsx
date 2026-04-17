@@ -163,6 +163,16 @@ export default function BeachPanorama() {
           scrub: 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          /* `fastScrollEnd: true` + `preventOverlaps` together
+             solve the "fast swipe skips a pinned section" bug.
+             Any swipe that would otherwise fling the user past
+             this pin gets clamped so the panorama flip + three
+             slide advances ALL get a chance to play. All pinned
+             sections on the page share the group name `"pinned"`,
+             so at most one pin is ever engaged at a time and
+             they take turns as the user scrolls. */
+          fastScrollEnd: true,
+          preventOverlaps: "pinned",
           /* Threshold-crossing trigger for the three scripted
              slide advances. Each one fires exactly once per
              direction so the cover-flip and the auto-cycle never

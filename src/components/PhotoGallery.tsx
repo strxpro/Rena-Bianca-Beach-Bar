@@ -109,8 +109,12 @@ export default function PhotoGallery() {
         scrub: 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
+        /* Clamp fast swipes + join the shared `"pinned"` group
+           so the gallery carousel can't be skipped in a single
+           fling gesture on mobile. */
+        fastScrollEnd: true,
+        preventOverlaps: "pinned",
         onUpdate: (self) => {
-          // Only scroll through first 3 cards (0→30% of total progress)
           progressRef.current = self.progress * 30;
           applyLayout();
         },

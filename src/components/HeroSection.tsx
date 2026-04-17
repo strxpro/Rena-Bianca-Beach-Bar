@@ -67,14 +67,24 @@ export default function HeroSection() {
   const handleVideoEnded = useCallback(() => {
     const vid = fullVideoRef.current;
     if (!vid) return;
+    /* Fire `video-ended` AT THE START of the fade-out, not after
+       it completes. The brief is "scroll should be locked until
+       the film ends" — from the user's point of view the film
+       has ended the moment it reaches its last frame, not 2.5 s
+       later when the crossfade finishes. Firing early also means
+       the dotted-nav rail fades IN while the video fades OUT, so
+       both transitions happen in a single smooth beat instead of
+       back-to-back. The fade itself continues (video lingers as
+       a fading overlay on top of the parallax) but the user can
+       already scroll to explore the page. */
+    window.dispatchEvent(new CustomEvent("video-ended"));
+    firePreloaderComplete();
     gsap.to(vid, {
       opacity: 0,
       duration: VIDEO_FADE_DUR,
       ease: "power2.inOut",
       onComplete: () => {
         vid.style.display = "none";
-        window.dispatchEvent(new CustomEvent("video-ended"));
-        firePreloaderComplete();
       },
     });
   }, []);
@@ -90,7 +100,12 @@ export default function HeroSection() {
     if (window.scrollY > 100) {
       skippedRef.current = true;
       vid.style.display = "none";
-      document.documentElement.style.overflow = "";
+      /* SmoothScrollProvider owns the `intro-locked` class on
+         <html> + <body>; release it here too so a mid-page reload
+         never leaves the user with a frozen page while the
+         `video-ended` listener is racing to fire. */
+      document.documentElement.classList.remove("intro-locked");
+      document.body.classList.remove("intro-locked");
       const overlay = root?.querySelector("[data-overlay]") as HTMLElement | null;
       if (overlay) overlay.style.display = "none";
       window.dispatchEvent(new CustomEvent("header-show"));
@@ -115,9 +130,11 @@ export default function HeroSection() {
       }
     }, 8000);
 
-    // Safety: if preloader animation stalls, force-unlock page
+    // Safety: if preloader animation stalls, force-unlock page.
+    // The `intro-locked` CSS class is cleared by SmoothScrollProvider
+    // when it hears `video-ended` (fired below); we just need to
+    // make sure that event is guaranteed to happen.
     const safetyUnlock = setTimeout(() => {
-      document.documentElement.style.overflow = "";
       const overlay = root?.querySelector("[data-overlay]") as HTMLElement | null;
       if (overlay && overlay.style.display !== "none") {
         overlay.style.display = "none";
@@ -139,7 +156,11 @@ export default function HeroSection() {
       if (!root) return;
       // Skip preloader animation if page loaded scrolled down
       if (skippedRef.current) return;
-      document.documentElement.style.overflow = "hidden";
+      /* Scroll is locked via the `intro-locked` body/html class
+         added in SmoothScrollProvider — no need to write
+         `style.overflow` imperatively here any more (the class
+         wins over inline styles with `!important`, so double-
+         writing would just create confusion). */
 
       const heading = root.querySelector("[data-heading]") as HTMLElement;
       const letters = root.querySelectorAll("[data-letter]");
@@ -275,9 +296,11 @@ export default function HeroSection() {
       }, "<");
 
       tl.set(overlay, { display: "none" });
-      tl.call(() => {
-        document.documentElement.style.overflow = "";
-      });
+      /* No overflow reset here — SmoothScrollProvider keeps the
+         page locked until the full video (`film2.mp4`) actually
+         finishes and dispatches `video-ended`. That matches the
+         user's brief: "when the page opens and the film is
+         playing, scrolling should be locked until the film ends". */
     },
     { scope: rootRef }
   );

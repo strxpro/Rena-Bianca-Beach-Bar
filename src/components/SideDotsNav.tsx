@@ -77,6 +77,27 @@ export default function SideDotsNav() {
      it relaxes back to the subtle hairline. Gives the rail a
      gentle "alive when in motion, calm when idle" pulse. */
   const [isScrolling, setIsScrolling] = useState(false);
+  /* Hidden on mount — the rail only appears AFTER the hero video
+     ends. Per the brief, the dotted nav must be invisible while
+     the intro film is playing; it fades in the moment HeroSection
+     fires `video-ended`. `preloader-complete` is a redundant
+     second channel so a reload-past-hero path still shows the
+     rail immediately. */
+  const [filmDone, setFilmDone] = useState(false);
+  useEffect(() => {
+    const show = () => setFilmDone(true);
+    window.addEventListener("video-ended", show, { once: true });
+    window.addEventListener("preloader-complete", show, { once: true });
+    /* If the page was reloaded while scrolled past the hero, the
+       rail should be visible immediately — the film never plays. */
+    if (typeof window !== "undefined" && window.scrollY > 100) {
+      setFilmDone(true);
+    }
+    return () => {
+      window.removeEventListener("video-ended", show);
+      window.removeEventListener("preloader-complete", show);
+    };
+  }, []);
   const scrollIdleTimerRef = useRef<number | null>(null);
   const hideTimerRef = useRef<number | null>(null);
   /* The freshly-clicked index stays "stuck" as active for a moment
@@ -297,7 +318,7 @@ export default function SideDotsNav() {
            position — including pages where some ancestor sets
            a transform that would otherwise break `top: 50%`. */
         top: "50vh",
-        right: "var(--rail-right, 12px)",
+        right: "var(--rail-right, 6px)",
         zIndex: 90,
         /* Subtle in/out nudge keeps the shy ↔ expanded
            transition feeling alive without ever leaving the
@@ -306,12 +327,18 @@ export default function SideDotsNav() {
            user is on the MENU section the rail tucks half of its
            own width off the right edge so the page-flip hotspots
            are unobstructed; everywhere else the regular shy/out
-           offsets apply. */
+           offsets apply.
+           Until the intro film ends the whole rail is fully
+           hidden (opacity 0 + translated off-screen to the right)
+           — the brief explicitly asks for "hide the dotted menu
+           while the film is playing". */
         transform: `translate(${
-          hideForMenu ? "55%" : isOut ? "0px" : "6px"
+          !filmDone ? "120%" : hideForMenu ? "55%" : isOut ? "0px" : "6px"
         }, -50%)`,
-        transition: "transform 520ms cubic-bezier(0.22, 1, 0.36, 1)",
-        opacity: hideForMenu ? 0.55 : 1,
+        transition:
+          "transform 520ms cubic-bezier(0.22, 1, 0.36, 1), opacity 420ms ease-out",
+        opacity: !filmDone ? 0 : hideForMenu ? 0.55 : 1,
+        pointerEvents: !filmDone ? "none" : undefined,
       }}
     >
       <div
@@ -328,10 +355,14 @@ export default function SideDotsNav() {
           /* Padding scales with viewport height: comfy on
              desktop, tighter on short laptop screens / phones
              so the rail always fits inside the viewport (and
-             therefore actually CAN be vertically centred). */
+             therefore actually CAN be vertically centred).
+             The mobile floor (`5px`/`4px`) was explicitly tuned
+             down from 8/6 so the rail is physically small on
+             phones — the user asked for a smaller dotted menu
+             on mobile. */
           padding: isOut
-            ? "clamp(8px, 1.6vh, 16px) clamp(8px, 1.2vw, 12px)"
-            : "clamp(6px, 1.0vh, 10px) clamp(6px, 0.8vw, 8px)",
+            ? "clamp(5px, 1.4vh, 16px) clamp(4px, 1.0vw, 12px)"
+            : "clamp(4px, 0.8vh, 10px) clamp(3px, 0.6vw, 8px)",
           boxShadow:
             "-10px 10px 30px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
           transition:
@@ -429,13 +460,14 @@ export default function SideDotsNav() {
         {/* ── DOTS COLUMN ──────────────────────────────────────
              Gap also scales with viewport height so 7 dots +
              6 gaps + padding never exceed the viewport on
-             shorter laptops / phones. ── */}
+             shorter laptops / phones. Mobile floor reduced from
+             8/6 → 5/4 to further shrink the rail on phones. ── */}
         <ul
           className="relative flex flex-col items-center"
           style={{
             gap: isOut
-              ? "clamp(8px, 1.8vh, 18px)"
-              : "clamp(6px, 1.2vh, 12px)",
+              ? "clamp(5px, 1.6vh, 18px)"
+              : "clamp(4px, 1.0vh, 12px)",
             transition: "gap 520ms cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
@@ -476,23 +508,28 @@ export default function SideDotsNav() {
                   aria-label={t(section.key)}
                   aria-current={isActive ? "true" : undefined}
                   onClick={() => go(i)}
-                  className="group/dot relative flex h-5 w-5 items-center justify-center focus:outline-none"
+                  /* Touch target stays 20×20 on desktop (h-5 w-5)
+                     but drops to 14×14 on phones (h-3.5 w-3.5) so
+                     the rail shrinks visually AND the 7-dot column
+                     never eats more than ~120 px of vertical
+                     viewport on small screens. */
+                  className="group/dot relative flex h-3.5 w-3.5 items-center justify-center focus:outline-none sm:h-5 sm:w-5"
                 >
                   {/* Outer halo — only when active */}
                   <span
                     aria-hidden
                     className={`absolute rounded-full transition-all duration-300
                       ${isActive
-                        ? "h-5 w-5 bg-ocean/20 ring-1 ring-ocean/40"
-                        : "h-3 w-3 bg-transparent"}`}
+                        ? "h-3.5 w-3.5 bg-ocean/20 ring-1 ring-ocean/40 sm:h-5 sm:w-5"
+                        : "h-2 w-2 bg-transparent sm:h-3 sm:w-3"}`}
                   />
                   {/* Inner dot */}
                   <span
                     aria-hidden
                     className={`relative block rounded-full transition-all duration-300
                       ${isActive
-                        ? "h-2 w-2 bg-sand shadow-[0_0_12px_rgba(142,197,232,0.9)]"
-                        : "h-1.5 w-1.5 bg-sand/35 group-hover/dot:h-2 group-hover/dot:w-2 group-hover/dot:bg-sand/70"}`}
+                        ? "h-1.5 w-1.5 bg-sand shadow-[0_0_10px_rgba(142,197,232,0.85)] sm:h-2 sm:w-2"
+                        : "h-1 w-1 bg-sand/35 group-hover/dot:h-1.5 group-hover/dot:w-1.5 group-hover/dot:bg-sand/70 sm:h-1.5 sm:w-1.5"}`}
                   />
                 </button>
               </li>

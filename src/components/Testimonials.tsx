@@ -197,7 +197,14 @@ function ReviewCard({
       style={{ rotate: tilt, x: translate }}
       whileHover={{ y: -10, rotate: 0, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 260, damping: 22 }}
-      className="group/review relative h-60 w-72 shrink-0 cursor-pointer sm:h-72 sm:w-88"
+      /* Card sizes are now deeply responsive so the row never
+         overflows on narrow phones. Previous `w-72` (288 px) +
+         `space-x-20` (80 px) × 3–4 cards per row meant each row's
+         intrinsic width was ~1.3 k px on a 360 px viewport — a
+         big contributor to the horizontal-overflow white strip.
+         Width drops to 14 rem (224 px) on <640 px, grows to
+         88 units (22 rem) on ≥ sm. Height scales too. */
+      className="group/review relative h-52 w-56 shrink-0 cursor-pointer sm:h-72 sm:w-88"
       onClick={onClick}
     >
       {/* ── Polaroid frame ── */}
@@ -403,14 +410,21 @@ export default function Testimonials() {
   const springConfig = { stiffness: 300, damping: 30, bounce: 100 };
 
   /* Row 1 & Row 3 drift RIGHT, Row 2 drifts LEFT. Horizontal
-     parallax range kept at ±600 so the cards drift enough to
-     feel cinematic without flying beyond the gutter. */
+     parallax range is narrower on phones (±260) than on
+     desktop (±600) — otherwise the cards would fly far past
+     the screen edges on narrow viewports and the row's clip
+     box would visibly leak on the opposite side. `useMemo` on
+     the detection isn't necessary because Framer Motion already
+     resubscribes on value change; SSR-safe with a guard. */
+  const isMobileViewport =
+    typeof window !== "undefined" && window.innerWidth < 640;
+  const xRange = isMobileViewport ? 260 : 600;
   const translateX = useSpring(
-    useTransform(scrollYProgress, [0, 1], [0, 600]),
+    useTransform(scrollYProgress, [0, 1], [0, xRange]),
     springConfig
   );
   const translateXReverse = useSpring(
-    useTransform(scrollYProgress, [0, 1], [0, -600]),
+    useTransform(scrollYProgress, [0, 1], [0, -xRange]),
     springConfig
   );
 
@@ -450,19 +464,21 @@ export default function Testimonials() {
         className="relative antialiased flex flex-col self-auto"
         style={{
           /* Sized in vh (viewport-percent) — the user explicitly
-             asked for percentage-based sizing. The previous
-             180vh was shorter than the rendered content on
-             common laptop viewports (180vh ≈ 1440 px @ 800 px,
-             but 3 rows of 240 px stickers + 80 px row gaps +
-             section header + CTA ≈ 1700 px). That let
-             `overflow-hidden` clip the bottom of the stack and
-             hide the "Zobacz więcej / Zostaw wiadomość"
-             buttons under the next section's layers. 240vh
-             gives the stack ample headroom on every viewport
-             AND lengthens the scroll, so the horizontal
-             parallax has more room to breathe before the CTA
-             arrives at the bottom. */
-          height: "240vh",
+             asked for percentage-based sizing.
+             ─ DESKTOP (≥ sm, default 240vh): gives 3 rows of
+               288 px stickers + 80 px gaps + header + CTA
+               (~1700 px) plenty of headroom so `overflow` can
+               never clip the CTA.
+             ─ MOBILE (<640 px, 200vh via media query below):
+               cards + gaps are smaller on phones (h-52, w-56,
+               space-x-8) so the content is only ~1100 px tall;
+               200vh (typically ~1300 px on a 650 px phone
+               viewport) is plenty without creating an ocean of
+               empty blue below the CTA. This single responsive
+               height is why the section now renders correctly
+               on both desktop AND mobile without any awkward
+               white stretch. */
+          height: "var(--testi-height, 240vh)",
           paddingTop: "6rem",
           /* 14vh of padding at the bottom guarantees the CTA
              sits comfortably above the section's lower edge
@@ -510,15 +526,17 @@ export default function Testimonials() {
             opacity,
           }}
         >
-          {/* Row 1 — drifts RIGHT (translateX: 0 → +600 px).
+          {/* Row 1 — drifts RIGHT (translateX range above).
               flex-row-reverse starts the row overflowing to the
-              LEFT of the viewport so as translateX pushes
-              right the cards scroll in from the left.
-              `overflow-hidden` is now applied per-row instead
-              of on the section wrapper, so the horizontally-
-              drifting cards still get clipped without ever
-              clipping the CTA below. */}
-          <motion.div className="mb-20 flex flex-row-reverse space-x-20 space-x-reverse overflow-hidden">
+              LEFT of the viewport so as translateX pushes right
+              the cards scroll in from the left.
+              `overflow-hidden` is applied per-row instead of on
+              the section wrapper, so the horizontally drifting
+              cards still get clipped without ever clipping the
+              CTA below. Row bottom margin + horizontal spacing
+              shrinks on phones so the three rows + CTA all fit
+              inside the taller 240vh section. */}
+          <motion.div className="mb-10 flex flex-row-reverse space-x-8 space-x-reverse overflow-hidden sm:mb-20 sm:space-x-20">
             {firstRow.map((r, i) => (
               <ReviewCard
                 key={r.name}
@@ -531,8 +549,8 @@ export default function Testimonials() {
             ))}
           </motion.div>
 
-          {/* Row 2 — drifts LEFT (translateX: 0 → −600 px). */}
-          <motion.div className="mb-20 flex flex-row space-x-20 overflow-hidden">
+          {/* Row 2 — drifts LEFT. */}
+          <motion.div className="mb-10 flex flex-row space-x-8 overflow-hidden sm:mb-20 sm:space-x-20">
             {secondRow.map((r, i) => (
               <ReviewCard
                 key={r.name}
@@ -546,7 +564,7 @@ export default function Testimonials() {
           </motion.div>
 
           {/* Row 3 — mirrors Row 1 (drifts RIGHT). */}
-          <motion.div className="mb-20 flex flex-row-reverse space-x-20 space-x-reverse overflow-hidden">
+          <motion.div className="mb-10 flex flex-row-reverse space-x-8 space-x-reverse overflow-hidden sm:mb-20 sm:space-x-20">
             {thirdRow.map((r, i) => (
               <ReviewCard
                 key={r.name}

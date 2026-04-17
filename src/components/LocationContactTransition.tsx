@@ -74,6 +74,18 @@ export default function LocationContactTransition() {
         Net effect: landing page transfer drops by ~100 MB, and
         the frame sequence is always ready by the time the
         scroll-driven timeline actually reaches it. ── */
+  /* On phones we only decode every SECOND frame — cuts the
+     Znajdź-nas asset payload from ~100 MB to ~50 MB and halves
+     the image-decode work the compositor has to do while the
+     user scrubs through Phase 3. `drawFrame` below rounds the
+     requested index down to the nearest loaded frame so the
+     animation looks identical (the scrolling film still plays
+     smoothly thanks to Lenis' easing — the slight loss in
+     frame granularity is invisible at typical scroll speeds). */
+  const isMobileDevice =
+    typeof window !== "undefined" && window.innerWidth < 768;
+  const FRAME_STEP = isMobileDevice ? 2 : 1;
+
   useEffect(() => {
     const imgs: HTMLImageElement[] = new Array(TOTAL_FRAMES);
     for (let i = 0; i < TOTAL_FRAMES; i++) {
@@ -82,8 +94,6 @@ export default function LocationContactTransition() {
     }
     imagesRef.current = imgs;
 
-    // Always fetch frame 0 now so the first paint of the section
-    // isn't blank — it's a single ~430 KB image, negligible cost.
     imgs[0].src = getFrameSrc(0);
     imgs[0].onload = () => {
       const canvas = canvasRef.current;
@@ -97,19 +107,19 @@ export default function LocationContactTransition() {
 
     let cancelled = false;
     let started = false;
-    // Streams the remaining frames in batches so we don't fire
-    // 149 parallel requests at once (which can overwhelm mobile
-    // HTTP/1.1 connections and stall the main image for seconds).
+    /* Streams frames in batches so we don't fire 149 parallel
+       requests at once (slaughters mobile HTTP/1.1 connections).
+       `FRAME_STEP` lets us skip every other frame on phones. */
     const startStreaming = () => {
       if (started || cancelled) return;
       started = true;
       const BATCH = 8;
-      let next = 1;
+      let next = FRAME_STEP;
       const pump = () => {
         if (cancelled) return;
         let inFlight = 0;
-        const end = Math.min(next + BATCH, TOTAL_FRAMES);
-        for (let i = next; i < end; i++) {
+        const end = Math.min(next + BATCH * FRAME_STEP, TOTAL_FRAMES);
+        for (let i = next; i < end; i += FRAME_STEP) {
           const img = imgs[i];
           if (!img.src) {
             inFlight++;
@@ -155,7 +165,18 @@ export default function LocationContactTransition() {
 
   const drawFrame = useCallback((idx: number) => {
     const canvas = canvasRef.current;
-    const img = imagesRef.current[idx];
+    /* Snap to the nearest frame we actually loaded. On desktop
+       `FRAME_STEP` is 1 so this is a no-op; on phones it rounds
+       odd indices down to the preceding even frame that was
+       actually fetched. If the chosen frame is still in flight
+       we walk backwards until we find one that's decoded — so
+       the canvas is NEVER blank once the first frame arrives. */
+    let snapped = Math.floor(idx / FRAME_STEP) * FRAME_STEP;
+    let img = imagesRef.current[snapped];
+    while ((!img || !img.complete) && snapped > 0) {
+      snapped -= FRAME_STEP;
+      img = imagesRef.current[snapped];
+    }
     if (!canvas || !img || !img.complete) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -163,7 +184,7 @@ export default function LocationContactTransition() {
     if (canvas.height !== img.naturalHeight) canvas.height = img.naturalHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0);
-  }, []);
+  }, [FRAME_STEP]);
 
   useGSAP(
     () => {
@@ -257,6 +278,16 @@ export default function LocationContactTransition() {
           pin: true,
           scrub: 0.5,
           anticipatePin: 1,
+          /* Share the `"pinned"` group so this pin can never
+             overlap with the menu-transition, panorama or gallery
+             pins, and clamp fast swipes so the film + orbital
+             animation always get a chance to play. Without these,
+             a single hard swipe on mobile could fling the user
+             past 6 × viewport of pinned scroll, skipping the
+             entire "Znajdź nas" sequence. */
+          fastScrollEnd: true,
+          preventOverlaps: "pinned",
+          invalidateOnRefresh: true,
           onUpdate: (self) => {
             // Auto-activate the 3D pin while the panel is orbiting away.
             const p = self.progress;
