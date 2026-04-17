@@ -402,10 +402,9 @@ export default function Testimonials() {
      with the reference mechanism. */
   const springConfig = { stiffness: 300, damping: 30, bounce: 100 };
 
-  /* Row 1 & Row 3 drift RIGHT, Row 2 drifts LEFT. The range was
-     tuned down from ±1000 to ±600 so the horizontal parallax
-     fits comfortably inside the new shorter (180vh) container —
-     no ocean of empty blue below the CTA any more. */
+  /* Row 1 & Row 3 drift RIGHT, Row 2 drifts LEFT. Horizontal
+     parallax range kept at ±600 so the cards drift enough to
+     feel cinematic without flying beyond the gutter. */
   const translateX = useSpring(
     useTransform(scrollYProgress, [0, 1], [0, 600]),
     springConfig
@@ -415,24 +414,28 @@ export default function Testimonials() {
     springConfig
   );
 
-  /* Whole-stack 3D entrance — unwinds over the first 25% of the
-     shortened scroll range so the cards rise and land flat a
-     hair sooner, leaving the remaining 75% to simply parallax
-     horizontally and close on the CTA naturally. */
+  /* Whole-stack 3D entrance — unwinds over the first 22% of
+     the taller scroll range so cards land flat early.
+     translateY finishes at 0 (instead of the old +300 which
+     pushed the CTA below the section's `overflow-hidden` clip
+     and made it disappear behind neighbouring layers). With a
+     terminal translateY of 0 the CTA always sits exactly where
+     it was laid out — directly under row 3 — regardless of
+     viewport height. */
   const rotateX = useSpring(
-    useTransform(scrollYProgress, [0, 0.25], [15, 0]),
+    useTransform(scrollYProgress, [0, 0.22], [15, 0]),
     springConfig
   );
   const rotateZ = useSpring(
-    useTransform(scrollYProgress, [0, 0.25], [20, 0]),
+    useTransform(scrollYProgress, [0, 0.22], [20, 0]),
     springConfig
   );
   const translateY = useSpring(
-    useTransform(scrollYProgress, [0, 0.25], [-500, 300]),
+    useTransform(scrollYProgress, [0, 0.22], [-320, 0]),
     springConfig
   );
   const opacity = useSpring(
-    useTransform(scrollYProgress, [0, 0.25], [0.2, 1]),
+    useTransform(scrollYProgress, [0, 0.22], [0.25, 1]),
     springConfig
   );
 
@@ -444,18 +447,28 @@ export default function Testimonials() {
       <div
         id="testimonials"
         ref={ref}
-        className="relative overflow-hidden antialiased flex flex-col self-auto"
+        className="relative antialiased flex flex-col self-auto"
         style={{
-          /* 180vh — shorter than the reference HeroParallax's
-             300vh because our content (3 rows + CTA) is only
-             ~1100 px tall. At 300vh the user would see a huge
-             empty blue stretch below the CTA before the next
-             section; 180vh is just enough scroll for the
-             horizontal ±600 px parallax to play out while
-             ending near the CTA. */
-          height: "180vh",
+          /* Sized in vh (viewport-percent) — the user explicitly
+             asked for percentage-based sizing. The previous
+             180vh was shorter than the rendered content on
+             common laptop viewports (180vh ≈ 1440 px @ 800 px,
+             but 3 rows of 240 px stickers + 80 px row gaps +
+             section header + CTA ≈ 1700 px). That let
+             `overflow-hidden` clip the bottom of the stack and
+             hide the "Zobacz więcej / Zostaw wiadomość"
+             buttons under the next section's layers. 240vh
+             gives the stack ample headroom on every viewport
+             AND lengthens the scroll, so the horizontal
+             parallax has more room to breathe before the CTA
+             arrives at the bottom. */
+          height: "240vh",
           paddingTop: "6rem",
-          paddingBottom: "4rem",
+          /* 14vh of padding at the bottom guarantees the CTA
+             sits comfortably above the section's lower edge
+             even after the (now zeroed) translateY animation
+             finishes, on every viewport. */
+          paddingBottom: "14vh",
           background: "linear-gradient(180deg, #0A192F 0%, #0d2240 20%, #1a4a6e 55%, #5ba3d9 80%, #8ec5e8 100%)",
           /* 3D camera for the whole section — `preserve-3d`
              plus `perspective` is the exact combo HeroParallax
@@ -497,11 +510,15 @@ export default function Testimonials() {
             opacity,
           }}
         >
-          {/* Row 1 — drifts RIGHT (translateX: 0 → +1000 px).
+          {/* Row 1 — drifts RIGHT (translateX: 0 → +600 px).
               flex-row-reverse starts the row overflowing to the
               LEFT of the viewport so as translateX pushes
-              right the cards scroll in from the left. */}
-          <motion.div className="mb-20 flex flex-row-reverse space-x-20 space-x-reverse">
+              right the cards scroll in from the left.
+              `overflow-hidden` is now applied per-row instead
+              of on the section wrapper, so the horizontally-
+              drifting cards still get clipped without ever
+              clipping the CTA below. */}
+          <motion.div className="mb-20 flex flex-row-reverse space-x-20 space-x-reverse overflow-hidden">
             {firstRow.map((r, i) => (
               <ReviewCard
                 key={r.name}
@@ -514,11 +531,8 @@ export default function Testimonials() {
             ))}
           </motion.div>
 
-          {/* Row 2 — drifts LEFT (translateX: 0 → −1000 px).
-              flex-row starts the row overflowing to the RIGHT
-              so as translateX pulls left the cards scroll in
-              from the right. */}
-          <motion.div className="mb-20 flex flex-row space-x-20">
+          {/* Row 2 — drifts LEFT (translateX: 0 → −600 px). */}
+          <motion.div className="mb-20 flex flex-row space-x-20 overflow-hidden">
             {secondRow.map((r, i) => (
               <ReviewCard
                 key={r.name}
@@ -532,7 +546,7 @@ export default function Testimonials() {
           </motion.div>
 
           {/* Row 3 — mirrors Row 1 (drifts RIGHT). */}
-          <motion.div className="mb-20 flex flex-row-reverse space-x-20 space-x-reverse">
+          <motion.div className="mb-20 flex flex-row-reverse space-x-20 space-x-reverse overflow-hidden">
             {thirdRow.map((r, i) => (
               <ReviewCard
                 key={r.name}
@@ -547,12 +561,13 @@ export default function Testimonials() {
 
           {/* ── CTA — placed INSIDE the motion.div so it travels with
                 the stack's `translateY` and lands directly under the
-                last row of stickers (same relationship the previous
-                version had). The rotateX/rotateZ entrance does apply
-                to the buttons too, but they unwind to 0 long before
-                the CTA enters the viewport, so they end up perfectly
-                upright and crisp. ── */}
-          <div className="pointer-events-auto relative z-20 mx-auto flex w-full max-w-xl flex-col items-center gap-5 px-4 sm:gap-6 sm:px-6">
+                last row of stickers. With the section now 240vh tall
+                and translateY ending at 0 (instead of +300), the
+                CTA lands well inside the visible area and is no
+                longer covered by neighbouring section layers.
+                z-30 + a small mt-4 give it a hard guarantee of
+                sitting on top of any 3D-transformed sibling. ── */}
+          <div className="pointer-events-auto relative z-30 mx-auto mt-4 flex w-full max-w-xl flex-col items-center gap-5 px-4 sm:gap-6 sm:px-6">
             {/* See-all — header-style link with hand-drawn underline */}
             <button
               onClick={() => setShowAll(true)}

@@ -415,7 +415,7 @@ export default function LocationContactTransition() {
         duration: ORBIT_DUR,
       }, ORBIT_START);
 
-      /* ═══ Phase 5 (0.66 → 0.78): Scenery hides DOWN.
+      /* ═══ Phase 5 (FILM_END → +0.12): Scenery hides DOWN.
             Only AFTER the contact panel has locked to centre do the
             film player and waves retreat below the viewport, so the
             contact card owns the screen for the rest of the section. ═══ */
@@ -424,21 +424,26 @@ export default function LocationContactTransition() {
       tl.to(waveFront,   { yPercent: 140, duration: 0.06, ease: "power2.in" }, SCENERY_EXIT + 0.03);
       tl.to(waveBack,    { yPercent: 130, duration: 0.06, ease: "power2.in" }, SCENERY_EXIT + 0.06);
 
-      /* ═══ Phase 5b (0.70 → 0.88): SENTENCE-BY-SENTENCE REVEAL.
-            Once the contact panel is centred, each line of copy
-            slides up into its final position while its filter
-            animates from `blur(8px) brightness(0.45)` to crisp
-            `blur(0) brightness(1)` — the "becomes brighter, more
-            vivid, one sentence at a time" beat. The stagger is
-            sized so the last line (submit button) finishes well
-            before the panel lifts for the footer. ═══ */
-      /* Cascade starts the moment the magnetic lock releases
-         (ORBIT_START + ORBIT_DUR = 0.66) so the sentences brighten
-         in as the scenery is sliding down — one continuous beat
-         instead of two separate ones. */
-      const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR + 0.02; // ≈ 0.68
-      const LINE_REVEAL_DUR = 0.06;
-      const LINE_STAGGER = 0.025;
+      /* ═══ Phase 5b — SENTENCE-BY-SENTENCE REVEAL, NOW SYNC'd
+            WITH THE FILM + ORBIT.
+            ──────────────────────────────────────────────────
+            User report: the film and the rest of the "Znajdź
+            nas" animation felt out of sync — the film would
+            finish, the orbit would settle, THEN the contact
+            lines would slowly brighten in as a separate beat.
+            Fix: start the cascade just past the magnetic lock
+            (ORBIT_START + 60% of ORBIT_DUR ≈ 0.588) so the
+            lines finish revealing exactly at FILM_END (0.66).
+            From the user's eye, the film, the orbit and the
+            sentence reveal all complete in one synchronised
+            beat — there is no longer any "wait, now read" gap.
+            ── Math check (6 contact-line targets):
+               start  + stagger * (n-1) + dur
+             = 0.588 + 0.010 * 5         + 0.025
+             = 0.663  ≈ FILM_END (0.66)  ✓ ═══ */
+      const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR * 0.60; // ≈ 0.588
+      const LINE_REVEAL_DUR = 0.025;
+      const LINE_STAGGER = 0.010;
 
       // Snap the sync'd form-el init out of the way so the cascade
       // owns their opacity/y. (formEls's initial gsap.set above is
@@ -465,15 +470,15 @@ export default function LocationContactTransition() {
       );
 
       // Heading letters still rise letter-by-letter, but now
-      // timed to coincide with the heading's turn in the cascade
-      // (it's the SECOND data-contact-line, so start one
-      // stagger-beat after the eyebrow).
+      // tightened so all of them finish RISING before FILM_END
+      // (0.66) — the heading is the SECOND data-contact-line,
+      // hence one stagger-beat after the eyebrow.
       tl.to(
         headingLetters,
         {
           yPercent: 0,
-          stagger: 0.006,
-          duration: 0.08,
+          stagger: 0.003,
+          duration: 0.04,
           ease: "expo.out",
         },
         LINE_REVEAL_START + LINE_STAGGER
