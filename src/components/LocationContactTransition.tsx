@@ -260,7 +260,7 @@ export default function LocationContactTransition() {
           onUpdate: (self) => {
             // Auto-activate the 3D pin while the panel is orbiting away.
             const p = self.progress;
-            const shouldActivate = p > 0.18 && p < 0.55;
+            const shouldActivate = p > 0.18 && p < 0.50;
             if (shouldActivate !== pinActiveRef.current) {
               pinActiveRef.current = shouldActivate;
               setPinActive(shouldActivate);
@@ -325,60 +325,71 @@ export default function LocationContactTransition() {
         }, 0.18);
       }
 
-      /* ═══ Phase 4 (0.51 → 0.60): ORBIT SWAP — Location exits LEFT,
-            Contact enters from the RIGHT and PARKS on the right side
-            of the screen (xPercent: 50 — half off, half visible).
-            Mapping to film frames: the orbit begins at ~frame 85/150
-            and contact is fully docked on the right at ~frame 128/150
-            — exactly as specified in the brief. Rotation capped at
-            ±25° so the panels feel like moons gliding past. ═══ */
-      const ORBIT_START = 0.51;
-      const ORBIT_DUR = 0.09;
+      /* ═══ Phase 4 (0.48 → 0.66): SYNCHRONIZED ORBIT SWAP
+            Location orbits out to the LEFT while the Contact panel
+            ENTERS FROM THE RIGHT in the **same scroll window**. There
+            is no "park on the right, wait, then glide to centre"
+            step any more — the contact panel makes one continuous
+            flight from off-right, across the viewport, slightly PAST
+            centre toward the LEFT, where a delicate magnetic lock
+            pulls it back to dead centre. After the lock releases,
+            subsequent phases continue normally. ═══ */
+      const ORBIT_START = 0.48;
+      const ORBIT_DUR = 0.18;
 
       // LOCATION: orbit out to the LEFT. The path curves UP first
       // (−y), then sweeps down and off-screen (+y). `sine.inOut`
       // between keyframes gives the arc a genuine circular feel.
       tl.to(locationPanel, {
         keyframes: [
-          { xPercent: -20, yPercent: -8,  rotation: -8,  scale: 0.94, opacity: 0.92, duration: 0.28, ease: "sine.inOut" },
-          { xPercent: -60, yPercent: -14, rotation: -18, scale: 0.82, opacity: 0.55, duration: 0.32, ease: "sine.inOut" },
+          { xPercent: -20, yPercent: -8,  rotation: -8,  scale: 0.94, opacity: 0.92, duration: 0.22, ease: "sine.inOut" },
+          { xPercent: -60, yPercent: -14, rotation: -18, scale: 0.82, opacity: 0.55, duration: 0.28, ease: "sine.inOut" },
           { xPercent: -110, yPercent: -6, rotation: -24, scale: 0.66, opacity: 0.2,  duration: 0.25, ease: "sine.inOut" },
-          { xPercent: -160, yPercent: 8,  rotation: -25, scale: 0.5,  opacity: 0,    duration: 0.15, ease: "power1.in" },
+          { xPercent: -160, yPercent: 8,  rotation: -25, scale: 0.5,  opacity: 0,    duration: 0.25, ease: "power1.in" },
         ],
         duration: ORBIT_DUR,
       }, ORBIT_START);
 
-      // CONTACT: arrival from the RIGHT, but STOPS at xPercent:50
-      // (right side of the viewport — half of the panel visible).
-      // It will glide into the centre later, AFTER the film + waves
-      // have slid down, so the handover reads as:
-      //   film playing → orbit → contact appears on the right →
-      //   scenery hides down → contact walks to centre.
-      tl.set(contactPanel, { opacity: 0, xPercent: 120, yPercent: 0, rotation: 8 }, ORBIT_START);
+      /* CONTACT: one continuous flight from off-right → across the
+         viewport → small overshoot past centre toward the LEFT →
+         magnetic snap-back → settle exactly at x=0.
+
+         Keyframe durations are fractions of the ORBIT_DUR window
+         (they must sum to 1.0):
+           0.00–0.35 — enter, travel to ~50% (approaching centre)
+           0.35–0.60 — cross centre, fly to ~-8% (LEFT of centre)
+                       → this is the "on the left" moment the user
+                       asked for; magnetic lock ENGAGES here with
+                       a tiny scale bloom (1.02).
+           0.60–0.85 — gentle pull back to +1.5% with a micro
+                       rebound in scale (the delicate magnet tug).
+           0.85–1.00 — final settle to dead centre at scale 1.
+      */
+      tl.set(contactPanel, { opacity: 0, xPercent: 120, yPercent: 0, rotation: 8, scale: 1 }, ORBIT_START);
       tl.to(contactPanel, {
         keyframes: [
-          { xPercent: 90, yPercent: -4, rotation: 6, opacity: 0.4, duration: 0.35, ease: "sine.inOut" },
-          { xPercent: 65, yPercent: -2, rotation: 3, opacity: 0.8, duration: 0.35, ease: "sine.inOut" },
-          { xPercent: 50, yPercent: 0,  rotation: 0, opacity: 1,   duration: 0.30, ease: "power2.out" },
+          { xPercent: 85, yPercent: -4, rotation: 6, opacity: 0.45, duration: 0.18, ease: "sine.inOut" },
+          { xPercent: 50, yPercent: -2, rotation: 3, opacity: 0.85, duration: 0.17, ease: "sine.inOut" },
+          /* Magnetic LOCK engages: panel crosses centre and is
+             pulled by an invisible magnet a few percent LEFT of
+             centre with a tiny scale bloom. */
+          { xPercent: -8, yPercent: -0.6, rotation: 0, opacity: 1, scale: 1.02, duration: 0.25, ease: "power3.out" },
+          /* Gentle settle — the magnet lets go. Micro-rebound in
+             scale so it doesn't feel like a hard snap. */
+          { xPercent: 1.5, yPercent: 0, scale: 0.996, duration: 0.25, ease: "sine.inOut" },
+          { xPercent: 0, yPercent: 0, scale: 1, duration: 0.15, ease: "power2.out" },
         ],
         duration: ORBIT_DUR,
-      }, ORBIT_START + 0.01);
+      }, ORBIT_START);
 
-      /* ═══ Phase 5 (0.62 → 0.72): Scenery hides DOWN (film → front
-            wave → back wave) and the contact panel simultaneously
-            glides from the RIGHT edge to the CENTRE of the viewport.
-            This is the "everything hides down, contact moves to
-            centre" moment from the brief. ═══ */
-      tl.to(framePlayer, { yPercent: 130, duration: 0.06, ease: "power2.in" }, 0.62);
-      tl.to(waveFront, { yPercent: 140, duration: 0.06, ease: "power2.in" }, 0.65);
-      tl.to(waveBack, { yPercent: 130, duration: 0.06, ease: "power2.in" }, 0.68);
-
-      // Contact panel: right → centre as scenery goes down.
-      tl.to(contactPanel, {
-        xPercent: 0,
-        duration: 0.10,
-        ease: "power2.inOut",
-      }, 0.62);
+      /* ═══ Phase 5 (0.66 → 0.78): Scenery hides DOWN.
+            Only AFTER the contact panel has locked to centre do the
+            film player and waves retreat below the viewport, so the
+            contact card owns the screen for the rest of the section. ═══ */
+      const SCENERY_EXIT = ORBIT_START + ORBIT_DUR;        // 0.66
+      tl.to(framePlayer, { yPercent: 130, duration: 0.06, ease: "power2.in" }, SCENERY_EXIT);
+      tl.to(waveFront,   { yPercent: 140, duration: 0.06, ease: "power2.in" }, SCENERY_EXIT + 0.03);
+      tl.to(waveBack,    { yPercent: 130, duration: 0.06, ease: "power2.in" }, SCENERY_EXIT + 0.06);
 
       /* ═══ Phase 5b (0.70 → 0.88): SENTENCE-BY-SENTENCE REVEAL.
             Once the contact panel is centred, each line of copy
@@ -388,7 +399,11 @@ export default function LocationContactTransition() {
             vivid, one sentence at a time" beat. The stagger is
             sized so the last line (submit button) finishes well
             before the panel lifts for the footer. ═══ */
-      const LINE_REVEAL_START = 0.70;
+      /* Cascade starts the moment the magnetic lock releases
+         (ORBIT_START + ORBIT_DUR = 0.66) so the sentences brighten
+         in as the scenery is sliding down — one continuous beat
+         instead of two separate ones. */
+      const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR + 0.02; // ≈ 0.68
       const LINE_REVEAL_DUR = 0.06;
       const LINE_STAGGER = 0.025;
 
@@ -482,14 +497,13 @@ export default function LocationContactTransition() {
       </div>
 
       {/* ═══ FRAME PLAYER — 1920×1080 original ratio, rises from below waves.
-              On phones the section is shorter than the 16:9 frame, so we
-              GLUE the player to the BOTTOM of the viewport (just above
-              the front waves) so the animated film never drifts up out
-              of view. From `md:` upward we revert to the original
-              top-anchored placement that fits the wider hero composition. ═══ */}
+              Anchored high in the viewport on every breakpoint so the
+              frame sits ABOVE the waves and well clear of any bottom
+              overlays (user explicitly asked for it to sit higher like
+              it did originally). ═══ */}
       <div
         data-frame-player
-        className="absolute inset-x-0 z-3 top-auto bottom-[18vh] overflow-hidden will-change-transform md:top-[clamp(1rem,4vw,3rem)] md:bottom-auto"
+        className="absolute inset-x-0 z-3 top-[clamp(2rem,6vh,4rem)] overflow-hidden will-change-transform md:top-[clamp(1rem,4vw,3rem)]"
         style={{
           width: "100%",
           aspectRatio: "1920/1080",

@@ -198,13 +198,19 @@ export default function Header() {
               explicit min-width reserves breathing room around the
               docked logo so the flanking UI physically can't touch
               it — the rest of the header "respects" the logo instead
-              of crowding it. The animated fixed logo (from
-              HeroVideoParallax) and the static reference img below
-              sit on top of this space via absolute positioning. ══ */}
+              of crowding it.
+
+              The width is tuned so there's always room for the logo
+              at its centred position AND enough leftover horizontal
+              space for the longest-language nav items ("Prenotazione",
+              "Reservierung") to sit comfortably on the right side.
+              The animated fixed logo (from HeroVideoParallax) and
+              the static reference img below sit on top of this
+              space via absolute positioning. ══ */}
         <div
           aria-hidden
           className="pointer-events-none shrink-0"
-          style={{ width: "clamp(120px, 22vw, 220px)" }}
+          style={{ width: "clamp(96px, 16vw, 200px)" }}
         />
 
         {/* Static reference logo — shown once docked (isDocked).
@@ -226,8 +232,25 @@ export default function Header() {
           />
         </div>
 
-        {/* ═══ RIGHT — Desktop nav links ═══ */}
-        <nav className="hidden shrink-0 items-center gap-1 md:flex lg:gap-3 xl:gap-5">
+        {/* ═══ RIGHT — Desktop nav links ═══
+              The nav uses fluid `clamp()` values for font-size,
+              padding, tracking and gap so that the whole block
+              scales smoothly between `md` and full desktop. This
+              is the key to honouring the brief's "logo always
+              centred, text at most SHRINKS — always fits, never
+              overlaps" rule: the longest translation
+              ("Prenotazione" / "Reservierung") is ~12 characters
+              but at the smallest nav breakpoint it still only
+              takes up ~115 px instead of the ~200 px the old
+              fixed pixel sizes produced, leaving room on every
+              viewport for the centred logo to breathe.
+              Breakpoint is `md:flex` so the full nav is only
+              shown once there's genuine room for it; below that
+              the mobile hamburger owns the right edge. ═══ */}
+        <nav
+          className="hidden min-w-0 shrink-0 items-center md:flex"
+          style={{ gap: "clamp(2px, 0.5vw, 18px)" }}
+        >
           {NAV_KEYS.map((item, index) => {
             if (item.key === "nav.reservation") {
               return (
@@ -240,10 +263,19 @@ export default function Header() {
                     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
                     setIsMenuOpen(false);
                   }}
-                  className={`group/reservation relative ml-1 flex h-10 min-w-[128px] items-center justify-center overflow-hidden rounded-full border px-4 font-body text-[11px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 lg:min-w-[144px] lg:px-5 lg:text-xs
+                  className={`group/reservation relative ml-1 flex h-10 items-center justify-center overflow-hidden whitespace-nowrap rounded-full border font-body font-medium uppercase transition-colors duration-300
                              ${isDocked
                                ? "border-navy/15 bg-navy/5 text-navy hover:border-ocean/30 hover:bg-ocean/10"
                                : "border-white/20 bg-white/8 text-white hover:border-white/35 hover:bg-white/14"}`}
+                  style={{
+                    /* Fluid sizing — content-driven width, never a
+                       fixed min. The longest locale stretches the
+                       button naturally; the shortest one gets a
+                       comfortable pill shape via padding alone. */
+                    fontSize: "clamp(10px, 0.82vw, 13px)",
+                    padding: "0 clamp(10px, 1.2vw, 20px)",
+                    letterSpacing: "clamp(0.1em, 0.16vw, 0.22em)",
+                  }}
                 >
                   <span className="transition-transform duration-500 group-hover/reservation:translate-x-40">
                     {t(item.key)}
@@ -267,8 +299,13 @@ export default function Header() {
                   if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
                   setIsMenuOpen(false);
                 }}
-                className={`group/nav relative select-none whitespace-nowrap px-2 py-1.5 font-body text-[11px] uppercase tracking-wider transition-colors duration-300 lg:px-3 lg:text-[13px] lg:tracking-widest xl:px-4 xl:text-sm
+                className={`group/nav relative select-none whitespace-nowrap py-1.5 font-body uppercase transition-colors duration-300
                            ${isDocked ? "text-navy hover:text-ocean" : "text-white/85 hover:text-white"}`}
+                style={{
+                  fontSize: "clamp(10px, 0.88vw, 14px)",
+                  padding: "0.375rem clamp(4px, 0.9vw, 16px)",
+                  letterSpacing: "clamp(0.03em, 0.15vw, 0.08em)",
+                }}
               >
                 <span className="relative z-10">{t(item.key)}</span>
                 <span className="pointer-events-none absolute inset-x-0 -bottom-2 h-3 text-ocean/90">

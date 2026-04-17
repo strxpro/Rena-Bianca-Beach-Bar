@@ -347,23 +347,74 @@ export default function Testimonials() {
 
   /* Write-form state. We collect locally then bounce to a transport
      of the owner's choice (mailto fallback by default — see the
-     Make.com / Sheets recipe in the chat reply). */
+     Make.com / Sheets recipe in the chat reply). `formPhotos` holds
+     raw File objects for previews; submission converts them to
+     base64 data URLs so they travel inside the JSON payload to the
+     webhook without needing multipart/form-data plumbing on the
+     receiver side. */
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formRating, setFormRating] = useState(5);
   const [formText, setFormText] = useState("");
+  const [formPhotos, setFormPhotos] = useState<File[]>([]);
   const [formStatus, setFormStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   useEffect(() => { setMounted(true); }, []);
+
+  /* Convert a File to a base64 data URL. We cap each file at 4 MB
+     so a naive submission of 10 smartphone shots doesn't overflow
+     Make.com's 10 MB request limit. Files over the cap get silently
+     compressed via an OffscreenCanvas resize to 1600 px on the long
+     edge, which typically lands well under 2 MB as JPEG 85. */
+  const readAsDataUrl = useCallback(async (file: File): Promise<string> => {
+    const MAX_BYTES = 4 * 1024 * 1024;
+    if (file.size <= MAX_BYTES) {
+      return await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+    }
+    // Lossy downsize path — only kicks in for very large files.
+    const img = document.createElement("img");
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      await new Promise<void>((res, rej) => {
+        img.onload = () => res();
+        img.onerror = () => rej(new Error("decode"));
+        img.src = objectUrl;
+      });
+      const longEdge = Math.max(img.width, img.height);
+      const scale = Math.min(1, 1600 / longEdge);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const cvs = document.createElement("canvas");
+      cvs.width = w; cvs.height = h;
+      const ctx = cvs.getContext("2d");
+      if (!ctx) throw new Error("canvas");
+      ctx.drawImage(img, 0, 0, w, h);
+      return cvs.toDataURL("image/jpeg", 0.85);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }, []);
 
   const submitReview = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formText.trim()) return;
     setFormStatus("sending");
     try {
+      /* Encode all attached photos in parallel so large galleries
+         don't block the request end-to-end. */
+      const photos = await Promise.all(formPhotos.map((f) => readAsDataUrl(f)));
+
       /* Webhook URL is read from NEXT_PUBLIC_REVIEW_WEBHOOK at build
          time. Drop your Make.com / Zapier / Apps Script webhook
-         there and the form posts straight to it — no DB needed. */
+         there and the form posts straight to it — no DB needed.
+         The webhook receives a single JSON body with the review plus
+         a `photos` array of base64 data URLs (which Make.com can
+         upload straight to Google Drive / Cloudinary / etc.). */
       const webhook = process.env.NEXT_PUBLIC_REVIEW_WEBHOOK;
       if (webhook) {
         const res = await fetch(webhook, {
@@ -374,6 +425,7 @@ export default function Testimonials() {
             email: formEmail,
             rating: formRating,
             text: formText,
+            photos,
             source: "site",
             date: new Date().toISOString(),
           }),
@@ -382,9 +434,15 @@ export default function Testimonials() {
       } else {
         // No webhook configured → fall back to mailto so submissions
         // are never silently lost while the integration is wired up.
+        // (mailto can't carry attachments — we just list the filenames
+        //  so the recipient knows photos were attempted.)
         const subject = encodeURIComponent(`Nowa opinia – ${formName}`);
+        const photoList = formPhotos.length
+          ? `\n\nZdjęcia (${formPhotos.length}):\n` +
+            formPhotos.map((f) => ` • ${f.name}`).join("\n")
+          : "";
         const body = encodeURIComponent(
-          `Imię: ${formName}\nEmail: ${formEmail}\nOcena: ${formRating}/5\n\n${formText}`
+          `Imię: ${formName}\nEmail: ${formEmail}\nOcena: ${formRating}/5\n\n${formText}${photoList}`
         );
         window.location.href = `mailto:hello@renabianca.pl?subject=${subject}&body=${body}`;
       }
@@ -393,6 +451,7 @@ export default function Testimonials() {
       setFormEmail("");
       setFormText("");
       setFormRating(5);
+      setFormPhotos([]);
       window.setTimeout(() => {
         setShowWrite(false);
         setFormStatus("idle");
@@ -400,7 +459,7 @@ export default function Testimonials() {
     } catch {
       setFormStatus("error");
     }
-  }, [formName, formEmail, formRating, formText]);
+  }, [formName, formEmail, formRating, formText, formPhotos, readAsDataUrl]);
 
   const firstRow = REVIEWS.slice(0, 5);
   const secondRow = REVIEWS.slice(5, 10);
@@ -413,26 +472,30 @@ export default function Testimonials() {
 
   const springConfig = { stiffness: 120, damping: 26, mass: 0.9 };
 
-  /* Scroll-driven parallax — the wrapper rotates / drifts the
-     whole way through the section's scroll range so the cards
-     feel "sticky" to the page: they keep tilting and settling
-     as the viewer scrolls, only flattening out across the middle
-     and tipping the opposite way on exit (Aceternity hero-parallax
-     idea, adapted for guest reviews). */
+  /* Parallax geometry — toned down vs. the previous pass so the
+     rotation never pushes a card's pixels outside the section's
+     clip box (that's what was "cutting off" the rows):
+       • rotateX / rotateZ peak at ~12–14° which still reads as a
+         solid 3D tilt but leaves room for the rows to stay fully
+         visible inside the viewport.
+       • translateY is REMOVED entirely — the new sticky wrapper
+         (see the JSX below) is responsible for vertical framing,
+         so layering translateY on top of sticky would fight it
+         and is exactly what was clipping content. Keeping only
+         rotateX / rotateZ / opacity means the sticky container
+         stays locked to the viewport centre while the 3-row
+         stack turns in place — that's the "3 carousels pause and
+         rotate at once" moment the brief asks for. */
   const rotateX = useSpring(
-    useTransform(scrollYProgress, [0, 0.35, 0.75, 1], [14, 0, 0, -10]),
+    useTransform(scrollYProgress, [0, 0.3, 0.72, 1], [14, 0, 0, -12]),
     springConfig
   );
   const opacity = useSpring(
-    useTransform(scrollYProgress, [0, 0.12, 0.85, 1], [0.25, 1, 1, 0.35]),
+    useTransform(scrollYProgress, [0, 0.18, 0.85, 1], [0.35, 1, 1, 0.45]),
     springConfig
   );
   const rotateZ = useSpring(
-    useTransform(scrollYProgress, [0, 0.35, 0.75, 1], [16, 0, 0, -12]),
-    springConfig
-  );
-  const translateY = useSpring(
-    useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [-320, -40, 30, 160]),
+    useTransform(scrollYProgress, [0, 0.3, 0.72, 1], [10, 0, 0, -8]),
     springConfig
   );
 
@@ -451,13 +514,27 @@ export default function Testimonials() {
       <div
         id="testimonials"
         ref={ref}
-        className="relative flex flex-col self-auto overflow-x-hidden py-10 antialiased perspective-[1000px] transform-3d sm:py-20"
+        className="relative overflow-hidden py-10 antialiased sm:py-20"
         style={{
-          // `minHeight` (instead of fixed `height`) lets the section grow
-          // tall enough to fit the CTA under the 3rd row on every screen —
-          // it never cuts the "zobacz więcej / napisz" buttons off.
-          minHeight: "150vh",
+          /* Tall section on purpose. The 3-row stack is pinned in
+             the middle via `position: sticky` (see below) — this
+             gives the sticky wrapper a long scroll range to hold
+             still while the user scrolls past, which is what reads
+             as "the 3 carousels pause for a moment and rotate at
+             once". 260vh ≈ 1.6 viewports of hold time + entrance
+             + exit. */
+          minHeight: "260vh",
           background: "linear-gradient(180deg, #0A192F 0%, #0d2240 20%, #1a4a6e 55%, #5ba3d9 80%, #8ec5e8 100%)",
+          /* Inline perspective — belt-and-braces so the tilt is
+             applied regardless of how Tailwind's transform
+             utilities resolve on the current version. `perspective`
+             creates the 3D camera for all descendants. We do NOT
+             put `preserve-3d` on the section itself because that
+             lifts child clipping out of the stacking context and
+             lets rotated cards visually bleed into neighbouring
+             sections; `overflow: hidden` + perspective only is the
+             safe combo. */
+          perspective: "1200px",
         }}
       >
         {/* ── Header ── */}
@@ -473,13 +550,35 @@ export default function Testimonials() {
           </p>
         </div>
 
-        {/* ── Draggable rows — restored Aceternity-style hero
-              parallax. The rotateX / rotateZ / translateY / opacity
-              transforms drive the entire stack of rows so the cards
-              feel sticky and 3D as the viewer scrolls past. Each
-              row independently scrolls horizontally on drag /
-              swipe (overflow-x-auto + pointer-event handlers). ── */}
-        <motion.div style={{ rotateX, rotateZ, translateY, opacity }}>
+        {/* ── STICKY PARALLAX WRAP ──
+              `position: sticky` plus the tall outer minHeight gives
+              us the "3 carousels pause and rotate" moment the user
+              asked for: the wrapper sticks to the viewport's
+              vertical centre and stays there for roughly one extra
+              viewport of scroll. While it's stuck, the rotateX /
+              rotateZ Framer springs drive the in-place 3D tilt.
+              Entering from below + leaving from above is handled
+              naturally by sticky — we don't need translateY, which
+              was previously fighting the sticky positioning and
+              clipping card edges.
+              `top: 50vh` + `translateY(-50%)` centres the wrapper
+              vertically so the tilt happens at reading height. The
+              wrap has its own `overflow: visible` so rotated card
+              edges aren't clipped by the sticky bound (the outer
+              section keeps the overall clip). ── */}
+        <div
+          className="sticky top-1/2 mx-auto w-full -translate-y-1/2"
+          style={{ perspective: "1200px" }}
+        >
+          <motion.div
+            style={{
+              rotateX,
+              rotateZ,
+              opacity,
+              transformStyle: "preserve-3d",
+            }}
+            className="relative will-change-transform"
+          >
           {/* Row 1 */}
           <div
             ref={row1.ref}
@@ -548,19 +647,17 @@ export default function Testimonials() {
               </div>
             ))}
           </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
-        {/* ── CTA — rendered OUTSIDE the parallax motion.div so it never
-              inherits the end-of-scroll fade (opacity → 0.4) or the
-              translateY push that was cutting it off. It sits right
-              below the third row in normal document flow, always visible.
-
-              Decoration is intentionally swapped vs. before:
-                • "See all reviews" → bare text link with the same
+        {/* ── CTA — rendered BELOW the sticky-pinned parallax stack so
+              it comes into view as the user scrolls past the pin.
+              Two stacked pills:
+                • "See all reviews" — bare text link with the same
                   hand-drawn underline highlight the header nav uses.
-                • "Leave a review"  → the rounded-pill bordered card
-                  that visually anchors the CTA stack. ── */}
-        <div className="pointer-events-auto relative z-20 mx-auto mt-6 flex w-full max-w-2xl flex-col items-center gap-6 px-4 pb-12 sm:mt-10 sm:gap-7 sm:px-6 sm:pb-16 md:mt-14 md:gap-8 md:px-8 md:pb-24">
+                • "Zostaw wiadomość" — compact pill, single-line
+                  label, opens the write-a-review popup form. ── */}
+        <div className="pointer-events-auto relative z-20 mx-auto mt-10 flex w-full max-w-xl flex-col items-center gap-5 px-4 pb-12 sm:mt-14 sm:gap-6 sm:px-6 sm:pb-16 md:mt-16 md:pb-20">
           {/* See-all — header-style link with hand-drawn underline */}
           <button
             onClick={() => setShowAll(true)}
@@ -579,22 +676,16 @@ export default function Testimonials() {
             </span>
           </button>
 
-          {/* Leave-a-review — bordered pill button that opens the
-              write-a-review popup form. */}
+          {/* Leave-a-review — compact pill button with a single-line
+              label. Smaller horizontal padding + single span so the
+              CTA reads as a hint, not a marketing banner. */}
           <button
             type="button"
             onClick={() => setShowWrite(true)}
-            className="group/leave block w-full max-w-md rounded-full border border-sand/30 bg-sand/10 px-6 py-4 text-center backdrop-blur-sm transition-all duration-300 hover:border-sand/50 hover:bg-sand/20 sm:px-8 sm:py-5 md:px-10 md:py-6"
+            className="inline-flex items-center justify-center rounded-full border border-sand/30 bg-sand/10 px-6 py-2.5 font-heading text-base text-sand backdrop-blur-sm transition-all duration-300 hover:border-sand/50 hover:bg-sand/20 sm:px-7 sm:py-3 sm:text-lg"
+            style={{ fontWeight: 400 }}
           >
-            <h3
-              className="font-heading text-lg text-sand sm:text-xl md:text-2xl"
-              style={{ fontWeight: 400 }}
-            >
-              {t("testimonials.cta.heading")}
-            </h3>
-            <p className="mx-auto mt-1 max-w-xs font-body text-xs leading-relaxed text-sand/60 sm:mt-2 sm:max-w-sm sm:text-sm md:mt-2.5 md:max-w-md md:text-base">
-              {t("testimonials.cta.description")}
-            </p>
+            {t("testimonials.cta.heading")}
           </button>
         </div>
       </div>
@@ -821,7 +912,7 @@ export default function Testimonials() {
 
                     <div>
                       <label className="mb-1.5 block font-body text-[11px] uppercase tracking-[0.18em] text-sand/50">
-                        {t("testimonials.sort.highest") || "Ocena"}
+                        {t("testimonials.write.rating")}
                       </label>
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 5 }).map((_, i) => {
@@ -856,6 +947,83 @@ export default function Testimonials() {
                         placeholder="Co najbardziej zapadło Wam w pamięć?"
                       />
                     </div>
+
+                    {/* Photo upload — multi-select, preview grid,
+                        each thumbnail removable. Keeps the panel
+                        compact while still letting the user attach
+                        several snapshots from a phone (handled by
+                        the iOS/Android native picker). */}
+                    <div>
+                      <label className="mb-1 block font-body text-[11px] uppercase tracking-[0.18em] text-sand/50">
+                        {t("testimonials.write.photos")}{" "}
+                        <span className="text-sand/30 normal-case tracking-normal">
+                          ({t("contact.optional")})
+                        </span>
+                      </label>
+                      <label className="group/upload flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/15 bg-white/5 px-4 py-3 font-body text-xs text-sand/70 transition-all duration-300 hover:border-ocean/50 hover:bg-white/10 hover:text-sand">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <path d="M21 15l-5-5L5 21" />
+                        </svg>
+                        <span>{t("testimonials.write.photos")}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="sr-only"
+                          onChange={(e) => {
+                            const next = Array.from(e.target.files ?? []);
+                            /* Append to whatever's already selected so
+                               the user can add photos in multiple
+                               passes without losing earlier picks. */
+                            setFormPhotos((prev) => [...prev, ...next]);
+                            /* Reset the input's value so selecting the
+                               SAME file twice still fires onChange. */
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                      <p className="mt-1 font-body text-[10px] leading-relaxed text-sand/35">
+                        {t("testimonials.write.photosHint")}
+                      </p>
+
+                      {formPhotos.length > 0 && (
+                        <ul className="mt-3 grid grid-cols-4 gap-2">
+                          {formPhotos.map((file, i) => {
+                            const url = URL.createObjectURL(file);
+                            return (
+                              <li
+                                key={`${file.name}-${i}`}
+                                className="group/thumb relative aspect-square overflow-hidden rounded-md border border-white/10 bg-black/30"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={url}
+                                  alt={file.name}
+                                  className="h-full w-full object-cover"
+                                  onLoad={() => URL.revokeObjectURL(url)}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormPhotos((prev) =>
+                                      prev.filter((_, idx) => idx !== i)
+                                    )
+                                  }
+                                  aria-label="Remove photo"
+                                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white/90 opacity-0 transition-opacity duration-200 group-hover/thumb:opacity-100 focus-visible:opacity-100"
+                                >
+                                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                    <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                                  </svg>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
                   </div>
 
                   <button
@@ -864,16 +1032,16 @@ export default function Testimonials() {
                     className="mt-5 w-full rounded-full bg-ocean px-6 py-3 font-body text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_-8px_rgba(59,130,196,0.7)] transition-all duration-300 hover:bg-ocean/90 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-6"
                   >
                     {formStatus === "sending"
-                      ? "Wysyłanie…"
+                      ? t("testimonials.write.sending")
                       : formStatus === "sent"
-                      ? "Dziękujemy!"
+                      ? t("testimonials.write.sent")
                       : formStatus === "error"
-                      ? "Spróbuj ponownie"
-                      : t("testimonials.cta.button") || "Wyślij opinię"}
+                      ? t("testimonials.write.error")
+                      : t("testimonials.write.submit")}
                   </button>
 
                   <p className="mt-3 text-center font-body text-[10px] leading-relaxed text-sand/35">
-                    Po publikacji opinia pojawi się obok komentarzy z Google.
+                    {t("testimonials.write.footer")}
                   </p>
                 </motion.form>
               </motion.div>

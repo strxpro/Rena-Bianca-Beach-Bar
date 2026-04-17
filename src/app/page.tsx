@@ -7,7 +7,7 @@ import AboutGallery from "@/components/AboutGallery";
 import InteractiveBookMenu from "@/components/InteractiveBookMenu";
 import LocationContactTransition from "@/components/LocationContactTransition";
 import BackgroundAnimationLayer from "@/components/BackgroundAnimationLayer";
-import PanoramaSection from "@/components/PanoramaSection";
+import BeachPanorama from "@/components/BeachPanorama";
 import WaveDivider from "@/components/WaveDivider";
 import SpatialScrollTransition from "@/components/ui/SpatialScrollTransition";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -71,8 +71,9 @@ export default function Home() {
         }}
       />
 
-      {/* ── Panorama full-screen title + slideshow ── */}
-      <PanoramaSection />
+      {/* ── Panorama full-screen title + slideshow — pinned with
+            GSAP ScrollTrigger and a magnetic scroll-lock release. ── */}
+      <BeachPanorama />
 
       {/* ── Sunset divider: Panorama → Gallery ── */}
       <SunsetDivider />

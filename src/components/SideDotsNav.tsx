@@ -112,15 +112,19 @@ export default function SideDotsNav() {
         1,
         (document.documentElement.scrollHeight || 0) - window.innerHeight
       );
-      const p = Math.min(1, Math.max(0, scrollY / docH));
-      setProgress(p);
+      const rawP = Math.min(1, Math.max(0, scrollY / docH));
 
       const vpMid = scrollY + window.innerHeight * 0.45;
       let current = 0;
+      /* Gather each section's anchor-top while we're already
+         traversing the list so we can build a section-weighted
+         progress meter in a single pass. */
+      const sectionTops: number[] = new Array(SECTIONS.length).fill(0);
       for (let i = 1; i < SECTIONS.length; i++) {
         const el = document.getElementById(SECTIONS[i].id);
         if (!el) continue;
         const top = el.getBoundingClientRect().top + scrollY;
+        sectionTops[i] = top;
         if (vpMid >= top) current = i;
       }
 
@@ -130,6 +134,47 @@ export default function SideDotsNav() {
       } else {
         clickedIdxRef.current = null;
       }
+
+      /* ── Section-weighted progress ─────────────────────────────
+         The bar no longer tracks raw pixel scroll. Instead each
+         section gets an equal slice (1 / (N-1)) of the bar, and
+         within a section the bar fills proportionally to how far
+         between that section's anchor and the next one we've
+         scrolled. This keeps the pace consistent whether a
+         section is 100 vh or 600 vh tall — exactly what the user
+         asked for ("same timing as it reaches each next section").
+
+         Then, the moment the LAST section becomes active, the
+         remaining progress is accelerated with a sharp ease so the
+         bar closes quickly instead of waiting for the user to
+         scroll to the very bottom of the contact/footer block. */
+      const last = SECTIONS.length - 1;
+      const perSection = 1 / last;
+      let sectionalP: number;
+      if (current >= last) {
+        // Accelerate to 100 % across the last section's visible window
+        const lastTop = sectionTops[last] || 0;
+        const windowH = Math.max(1, window.innerHeight * 0.6);
+        const within = Math.min(1, Math.max(0, (scrollY + window.innerHeight - lastTop) / windowH));
+        // Ease-out so the final stretch snaps closed rather than
+        // creeping
+        const eased = 1 - Math.pow(1 - within, 2);
+        sectionalP = (last - 1) * perSection + perSection + (1 - (last - 1) * perSection - perSection) * eased;
+        sectionalP = Math.min(1, Math.max(current * perSection, sectionalP));
+      } else {
+        const curTop = sectionTops[current] || 0;
+        const nextTop = sectionTops[current + 1] || curTop + window.innerHeight;
+        const span = Math.max(1, nextTop - curTop);
+        const within = Math.min(1, Math.max(0, (vpMid - curTop) / span));
+        sectionalP = current * perSection + within * perSection;
+      }
+
+      /* Clamp & never go backwards from what pixel-scroll already
+         legitimately achieved — prevents the bar from snapping back
+         when a tall pinned section reports a smaller sectional
+         value than raw scroll on unpin. */
+      const p = Math.min(1, Math.max(sectionalP, rawP * 0.95));
+      setProgress(p);
 
       setActiveIdx(current);
 
@@ -196,11 +241,20 @@ export default function SideDotsNav() {
   }, []);
 
   const isOut = expanded || isHovering;
-  /* Stroke weight pulses with motion: hairline while idle (~1px),
-     swelling to a fuller line while the user is actively scrolling
-     or hovering. The progress meter therefore reads as "alive"
-     during scroll and "calm" between movements. */
-  const strokeW = isScrolling || isHovering ? 2.4 : 1;
+  /* Special exception requested for the menu section only: when the
+     interactive book menu owns the viewport the rail must hide
+     halfway off the right edge so it never overlaps the page-flip
+     hotspots. The instant the user scrolls into a different section
+     the rail returns to its normal shy-but-visible state. */
+  const isInMenu = SECTIONS[activeIdx]?.id === "menu";
+  const hideForMenu = isInMenu && !isOut;
+  /* Stroke weight pulses with motion: a soft "always-on" border
+     while idle so the capsule never looks outline-less, swelling
+     to a fuller line while the user is actively scrolling or
+     hovering. The progress meter therefore reads as a proper
+     capsule border at all times — subtle when calm, alive when
+     in motion. */
+  const strokeW = isScrolling || isHovering ? 2.4 : 1.6;
 
   const w = size.w;
   const h = size.h;
@@ -248,9 +302,16 @@ export default function SideDotsNav() {
         /* Subtle in/out nudge keeps the shy ↔ expanded
            transition feeling alive without ever leaving the
            right edge. The `-50%` keeps the rail vertically
-           centred regardless of its current height. */
-        transform: `translate(${isOut ? "0px" : "6px"}, -50%)`,
+           centred regardless of its current height. While the
+           user is on the MENU section the rail tucks half of its
+           own width off the right edge so the page-flip hotspots
+           are unobstructed; everywhere else the regular shy/out
+           offsets apply. */
+        transform: `translate(${
+          hideForMenu ? "55%" : isOut ? "0px" : "6px"
+        }, -50%)`,
         transition: "transform 520ms cubic-bezier(0.22, 1, 0.36, 1)",
+        opacity: hideForMenu ? 0.55 : 1,
       }}
     >
       <div
@@ -288,9 +349,16 @@ export default function SideDotsNav() {
              never get out of sync with the box. ── */}
         {showSvg && (
           <svg
+            /* `preserveAspectRatio="none"` forces the SVG viewport
+               to match the wrapper's exact pixel dimensions even
+               during the padding transition — without it, `meet`
+               can letterbox the viewBox by a hair and the stroke
+               reads as slightly inset from the capsule silhouette.
+               With `none`, the border always traces the CSS
+               `border-radius: 9999` pill pixel-for-pixel. */
             className="pointer-events-none absolute inset-0 h-full w-full"
             viewBox={`0 0 ${w} ${h}`}
-            preserveAspectRatio="xMidYMid meet"
+            preserveAspectRatio="none"
             aria-hidden
           >
             <defs>
@@ -301,8 +369,12 @@ export default function SideDotsNav() {
               </linearGradient>
             </defs>
 
-            {/* Track — almost invisible hairline so the capsule
-                doesn't read as "outlined" while idle. */}
+            {/* Track — the capsule's always-on border. Subtle
+                enough to feel delicate, strong enough that the
+                pill silhouette always reads as "outlined", so the
+                progress stroke above it acts as a highlight
+                filling in a visible border rather than drawing a
+                border from scratch. */}
             <rect
               x={inset}
               y={inset}
@@ -311,15 +383,27 @@ export default function SideDotsNav() {
               rx={rectR}
               ry={rectR}
               fill="none"
-              stroke="rgba(255,255,255,0.08)"
+              stroke="rgba(253, 251, 247, 0.22)"
               strokeWidth={sw}
-              style={{ transition: "stroke-width 420ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+              style={{ transition: "stroke-width 420ms cubic-bezier(0.22, 1, 0.36, 1), stroke 420ms" }}
             />
 
             {/* Progress stroke — `pathLength={1}` normalises the
                 rect's perimeter to 1, so `strokeDashoffset =
                 1 - progress` reads as a percentage of the page
-                regardless of the pill's actual size. */}
+                regardless of the pill's actual size.
+
+                IMPORTANT: `stroke-dashoffset` is NOT transitioned.
+                The scroll handler already fires on every frame and
+                React snaps `progress` to the current scroll ratio,
+                so a CSS transition on top of that would add a
+                280 ms "chase" and make the bar feel like it
+                animates in AFTER the scroll has already stopped.
+                By letting the dashoffset update instantly we
+                piggy-back on Lenis' own smoothing and get a bar
+                that scrubs in lockstep with the scroll position.
+                Only `stroke-width` keeps its easing, because that
+                one IS meant to ease (idle ↔ scrolling pulse). */}
             <rect
               x={inset}
               y={inset}
@@ -335,10 +419,8 @@ export default function SideDotsNav() {
               strokeDasharray={1}
               strokeDashoffset={1 - progress}
               style={{
-                transition:
-                  "stroke-dashoffset 280ms cubic-bezier(0.22, 0.61, 0.36, 1), stroke-width 420ms cubic-bezier(0.22, 1, 0.36, 1)",
-                filter:
-                  "drop-shadow(0 0 4px rgba(142, 197, 232, 0.35))",
+                transition: "stroke-width 420ms cubic-bezier(0.22, 1, 0.36, 1)",
+                filter: "drop-shadow(0 0 4px rgba(142, 197, 232, 0.35))",
               }}
             />
           </svg>
