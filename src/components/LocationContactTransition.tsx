@@ -291,30 +291,65 @@ export default function LocationContactTransition() {
         },
       }, 0.08);
 
-      /* ═══ Phase 3 (0.18 → 0.62): Film plays the remaining frames
-            with the cinematic slow-start → accelerate mapping.
-            The FIRST HALF is the intro; the SECOND HALF overlaps the
-            orbit swap (below), so the viewer's eye follows the film's
-            rising action while the sectors exchange places. ═══ */
+      /* ═══ Phase 3 (0.18 → 0.66): Film plays in two segments so
+            the orbital swap lines up exactly with the last 22
+            frames of the canvas film, as the user asked for:
+
+              Segment A (FILM_START → ORBIT_START):
+                 frames PHASE2_END_FRAME (~18) → 128
+                 Cinematic slow-start ease so the intro has
+                 anticipation.
+
+              Segment B (ORBIT_START → FILM_END):
+                 frames 128 → 149
+                 Linear. This 22-frame stretch runs at exactly
+                 the same scroll speed as the contact-enter
+                 animation, so frame 128 = contact-starts-to-
+                 appear and frame 150 = contact-fully-centred.
+            ═══ */
       const FILM_START = 0.18;
-      const FILM_END = 0.62;
+      const ORBIT_START = 0.48;
+      const ORBIT_DUR = 0.18;
+      const FILM_END = ORBIT_START + ORBIT_DUR; // 0.66
+      const FRAME_AT_ORBIT_START = 128;
+      const LAST_FRAME = TOTAL_FRAMES - 1;
+
+      // Segment A — frames ~18 → 128 with slow-start curve.
       tl.to(frameIdxRef.current, {
-        value: TOTAL_FRAMES - 1,
-        duration: FILM_END - FILM_START,
+        value: FRAME_AT_ORBIT_START,
+        duration: ORBIT_START - FILM_START,
         ease: "none",
         onUpdate: () => {
           const rawProgress = tl.progress();
-          const phaseProgress = Math.max(
+          const segP = Math.max(
             0,
-            Math.min(1, (rawProgress - FILM_START) / (FILM_END - FILM_START))
+            Math.min(1, (rawProgress - FILM_START) / (ORBIT_START - FILM_START))
           );
-          const mappedProgress = slowStartMap(phaseProgress);
+          const mapped = slowStartMap(segP);
           const frame =
             PHASE2_END_FRAME +
-            Math.round(mappedProgress * (TOTAL_FRAMES - 1 - PHASE2_END_FRAME));
-          drawFrame(Math.min(frame, TOTAL_FRAMES - 1));
+            Math.round(mapped * (FRAME_AT_ORBIT_START - PHASE2_END_FRAME));
+          drawFrame(Math.min(frame, LAST_FRAME));
         },
       }, FILM_START);
+
+      // Segment B — frames 128 → 149, tightly synced to the orbit.
+      tl.to(frameIdxRef.current, {
+        value: LAST_FRAME,
+        duration: ORBIT_DUR,
+        ease: "none",
+        onUpdate: () => {
+          const rawProgress = tl.progress();
+          const segP = Math.max(
+            0,
+            Math.min(1, (rawProgress - ORBIT_START) / ORBIT_DUR)
+          );
+          const frame =
+            FRAME_AT_ORBIT_START +
+            Math.round(segP * (LAST_FRAME - FRAME_AT_ORBIT_START));
+          drawFrame(Math.min(frame, LAST_FRAME));
+        },
+      }, ORBIT_START);
 
       /* ── Background gradually lightens during the film play ── */
       if (bgEl) {
@@ -325,17 +360,15 @@ export default function LocationContactTransition() {
         }, 0.18);
       }
 
-      /* ═══ Phase 4 (0.48 → 0.66): SYNCHRONIZED ORBIT SWAP
+      /* ═══ Phase 4 (ORBIT_START → FILM_END): SYNCHRONIZED ORBIT SWAP
             Location orbits out to the LEFT while the Contact panel
-            ENTERS FROM THE RIGHT in the **same scroll window**. There
-            is no "park on the right, wait, then glide to centre"
-            step any more — the contact panel makes one continuous
-            flight from off-right, across the viewport, slightly PAST
-            centre toward the LEFT, where a delicate magnetic lock
-            pulls it back to dead centre. After the lock releases,
-            subsequent phases continue normally. ═══ */
-      const ORBIT_START = 0.48;
-      const ORBIT_DUR = 0.18;
+            ENTERS FROM THE RIGHT in the **same scroll window**, and
+            the canvas film plays its last 22 frames at the same time
+            (Segment B above). Contact starts peeking in at frame 128
+            and reaches its magnetic-centred position at frame 150.
+            ORBIT_START / ORBIT_DUR are declared at the top of this
+            useGSAP scope so both the film segments and the panel
+            keyframes share identical timing. ═══ */
 
       // LOCATION: orbit out to the LEFT. The path curves UP first
       // (−y), then sweeps down and off-screen (+y). `sine.inOut`

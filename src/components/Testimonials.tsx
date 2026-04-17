@@ -9,110 +9,18 @@ import {
   useTransform,
   useSpring,
   AnimatePresence,
+  type MotionValue,
 } from "framer-motion";
 
-/* ── Drag-to-scroll helper — turns any overflow-x-auto element into
-      a click-and-drag scroller on mouse, with velocity-based inertia
-      so finger swipes on mobile glide to a rest instead of stopping
-      abruptly. Touch scrolling also goes through this path (not the
-      browser default) so the movement stays smooth and we can add
-      a post-release momentum tween.
-   ── */
-function useDragScroll() {
-  const ref = useRef<HTMLDivElement>(null);
-  const state = useRef({
-    isDown: false,
-    startX: 0,
-    scrollLeft: 0,
-    moved: false,
-    lastX: 0,
-    lastTime: 0,
-    velocity: 0,
-    rafId: 0,
-  });
-
-  /* ── Stops any currently running momentum animation. Called on
-         every fresh pointerdown so a new drag doesn't fight the
-         tail-end of the previous glide. ── */
-  const stopMomentum = () => {
-    if (state.current.rafId) {
-      cancelAnimationFrame(state.current.rafId);
-      state.current.rafId = 0;
-    }
-  };
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = ref.current;
-    if (!el) return;
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    stopMomentum();
-    state.current.isDown = true;
-    state.current.moved = false;
-    state.current.startX = e.clientX;
-    state.current.lastX = e.clientX;
-    state.current.lastTime = performance.now();
-    state.current.velocity = 0;
-    state.current.scrollLeft = el.scrollLeft;
-    try { el.setPointerCapture(e.pointerId); } catch {}
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = ref.current;
-    if (!el || !state.current.isDown) return;
-    const now = performance.now();
-    const dx = e.clientX - state.current.startX;
-    if (Math.abs(dx) > 4) state.current.moved = true;
-    el.scrollLeft = state.current.scrollLeft - dx;
-
-    /* Track instantaneous velocity so we can seed the momentum
-       tween with a realistic starting speed on pointerup. */
-    const dt = Math.max(8, now - state.current.lastTime);
-    state.current.velocity = (e.clientX - state.current.lastX) / dt;
-    state.current.lastX = e.clientX;
-    state.current.lastTime = now;
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = ref.current;
-    if (!el) return;
-    state.current.isDown = false;
-    try { el.releasePointerCapture(e.pointerId); } catch {}
-
-    /* ── Momentum tween: decays the remembered velocity each
-           frame and applies it to scrollLeft — the row glides to
-           a stop instead of snapping still the moment the user
-           lifts their finger. ── */
-    let v = state.current.velocity * 16; // px per frame at ~60fps
-    if (Math.abs(v) < 0.5) return;
-    const tick = () => {
-      const inner = ref.current;
-      if (!inner) return;
-      inner.scrollLeft -= v;
-      v *= 0.94; // friction — exponential decay
-      if (Math.abs(v) > 0.3) {
-        state.current.rafId = requestAnimationFrame(tick);
-      } else {
-        state.current.rafId = 0;
-      }
-    };
-    state.current.rafId = requestAnimationFrame(tick);
-  };
-
-  /* Prevent click-through on cards when the user was actually
-     dragging across them. */
-  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (state.current.moved) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-
-  return { ref, onPointerDown, onPointerMove, onPointerUp, onClickCapture };
-}
-
 /* ═══════════════════════════════════════════════════════════════
-   TESTIMONIALS — Parallax review grid + popup + masonry overlay
-   Inspired by hero-parallax layout, adapted for guest reviews.
+   TESTIMONIALS — Aceternity HeroParallax layout mechanism applied
+   to guest review sticker cards. The container is 300vh tall; as
+   the user scrolls through it three staggered rows slide
+   horizontally in alternating directions (row 1 & 3 right, row 2
+   left) while the whole stack performs a single 3D entrance
+   (rotateX / rotateZ unwind, translateY lifts, opacity fades up).
+   All pop-up UX, form logic and i18n are untouched — only the
+   layout/scroll mechanism was swapped.
    ═══════════════════════════════════════════════════════════════ */
 
 const REVIEWS = [
@@ -262,21 +170,31 @@ function Stars({ count, size = "sm" }: { count: number; size?: "sm" | "lg" }) {
   );
 }
 
-/* ── Single review "sticker" card (polaroid / post-it style) ── */
+/* ── Single review "sticker" card (polaroid / post-it style) ──
+      `translate` is the scroll-driven MotionValue that pushes the
+      card along the X-axis — each row passes a different source
+      (translateX / translateXReverse) so rows 1 & 3 drift right
+      while row 2 drifts left as the user scrolls. That's the
+      parallax beat borrowed straight from Aceternity's
+      HeroParallax. `rotate: tilt` stays in the same style object
+      so the sticker's natural post-it tilt is preserved on top of
+      the X translation. */
 function ReviewCard({
   review,
   onClick,
   tilt = 0,
   tapeColor = "rgba(253,251,247,0.55)",
+  translate,
 }: {
   review: (typeof REVIEWS)[0];
   onClick: () => void;
   tilt?: number;
   tapeColor?: string;
+  translate: MotionValue<number>;
 }) {
   return (
     <motion.div
-      style={{ rotate: tilt }}
+      style={{ rotate: tilt, x: translate }}
       whileHover={{ y: -10, rotate: 0, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 260, damping: 22 }}
       className="group/review relative h-60 w-72 shrink-0 cursor-pointer sm:h-72 sm:w-88"
@@ -465,46 +383,58 @@ export default function Testimonials() {
   const secondRow = REVIEWS.slice(5, 10);
   const thirdRow = REVIEWS.slice(10, 15);
 
+  /* ── HeroParallax scroll mechanism ────────────────────────────
+        `offset: ["start start", "end start"]` maps 0 → 1 across
+        the ENTIRE scroll of the 300vh section, so every motion
+        value below is driven by the user's progress through the
+        pinned-ish vertical range. No sticky wrapper is needed —
+        the scroll range itself provides the "hold" moment while
+        the rows parallax past. ── */
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["start end", "end start"],
+    offset: ["start start", "end start"],
   });
 
-  const springConfig = { stiffness: 120, damping: 26, mass: 0.9 };
+  /* Spring profile matches HeroParallax exactly — stiff and
+     heavily damped so the X translation is responsive without
+     over-shooting. `bounce: 100` is ignored by `useSpring` (it
+     uses `stiffness` + `damping`) but kept here for fidelity
+     with the reference mechanism. */
+  const springConfig = { stiffness: 300, damping: 30, bounce: 100 };
 
-  /* Parallax geometry — toned down vs. the previous pass so the
-     rotation never pushes a card's pixels outside the section's
-     clip box (that's what was "cutting off" the rows):
-       • rotateX / rotateZ peak at ~12–14° which still reads as a
-         solid 3D tilt but leaves room for the rows to stay fully
-         visible inside the viewport.
-       • translateY is REMOVED entirely — the new sticky wrapper
-         (see the JSX below) is responsible for vertical framing,
-         so layering translateY on top of sticky would fight it
-         and is exactly what was clipping content. Keeping only
-         rotateX / rotateZ / opacity means the sticky container
-         stays locked to the viewport centre while the 3-row
-         stack turns in place — that's the "3 carousels pause and
-         rotate at once" moment the brief asks for. */
-  const rotateX = useSpring(
-    useTransform(scrollYProgress, [0, 0.3, 0.72, 1], [14, 0, 0, -12]),
+  /* Row 1 & Row 3 drift RIGHT, Row 2 drifts LEFT. The range was
+     tuned down from ±1000 to ±600 so the horizontal parallax
+     fits comfortably inside the new shorter (180vh) container —
+     no ocean of empty blue below the CTA any more. */
+  const translateX = useSpring(
+    useTransform(scrollYProgress, [0, 1], [0, 600]),
     springConfig
   );
-  const opacity = useSpring(
-    useTransform(scrollYProgress, [0, 0.18, 0.85, 1], [0.35, 1, 1, 0.45]),
+  const translateXReverse = useSpring(
+    useTransform(scrollYProgress, [0, 1], [0, -600]),
+    springConfig
+  );
+
+  /* Whole-stack 3D entrance — unwinds over the first 25% of the
+     shortened scroll range so the cards rise and land flat a
+     hair sooner, leaving the remaining 75% to simply parallax
+     horizontally and close on the CTA naturally. */
+  const rotateX = useSpring(
+    useTransform(scrollYProgress, [0, 0.25], [15, 0]),
     springConfig
   );
   const rotateZ = useSpring(
-    useTransform(scrollYProgress, [0, 0.3, 0.72, 1], [10, 0, 0, -8]),
+    useTransform(scrollYProgress, [0, 0.25], [20, 0]),
     springConfig
   );
-
-  /* Drag-scroll handlers — one per row so each row scrolls
-     independently. Uses native overflow-x-auto + pointer events
-     so touch works on mobile without any extra code. */
-  const row1 = useDragScroll();
-  const row2 = useDragScroll();
-  const row3 = useDragScroll();
+  const translateY = useSpring(
+    useTransform(scrollYProgress, [0, 0.25], [-500, 300]),
+    springConfig
+  );
+  const opacity = useSpring(
+    useTransform(scrollYProgress, [0, 0.25], [0.2, 1]),
+    springConfig
+  );
 
   const openReview = useCallback((r: (typeof REVIEWS)[0]) => setSelectedReview(r), []);
   const closeReview = useCallback(() => setSelectedReview(null), []);
@@ -514,30 +444,33 @@ export default function Testimonials() {
       <div
         id="testimonials"
         ref={ref}
-        className="relative overflow-hidden py-10 antialiased sm:py-20"
+        className="relative overflow-hidden antialiased flex flex-col self-auto"
         style={{
-          /* Tall section on purpose. The 3-row stack is pinned in
-             the middle via `position: sticky` (see below) — this
-             gives the sticky wrapper a long scroll range to hold
-             still while the user scrolls past, which is what reads
-             as "the 3 carousels pause for a moment and rotate at
-             once". 260vh ≈ 1.6 viewports of hold time + entrance
-             + exit. */
-          minHeight: "260vh",
+          /* 180vh — shorter than the reference HeroParallax's
+             300vh because our content (3 rows + CTA) is only
+             ~1100 px tall. At 300vh the user would see a huge
+             empty blue stretch below the CTA before the next
+             section; 180vh is just enough scroll for the
+             horizontal ±600 px parallax to play out while
+             ending near the CTA. */
+          height: "180vh",
+          paddingTop: "6rem",
+          paddingBottom: "4rem",
           background: "linear-gradient(180deg, #0A192F 0%, #0d2240 20%, #1a4a6e 55%, #5ba3d9 80%, #8ec5e8 100%)",
-          /* Inline perspective — belt-and-braces so the tilt is
-             applied regardless of how Tailwind's transform
-             utilities resolve on the current version. `perspective`
-             creates the 3D camera for all descendants. We do NOT
-             put `preserve-3d` on the section itself because that
-             lifts child clipping out of the stacking context and
-             lets rotated cards visually bleed into neighbouring
-             sections; `overflow: hidden` + perspective only is the
-             safe combo. */
-          perspective: "1200px",
+          /* 3D camera for the whole section — `preserve-3d`
+             plus `perspective` is the exact combo HeroParallax
+             uses so the entrance rotation/translate on the
+             stack reads as a real 3D flight-in rather than a
+             flat skew. `overflow-hidden` on the section still
+             clips the horizontally-drifting cards so they
+             don't bleed into neighbouring sections. */
+          perspective: "1000px",
+          transformStyle: "preserve-3d",
         }}
       >
-        {/* ── Header ── */}
+        {/* ── Header (top of section, outside the 3D stack so it
+              always reads crisply regardless of the entrance
+              rotation). ── */}
         <div className="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-10 md:py-20">
           <span className="mb-2 block font-body text-[10px] uppercase tracking-[0.25em] text-sand/50 sm:mb-3 sm:text-xs sm:tracking-[0.3em]">
             {t("testimonials.label")}
@@ -550,144 +483,107 @@ export default function Testimonials() {
           </p>
         </div>
 
-        {/* ── STICKY PARALLAX WRAP ──
-              `position: sticky` plus the tall outer minHeight gives
-              us the "3 carousels pause and rotate" moment the user
-              asked for: the wrapper sticks to the viewport's
-              vertical centre and stays there for roughly one extra
-              viewport of scroll. While it's stuck, the rotateX /
-              rotateZ Framer springs drive the in-place 3D tilt.
-              Entering from below + leaving from above is handled
-              naturally by sticky — we don't need translateY, which
-              was previously fighting the sticky positioning and
-              clipping card edges.
-              `top: 50vh` + `translateY(-50%)` centres the wrapper
-              vertically so the tilt happens at reading height. The
-              wrap has its own `overflow: visible` so rotated card
-              edges aren't clipped by the sticky bound (the outer
-              section keeps the overall clip). ── */}
-        <div
-          className="sticky top-1/2 mx-auto w-full -translate-y-1/2"
-          style={{ perspective: "1200px" }}
+        {/* ── 3D STACK ── the motion.div that does the whole-stack
+              entrance (rotateX / rotateZ unwind, translateY lifts,
+              opacity fades in) over the first 20% of the scroll
+              range. Everything inside parallaxes together, with
+              each row's cards additionally drifting horizontally
+              on their own translateX spring. ── */}
+        <motion.div
+          style={{
+            rotateX,
+            rotateZ,
+            translateY,
+            opacity,
+          }}
         >
-          <motion.div
-            style={{
-              rotateX,
-              rotateZ,
-              opacity,
-              transformStyle: "preserve-3d",
-            }}
-            className="relative will-change-transform"
-          >
-          {/* Row 1 */}
-          <div
-            ref={row1.ref}
-            onPointerDown={row1.onPointerDown}
-            onPointerMove={row1.onPointerMove}
-            onPointerUp={row1.onPointerUp}
-            onPointerCancel={row1.onPointerUp}
-            onClickCapture={row1.onClickCapture}
-            className="scrollbar-hide mb-4 flex cursor-grab flex-row-reverse space-x-6 space-x-reverse overflow-x-auto overscroll-x-contain px-6 py-2 active:cursor-grabbing sm:mb-8 sm:space-x-20 sm:space-x-reverse sm:px-10"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none", touchAction: "pan-x pan-y", scrollBehavior: "auto" }}
-          >
+          {/* Row 1 — drifts RIGHT (translateX: 0 → +1000 px).
+              flex-row-reverse starts the row overflowing to the
+              LEFT of the viewport so as translateX pushes
+              right the cards scroll in from the left. */}
+          <motion.div className="mb-20 flex flex-row-reverse space-x-20 space-x-reverse">
             {firstRow.map((r, i) => (
-              <div key={r.name}>
-                <ReviewCard
-                  review={r}
-                  onClick={() => openReview(r)}
-                  tilt={STICKER_TILTS[i % STICKER_TILTS.length]}
-                  tapeColor={TAPE_COLORS[i % TAPE_COLORS.length]}
-                />
-              </div>
+              <ReviewCard
+                key={r.name}
+                review={r}
+                translate={translateX}
+                onClick={() => openReview(r)}
+                tilt={STICKER_TILTS[i % STICKER_TILTS.length]}
+                tapeColor={TAPE_COLORS[i % TAPE_COLORS.length]}
+              />
             ))}
-          </div>
-
-          {/* Row 2 */}
-          <div
-            ref={row2.ref}
-            onPointerDown={row2.onPointerDown}
-            onPointerMove={row2.onPointerMove}
-            onPointerUp={row2.onPointerUp}
-            onPointerCancel={row2.onPointerUp}
-            onClickCapture={row2.onClickCapture}
-            className="scrollbar-hide mb-4 flex cursor-grab flex-row space-x-6 overflow-x-auto overscroll-x-contain px-6 py-2 active:cursor-grabbing sm:mb-8 sm:space-x-20 sm:px-10"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none", touchAction: "pan-x pan-y", scrollBehavior: "auto" }}
-          >
-            {secondRow.map((r, i) => (
-              <div key={r.name}>
-                <ReviewCard
-                  review={r}
-                  onClick={() => openReview(r)}
-                  tilt={STICKER_TILTS[(i + 2) % STICKER_TILTS.length]}
-                  tapeColor={TAPE_COLORS[(i + 2) % TAPE_COLORS.length]}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Row 3 */}
-          <div
-            ref={row3.ref}
-            onPointerDown={row3.onPointerDown}
-            onPointerMove={row3.onPointerMove}
-            onPointerUp={row3.onPointerUp}
-            onPointerCancel={row3.onPointerUp}
-            onClickCapture={row3.onClickCapture}
-            className="scrollbar-hide mb-4 flex cursor-grab flex-row-reverse space-x-6 space-x-reverse overflow-x-auto overscroll-x-contain px-6 py-2 active:cursor-grabbing sm:mb-8 sm:space-x-20 sm:space-x-reverse sm:px-10"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none", touchAction: "pan-x pan-y", scrollBehavior: "auto" }}
-          >
-            {thirdRow.map((r, i) => (
-              <div key={r.name}>
-                <ReviewCard
-                  review={r}
-                  onClick={() => openReview(r)}
-                  tilt={STICKER_TILTS[(i + 4) % STICKER_TILTS.length]}
-                  tapeColor={TAPE_COLORS[(i + 4) % TAPE_COLORS.length]}
-                />
-              </div>
-            ))}
-          </div>
           </motion.div>
-        </div>
 
-        {/* ── CTA — rendered BELOW the sticky-pinned parallax stack so
-              it comes into view as the user scrolls past the pin.
-              Two stacked pills:
-                • "See all reviews" — bare text link with the same
-                  hand-drawn underline highlight the header nav uses.
-                • "Zostaw wiadomość" — compact pill, single-line
-                  label, opens the write-a-review popup form. ── */}
-        <div className="pointer-events-auto relative z-20 mx-auto mt-10 flex w-full max-w-xl flex-col items-center gap-5 px-4 pb-12 sm:mt-14 sm:gap-6 sm:px-6 sm:pb-16 md:mt-16 md:pb-20">
-          {/* See-all — header-style link with hand-drawn underline */}
-          <button
-            onClick={() => setShowAll(true)}
-            className="group/seeall relative inline-flex select-none items-center justify-center px-2 py-1.5 font-body text-sm font-medium uppercase tracking-[0.18em] text-sand transition-colors duration-300 hover:text-white sm:text-[15px] md:text-base"
-          >
-            <span className="relative z-10">{t("testimonials.cta.button")}</span>
-            <span className="pointer-events-none absolute inset-x-0 -bottom-1 h-3 text-ocean/90">
-              <svg viewBox="0 0 310 40" fill="none" preserveAspectRatio="none" className="h-full w-full overflow-visible">
-                <path
-                  d="M5 21C26.8 16.2 49.6 11.6 71.8 14.7C85 16.5 97 21.8 110 24.4C116.4 25.7 123 25.5 129 22.6C136 19.3 142.6 15.1 150.1 13.3C156.8 11.7 161.7 14.6 167.9 16.8C181.6 21.7 195 22.6 209.3 21.4C224.7 20.1 239.9 18 255.4 18.3C272 18.6 288.4 18.9 305 18"
-                  pathLength={100}
-                  className="fill-none stroke-current stroke-6 [stroke-dasharray:100] [stroke-dashoffset:100] transition-[stroke-dashoffset] duration-500 ease-out group-hover/seeall:[stroke-dashoffset:0]"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-          </button>
+          {/* Row 2 — drifts LEFT (translateX: 0 → −1000 px).
+              flex-row starts the row overflowing to the RIGHT
+              so as translateX pulls left the cards scroll in
+              from the right. */}
+          <motion.div className="mb-20 flex flex-row space-x-20">
+            {secondRow.map((r, i) => (
+              <ReviewCard
+                key={r.name}
+                review={r}
+                translate={translateXReverse}
+                onClick={() => openReview(r)}
+                tilt={STICKER_TILTS[(i + 2) % STICKER_TILTS.length]}
+                tapeColor={TAPE_COLORS[(i + 2) % TAPE_COLORS.length]}
+              />
+            ))}
+          </motion.div>
 
-          {/* Leave-a-review — compact pill button with a single-line
-              label. Smaller horizontal padding + single span so the
-              CTA reads as a hint, not a marketing banner. */}
-          <button
-            type="button"
-            onClick={() => setShowWrite(true)}
-            className="inline-flex items-center justify-center rounded-full border border-sand/30 bg-sand/10 px-6 py-2.5 font-heading text-base text-sand backdrop-blur-sm transition-all duration-300 hover:border-sand/50 hover:bg-sand/20 sm:px-7 sm:py-3 sm:text-lg"
-            style={{ fontWeight: 400 }}
-          >
-            {t("testimonials.cta.heading")}
-          </button>
-        </div>
+          {/* Row 3 — mirrors Row 1 (drifts RIGHT). */}
+          <motion.div className="mb-20 flex flex-row-reverse space-x-20 space-x-reverse">
+            {thirdRow.map((r, i) => (
+              <ReviewCard
+                key={r.name}
+                review={r}
+                translate={translateX}
+                onClick={() => openReview(r)}
+                tilt={STICKER_TILTS[(i + 4) % STICKER_TILTS.length]}
+                tapeColor={TAPE_COLORS[(i + 4) % TAPE_COLORS.length]}
+              />
+            ))}
+          </motion.div>
+
+          {/* ── CTA — placed INSIDE the motion.div so it travels with
+                the stack's `translateY` and lands directly under the
+                last row of stickers (same relationship the previous
+                version had). The rotateX/rotateZ entrance does apply
+                to the buttons too, but they unwind to 0 long before
+                the CTA enters the viewport, so they end up perfectly
+                upright and crisp. ── */}
+          <div className="pointer-events-auto relative z-20 mx-auto flex w-full max-w-xl flex-col items-center gap-5 px-4 sm:gap-6 sm:px-6">
+            {/* See-all — header-style link with hand-drawn underline */}
+            <button
+              onClick={() => setShowAll(true)}
+              className="group/seeall relative inline-flex select-none items-center justify-center px-2 py-1.5 font-body text-sm font-medium uppercase tracking-[0.18em] text-sand transition-colors duration-300 hover:text-white sm:text-[15px] md:text-base"
+            >
+              <span className="relative z-10">{t("testimonials.cta.button")}</span>
+              <span className="pointer-events-none absolute inset-x-0 -bottom-1 h-3 text-ocean/90">
+                <svg viewBox="0 0 310 40" fill="none" preserveAspectRatio="none" className="h-full w-full overflow-visible">
+                  <path
+                    d="M5 21C26.8 16.2 49.6 11.6 71.8 14.7C85 16.5 97 21.8 110 24.4C116.4 25.7 123 25.5 129 22.6C136 19.3 142.6 15.1 150.1 13.3C156.8 11.7 161.7 14.6 167.9 16.8C181.6 21.7 195 22.6 209.3 21.4C224.7 20.1 239.9 18 255.4 18.3C272 18.6 288.4 18.9 305 18"
+                    pathLength={100}
+                    className="fill-none stroke-current stroke-6 [stroke-dasharray:100] [stroke-dashoffset:100] transition-[stroke-dashoffset] duration-500 ease-out group-hover/seeall:[stroke-dashoffset:0]"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+            </button>
+
+            {/* Leave-a-review — compact pill button with a single-line
+                label. Smaller horizontal padding + single span so the
+                CTA reads as a hint, not a marketing banner. */}
+            <button
+              type="button"
+              onClick={() => setShowWrite(true)}
+              className="inline-flex items-center justify-center rounded-full border border-sand/30 bg-sand/10 px-6 py-2.5 font-heading text-base text-sand backdrop-blur-sm transition-all duration-300 hover:border-sand/50 hover:bg-sand/20 sm:px-7 sm:py-3 sm:text-lg"
+              style={{ fontWeight: 400 }}
+            >
+              {t("testimonials.cta.heading")}
+            </button>
+          </div>
+        </motion.div>
       </div>
 
       {/* ═══ POPUPS rendered via portal to avoid extension DOM conflicts ═══ */}

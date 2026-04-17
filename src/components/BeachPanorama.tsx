@@ -18,8 +18,8 @@ gsap.registerPlugin(ScrollTrigger);
      │ COVER LAYER (z-30)                          │   ← opaque card
      │   • "Panorama" wordmark + subtitle          │     with hinge at
      │   • Hinges from its TOP edge                │     the top edge
-     │   • rotateX 0 → −105°, with perspective →   │     ("calendar
-     │     looks like a calendar page lifting up   │      opening" feel)
+     │   • rotateX 0 → −105° + opacity 1 → 0       │     ("calendar
+     │     so it peels AND fades simultaneously    │      opening" feel)
      └─────────────────────────────────────────────┘
      ┌─────────────────────────────────────────────┐
      │ SLIDESHOW LAYER (z-10)                      │   ← always there,
@@ -27,20 +27,14 @@ gsap.registerPlugin(ScrollTrigger);
      │   • Thumbnail strip + auto-changing title   │     the cover flips
      └─────────────────────────────────────────────┘
 
-   Scroll choreography (ScrollTrigger pin, end="+=300%"):
-
-     0.00 – 0.40   COVER FLIP — `rotateX` scrubbed by scroll, the
-                   cover peels away from the top hinge. Magnetic
-                   `snap` stop at 0.45 once the cover is gone.
-     0.45 – 0.75   AUTO-ADVANCE #1 — slide 0 → slide 1 fires the
-                   moment the user scrolls past the snap stop.
-                   Magnetic snap to 0.75.
-     0.75 – 1.00   AUTO-ADVANCE #2 — slide 1 → slide 2.
-                   Magnetic snap to 1.0 → pin releases.
-
-   Snap stops [0, 0.45, 0.75, 1] give the whole interaction the
-   "magnetyczne odczucie" the brief asks for: every beat clicks
-   into place instead of free-running.
+   Scroll choreography — MATCHES GALLERY PATTERN:
+     `pin: true, scrub: 1, end: "+=200%"` with NO snap, so the
+     pin holds the section in place and scroll smoothly scrubs
+     through three beats: cover flips & fades → slide 0→1 wipes
+     → slide 1→2 wipes → pin releases. The magnetic feel comes
+     from the pin itself (scroll is eaten, section feels stuck)
+     without `snap`'s jitter. Once all three beats play, the
+     page unlocks and scrolling continues naturally.
    ═══════════════════════════════════════════════════════════════ */
 
 const SLIDES = PANORAMA_SLIDES;
@@ -136,83 +130,106 @@ export default function BeachPanorama() {
       /* Track which auto-advance beats have already fired so each
          is triggered only once when its progress threshold is
          crossed forward. Going backward resets the flags. */
-      const fired = { adv1: false, adv2: false };
+      const fired = { adv1: false, adv2: false, adv3: false };
 
-      const tl = gsap.timeline({
+      /* Progress thresholds — the whole pin runs from 0 → 1 and
+         is split into FOUR equal beats so the cover flip + three
+         slide advances all get the same scroll distance and feel
+         equally quick:
+            0.00 – 0.25  cover flip + fade
+            0.25 – 0.50  slide 0 → 1
+            0.50 – 0.75  slide 1 → 2
+            0.75 – 1.00  slide 2 → 3
+         Each ADV trigger fires a hair after its beat starts so
+         the parallax wipe has room to play without being scrubbed
+         by the user's next scroll increment. */
+      const FLIP_END = 0.25;
+      const ADV1 = 0.32;
+      const ADV2 = 0.57;
+      const ADV3 = 0.82;
+
+      gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: "+=300%",
+          end: "+=260%",
           pin: true,
           pinSpacing: true,
+          /* scrub: 1 matches the gallery — a single-frame lag so
+             Lenis smooth-scroll inertia doesn't race the DOM
+             writes. No `snap`: snap + Lenis fights with user
+             momentum and causes the "skipping" the user saw.
+             The pin itself already gives the magnetic feel. */
           scrub: 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
-          /* Magnetic snap stops — every phase boundary is a
-             stable resting point. Combined with `scrub`, the
-             user feels the section "click" at each beat. */
-          snap: {
-            snapTo: (value) => {
-              const stops = [0, 0.45, 0.75, 1];
-              return stops.reduce((prev, cur) =>
-                Math.abs(cur - value) < Math.abs(prev - value) ? cur : prev
-              );
-            },
-            duration: { min: 0.25, max: 0.7 },
-            delay: 0.08,
-            ease: "power3.inOut",
-          },
-          /* Threshold-crossing trigger for the two scripted slide
-             advances. Each one fires exactly once per direction
-             so the cover-flip and the auto-cycle never compete. */
+          /* Threshold-crossing trigger for the three scripted
+             slide advances. Each one fires exactly once per
+             direction so the cover-flip and the auto-cycle never
+             compete. Reverse-scroll resets flags in reverse. */
           onUpdate: (self) => {
             const p = self.progress;
-            if (p > 0.5 && !fired.adv1) {
+            if (p > ADV1 && !fired.adv1) {
               fired.adv1 = true;
               navigate(1);
             }
-            if (p > 0.8 && !fired.adv2) {
+            if (p > ADV2 && !fired.adv2) {
               fired.adv2 = true;
               navigate(2);
             }
-            if (p < 0.45) {
+            if (p > ADV3 && !fired.adv3) {
+              fired.adv3 = true;
+              navigate(3);
+            }
+            if (p < ADV1 - 0.03) {
               fired.adv1 = false;
               fired.adv2 = false;
+              fired.adv3 = false;
               if (currentRef.current !== 0) navigate(0);
-            } else if (p < 0.75 && fired.adv2) {
+            } else if (p < ADV2 - 0.03) {
               fired.adv2 = false;
+              fired.adv3 = false;
               if (currentRef.current > 1) navigate(1);
+            } else if (p < ADV3 - 0.03) {
+              fired.adv3 = false;
+              if (currentRef.current > 2) navigate(2);
             }
           },
         },
-      });
+      })
+        /* PHASE 1 (0 → FLIP_END): COVER FLIPS AWAY and FADES.
+           `rotationX` overshoots past −90° so the cover ends up
+           clearly behind the camera plane. `opacity` runs in
+           parallel from 1 → 0 over the full flip so the card
+           literally dissolves while it tilts — no hard pop at
+           the end. Inner wordmark lifts a touch and fades a
+           hair early so the eye sees the text leave before the
+           geometry does. */
+        .to(
+          cover,
+          { rotationX: -110, duration: FLIP_END, ease: "power2.inOut" },
+          0
+        )
+        .to(
+          cover,
+          { opacity: 0, duration: FLIP_END, ease: "power2.in" },
+          0
+        )
+        .to(
+          coverInner ?? {},
+          { y: -40, duration: FLIP_END * 0.85, ease: "power2.in" },
+          0.02
+        )
+        .to(
+          coverInner ?? {},
+          { opacity: 0, duration: FLIP_END * 0.55, ease: "power2.in" },
+          FLIP_END * 0.4
+        );
 
-      /* PHASE 1 (0.00 – 0.38): COVER FLIPS AWAY from the top.
-         `rotationX` overshoots past −90° so the cover ends up
-         clearly behind the camera plane and the slideshow
-         underneath becomes fully readable. The inner content
-         lifts a touch and fades a hair early so the user sees
-         the wordmark recede before the geometry tilts away. */
-      tl.to(
-        cover,
-        { rotationX: -110, duration: 0.38, ease: "power2.inOut" },
-        0
-      );
-      if (coverInner) {
-        tl.to(coverInner, { y: -40, duration: 0.32, ease: "power2.in" }, 0.02);
-        tl.to(coverInner, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.18);
-      }
-      tl.to(
-        cover,
-        { opacity: 0, duration: 0.06, ease: "power1.in" },
-        0.36
-      );
-
-      /* PHASE 2 + 3: nothing on the timeline — the slide
-         transitions are owned by the navigate() calls fired
-         from `onUpdate` above. Keeping them off the timeline
-         lets the parallax wipe play at its own pace without
-         being scrubbed backwards by the user. */
+      /* PHASES 2 + 3 live in onUpdate above (navigate()). They
+         stay off the timeline so the parallax wipe plays at its
+         own pace without being scrubbed backwards frame-by-frame
+         by the user's scroll. */
     },
     { scope: sectionRef }
   );
@@ -376,16 +393,6 @@ export default function BeachPanorama() {
           >
             {t("panorama.label")}
           </p>
-          <span
-            aria-hidden
-            className="absolute bottom-[clamp(1.5rem,5vh,3rem)] flex flex-col items-center gap-2 font-body text-[10px] uppercase tracking-[0.4em] text-sand/40"
-          >
-            <span>scroll</span>
-            <span
-              className="block h-6 w-px bg-sand/40"
-              style={{ animation: "panoScrollHint 1.6s ease-in-out infinite" }}
-            />
-          </span>
         </div>
       </div>
 
@@ -434,12 +441,6 @@ export default function BeachPanorama() {
         @keyframes panoSlideTitleIn {
           0% { opacity: 0; transform: translateY(14px); filter: blur(6px); }
           100% { opacity: 1; transform: translateY(0); filter: blur(0); }
-        }
-        @keyframes panoScrollHint {
-          0% { transform: scaleY(0); transform-origin: top; opacity: 0.2; }
-          50% { transform: scaleY(1); transform-origin: top; opacity: 0.9; }
-          51% { transform: scaleY(1); transform-origin: bottom; }
-          100% { transform: scaleY(0); transform-origin: bottom; opacity: 0.2; }
         }
       `}</style>
     </section>
