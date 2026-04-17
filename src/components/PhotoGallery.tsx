@@ -116,6 +116,23 @@ export default function PhotoGallery() {
         preventOverlaps: "pinned",
         onUpdate: (self) => {
           progressRef.current = self.progress * 30;
+          // #region agent log
+          const w = window as unknown as { __galScrollCount?: number };
+          w.__galScrollCount = (w.__galScrollCount ?? 0) + 1;
+          if (w.__galScrollCount % 12 === 1) {
+            fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
+              body: JSON.stringify({
+                sessionId: '5e042f', runId: 'run1', hypothesisId: 'H4',
+                location: 'PhotoGallery.tsx:scrollTrigger-onUpdate',
+                message: 'scroll writes progressRef',
+                data: { scrollCount: w.__galScrollCount, scrollProg: +self.progress.toFixed(3), progressRefNow: +progressRef.current.toFixed(2) },
+                timestamp: Date.now(),
+              }),
+            }).catch(() => {});
+          }
+          // #endregion
           applyLayout();
         },
       });
@@ -164,6 +181,23 @@ export default function PhotoGallery() {
       const x = e.touches[0].clientX;
       progressRef.current += (x - touchXRef.current) * SPEED_DRAG;
       touchXRef.current = x;
+      // #region agent log
+      const w = window as unknown as { __galTouchCount?: number };
+      w.__galTouchCount = (w.__galTouchCount ?? 0) + 1;
+      if (w.__galTouchCount % 6 === 1) {
+        fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
+          body: JSON.stringify({
+            sessionId: '5e042f', runId: 'run1', hypothesisId: 'H4',
+            location: 'PhotoGallery.tsx:onTouchMove',
+            message: 'touch writes progressRef while pin may also write',
+            data: { touchCount: w.__galTouchCount, progressRef: +progressRef.current.toFixed(2), vw: window.innerWidth },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
+      // #endregion
       scheduleUpdate();
     },
     [scheduleUpdate]

@@ -64,6 +64,44 @@ export default function SpatialScrollTransition({ topSection, bottomSection }: P
             delay: 0.12,
             ease: "power1.inOut",
           },
+          // #region agent log
+          onUpdate: (self) => {
+            const w = typeof window !== "undefined" ? window : null;
+            if (!w) return;
+            const anyWin = w as unknown as { __menuLogCount?: number; __menuLastDir?: number };
+            anyWin.__menuLogCount = (anyWin.__menuLogCount ?? 0) + 1;
+            // Throttle: log only on direction-flip or every 8th update (~enough to see the zoom loop without spamming)
+            const dirFlipped = self.direction !== anyWin.__menuLastDir;
+            anyWin.__menuLastDir = self.direction;
+            if (!dirFlipped && anyWin.__menuLogCount % 8 !== 0) return;
+            fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
+              body: JSON.stringify({
+                sessionId: '5e042f',
+                runId: 'run1',
+                hypothesisId: 'H1',
+                location: 'SpatialScrollTransition.tsx:snap-onUpdate',
+                message: 'menu-pin update',
+                data: {
+                  progress: +self.progress.toFixed(3),
+                  direction: self.direction,
+                  isActive: self.isActive,
+                  dirFlipped,
+                  vw: w.innerWidth,
+                  vh: w.innerHeight,
+                  scaleNow: ((): string | null => {
+                    const el = topRef.current;
+                    if (!el) return null;
+                    const m = getComputedStyle(el).transform;
+                    return m === 'none' ? 'none' : m;
+                  })(),
+                },
+                timestamp: Date.now(),
+              }),
+            }).catch(() => {});
+          },
+          // #endregion
         },
       });
 

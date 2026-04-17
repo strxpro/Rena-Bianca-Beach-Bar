@@ -456,6 +456,41 @@ export default function Testimonials() {
   const openReview = useCallback((r: (typeof REVIEWS)[0]) => setSelectedReview(r), []);
   const closeReview = useCallback(() => setSelectedReview(null), []);
 
+  // #region agent log
+  useEffect(() => {
+    const send = () => {
+      const section = ref.current;
+      if (!section) return;
+      const firstRow = section.querySelector('[data-testi-row="1"]') as HTMLElement | null;
+      const header = section.querySelector('[data-testi-header]') as HTMLElement | null;
+      const cta = section.querySelector('[data-testi-cta]') as HTMLElement | null;
+      const sr = section.getBoundingClientRect();
+      fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
+        body: JSON.stringify({
+          sessionId: '5e042f',
+          runId: 'run1',
+          hypothesisId: 'H3',
+          location: 'Testimonials.tsx:mount',
+          message: 'testi layout measure',
+          data: {
+            vw: window.innerWidth,
+            vh: window.innerHeight,
+            section: { h: Math.round(sr.height), scrollH: section.scrollHeight, cssTop: Math.round(sr.top) },
+            header: header ? { top: Math.round(header.getBoundingClientRect().top), h: Math.round(header.getBoundingClientRect().height) } : null,
+            firstRow: firstRow ? { top: Math.round(firstRow.getBoundingClientRect().top), h: Math.round(firstRow.getBoundingClientRect().height) } : null,
+            cta: cta ? { bottom: Math.round(cta.getBoundingClientRect().bottom) } : null,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    };
+    const t = window.setTimeout(send, 600);
+    return () => window.clearTimeout(t);
+  }, []);
+  // #endregion
+
   return (
     <>
       <div
@@ -500,7 +535,7 @@ export default function Testimonials() {
         {/* ── Header (top of section, outside the 3D stack so it
               always reads crisply regardless of the entrance
               rotation). ── */}
-        <div className="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-10 md:py-20">
+        <div data-testi-header className="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-10 md:py-20">
           <span className="mb-2 block font-body text-[10px] uppercase tracking-[0.25em] text-sand/50 sm:mb-3 sm:text-xs sm:tracking-[0.3em]">
             {t("testimonials.label")}
           </span>
@@ -536,7 +571,7 @@ export default function Testimonials() {
               CTA below. Row bottom margin + horizontal spacing
               shrinks on phones so the three rows + CTA all fit
               inside the taller 240vh section. */}
-          <motion.div className="mb-10 flex flex-row-reverse space-x-8 space-x-reverse overflow-hidden sm:mb-20 sm:space-x-20">
+          <motion.div data-testi-row="1" className="mb-10 flex flex-row-reverse space-x-8 space-x-reverse overflow-hidden sm:mb-20 sm:space-x-20">
             {firstRow.map((r, i) => (
               <ReviewCard
                 key={r.name}
@@ -585,7 +620,7 @@ export default function Testimonials() {
                 longer covered by neighbouring section layers.
                 z-30 + a small mt-4 give it a hard guarantee of
                 sitting on top of any 3D-transformed sibling. ── */}
-          <div className="pointer-events-auto relative z-30 mx-auto mt-4 flex w-full max-w-xl flex-col items-center gap-5 px-4 sm:gap-6 sm:px-6">
+          <div data-testi-cta className="pointer-events-auto relative z-30 mx-auto mt-4 flex w-full max-w-xl flex-col items-center gap-5 px-4 sm:gap-6 sm:px-6">
             {/* See-all — header-style link with hand-drawn underline */}
             <button
               onClick={() => setShowAll(true)}

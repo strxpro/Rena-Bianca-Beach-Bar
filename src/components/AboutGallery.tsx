@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -57,13 +57,57 @@ const ABOUT_CARD_STYLES = [
   },
 ];
 
-const CARD_TOP = "12vh";
+/* Sticky top for the stacking cards.
+   – On desktop the cards sit at 12vh (nice "floating" look under the nav).
+   – On mobile the fixed <Header /> is 72 px; 12vh on a 750 px phone is
+     only 90 px, which means the card heading ends up sitting right
+     under the logo with no breathing room and visually appears to
+     start ABOVE the section (the user's complaint). We drop the
+     sticky position lower on phones (`clamp(96px, 15vh, 140px)`) so
+     the card clears the header and sits inside its own section. */
+const CARD_TOP = "clamp(96px, 15vh, 140px)";
 const CARD_TOP_OFFSET = 20; // px between stacked cards
 
 export default function AboutGallery() {
   const { t } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
   const cardsRef = useRef<(HTMLLIElement | null)[]>([]);
+
+  // #region agent log
+  useEffect(() => {
+    const send = () => {
+      const sect = sectionRef.current;
+      if (!sect) return;
+      const firstCard = cardsRef.current[0];
+      const prev = sect.previousElementSibling as HTMLElement | null;
+      const sr = sect.getBoundingClientRect();
+      const fc = firstCard?.getBoundingClientRect();
+      const pv = prev?.getBoundingClientRect();
+      fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
+        body: JSON.stringify({
+          sessionId: '5e042f',
+          runId: 'run1',
+          hypothesisId: 'H6',
+          location: 'AboutGallery.tsx:mount',
+          message: 'about layout measure',
+          data: {
+            vw: window.innerWidth,
+            vh: window.innerHeight,
+            headerH: (document.querySelector('header') as HTMLElement | null)?.offsetHeight ?? null,
+            section: { offsetTop: sect.offsetTop, h: Math.round(sr.height), scrollH: sect.scrollHeight, rectTop: Math.round(sr.top) },
+            firstCard: fc ? { topRel: Math.round(fc.top - sr.top), h: Math.round(fc.height) } : null,
+            prevSibling: prev && pv ? { tag: prev.tagName, id: prev.id, bottom: Math.round(pv.bottom), h: Math.round(pv.height) } : null,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    };
+    const t = window.setTimeout(send, 800);
+    return () => window.clearTimeout(t);
+  }, []);
+  // #endregion
 
   useGSAP(
     () => {
@@ -98,7 +142,20 @@ export default function AboutGallery() {
       ref={sectionRef}
       id="about"
       className="relative"
-      style={{ background: "linear-gradient(to bottom, #ff8855 0%, #cc7744 5%, #8a6040 12%, #3a4a6e 25%, #2a6a9e 40%, #3a7ab0 50%, #3a7ab0 90%, #2a6a9e 100%)" }}
+      style={{
+        background: "linear-gradient(to bottom, #ff8855 0%, #cc7744 5%, #8a6040 12%, #3a4a6e 25%, #2a6a9e 40%, #3a7ab0 50%, #3a7ab0 90%, #2a6a9e 100%)",
+        /* Guarantee the About section is its OWN scroll window. Without
+           a min-height the `<ul>`'s inline grid was the sole source of
+           height and, because the first `<li>` is `position: sticky`,
+           the first card started sticking the moment its parent grid
+           cell entered the viewport — i.e. the very first pixel of
+           the section. On phones that made the first card appear
+           over the end of the hero parallax ("za wysoko, nie w swojej
+           sekcji"). A `min-h-dvh` wrapper forces at least one full
+           viewport of the section to scroll past before the next
+           section can intrude. */
+        minHeight: "100dvh",
+      }}
     >
       <ul
         className="mx-auto list-none p-0"
@@ -109,7 +166,10 @@ export default function AboutGallery() {
           gridTemplateRows: `repeat(${ABOUT_CARD_STYLES.length}, clamp(300px, 55vh, 540px))`,
           gap: "clamp(12px, 4vw, 40px)",
           paddingBottom: `calc(${ABOUT_CARD_STYLES.length} * 4vw)`,
-          paddingTop: "4vw",
+          /* Bigger breathing room on phones so the first card starts
+             a clear distance below the header + the end of the hero
+             parallax, matching the generous spacing we have on desktop. */
+          paddingTop: "clamp(56px, 10vw, 80px)",
         }}
       >
         {ABOUT_CARD_STYLES.map((card, i) => (

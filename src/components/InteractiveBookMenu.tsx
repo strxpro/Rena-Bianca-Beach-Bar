@@ -544,6 +544,45 @@ export default function InteractiveBookMenu() {
     return () => window.removeEventListener("keydown", onKey);
   }, [goNext, goPrev]);
 
+  // #region agent log
+  useEffect(() => {
+    const send = () => {
+      const sect = document.querySelector('[data-menu-section]') as HTMLElement | null;
+      const book = document.querySelector('[data-menu-section] [data-book-stage]') as HTMLElement | null;
+      const buttons = document.querySelectorAll('[data-menu-section] [data-menu-cta]');
+      const lastBtn = buttons[buttons.length - 1] as HTMLElement | null;
+      if (!sect) return;
+      const sr = sect.getBoundingClientRect();
+      const br = book?.getBoundingClientRect();
+      const cr = lastBtn?.getBoundingClientRect();
+      fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
+        body: JSON.stringify({
+          sessionId: '5e042f',
+          runId: 'run1',
+          hypothesisId: 'H2',
+          location: 'InteractiveBookMenu.tsx:mount',
+          message: 'menu stack measure',
+          data: {
+            vw: window.innerWidth,
+            vh: window.innerHeight,
+            dvh: window.visualViewport?.height ?? null,
+            section: sr ? { h: Math.round(sr.height), scrollH: sect.scrollHeight } : null,
+            book: br ? { top: Math.round(br.top), h: Math.round(br.height) } : null,
+            lastCtaBottom: cr ? Math.round(cr.bottom) : null,
+            ctaCount: buttons.length,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    };
+    // Wait a frame for layout to settle
+    const t = window.setTimeout(send, 400);
+    return () => window.clearTimeout(t);
+  }, []);
+  // #endregion
+
   /* ── Derived data ── */
   const leftPage = getPage(leftIndex);
   const rightPage = getPage(leftIndex + 1);
@@ -560,6 +599,7 @@ export default function InteractiveBookMenu() {
   return (
     <section
       id="menu"
+      data-menu-section
       className="relative flex min-h-dvh flex-col pt-2 pb-4 sm:pt-3 sm:pb-6 md:pt-5 md:pb-10"
       style={{ background: "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)" }}
     >
@@ -655,7 +695,7 @@ export default function InteractiveBookMenu() {
             </div>
           </div>
 
-          <div className="relative z-10 w-full" style={{ aspectRatio: "2 / 1.3", minHeight: "clamp(420px, 64vw, 880px)" }}>
+          <div data-book-stage className="relative z-10 w-full" style={{ aspectRatio: "2 / 1.3", minHeight: "clamp(420px, 64vw, 880px)" }}>
             {/* ── Side arrows — clickable page-turn affordance.
                   Hidden on small screens (they overlap the book
                   there); the bottom-nav arrows handle mobile. On
@@ -824,6 +864,7 @@ export default function InteractiveBookMenu() {
             {t("menu.hint")}
           </p>
           <a
+            data-menu-cta="reservation"
             href="#reservation"
             onClick={(e) => {
               e.preventDefault();
@@ -848,6 +889,7 @@ export default function InteractiveBookMenu() {
 
           {/* ── Mobile CTA: prominent button to open readable popup ── */}
           <button
+            data-menu-cta="open-popup"
             onClick={() => {
               const page = contentPages.find((_, i) => {
                 const idx = bookData.indexOf(contentPages[i]);

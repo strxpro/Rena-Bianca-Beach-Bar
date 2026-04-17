@@ -18,8 +18,10 @@
   --color-stone: #8892A0;
   --color-stone-light: #CCD6E0;
 
-  /* ── Typography ── */
-  --font-heading: "Playfair Display", serif;
+  /* ── Typography ──
+        Heading: "Combo" (Google Fonts) — single-weight display serif.
+        Body:    "Plus Jakarta Sans". */
+  --font-heading: "Combo", serif;
   --font-body: "Plus Jakarta Sans", sans-serif;
 
   /* ── Spacing (negative space driven) ── */

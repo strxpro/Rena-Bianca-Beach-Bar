@@ -163,6 +163,43 @@ export default function LocationContactTransition() {
     };
   }, []);
 
+  // #region agent log
+  useEffect(() => {
+    const send = () => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const framePlayer = section.querySelector('[data-frame-player]') as HTMLElement | null;
+      const locationPanel = section.querySelector('[data-location]') as HTMLElement | null;
+      const locationHeading = locationPanel?.querySelector('h2') as HTMLElement | null;
+      const waveFront = section.querySelector('[data-wave-front]') as HTMLElement | null;
+      const sr = section.getBoundingClientRect();
+      fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
+        body: JSON.stringify({
+          sessionId: '5e042f',
+          runId: 'run1',
+          hypothesisId: 'H5',
+          location: 'LocationContactTransition.tsx:mount',
+          message: 'loc-contact layout measure',
+          data: {
+            vw: window.innerWidth,
+            vh: window.innerHeight,
+            headerH: (document.querySelector('header') as HTMLElement | null)?.offsetHeight ?? null,
+            section: { h: Math.round(sr.height), top: Math.round(sr.top) },
+            framePlayer: framePlayer ? { top: Math.round(framePlayer.getBoundingClientRect().top - sr.top), bottom: Math.round(framePlayer.getBoundingClientRect().bottom - sr.top), h: Math.round(framePlayer.getBoundingClientRect().height) } : null,
+            waveFront: waveFront ? { top: Math.round(waveFront.getBoundingClientRect().top - sr.top) } : null,
+            locationHeading: locationHeading ? { top: Math.round(locationHeading.getBoundingClientRect().top - sr.top) } : null,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    };
+    const t = window.setTimeout(send, 700);
+    return () => window.clearTimeout(t);
+  }, []);
+  // #endregion
+
   const drawFrame = useCallback((idx: number) => {
     const canvas = canvasRef.current;
     /* Snap to the nearest frame we actually loaded. On desktop

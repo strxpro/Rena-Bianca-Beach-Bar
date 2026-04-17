@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
+import { Combo, Plus_Jakarta_Sans } from "next/font/google";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+/* Headings now use Google's "Combo" — a single-weight display serif
+   that gives the wordmark-like feel the brief asked for. Combo ships
+   in only one weight (400), so we only request that one; any
+   `font-weight: 500/600/700` on headings will fall back to 400 for
+   this face (browser doesn't synthesise bold). */
+const combo = Combo({
   subsets: ["latin"],
   variable: "--font-heading",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400"],
 });
 
 const jakarta = Plus_Jakarta_Sans({
@@ -29,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" className={`${playfair.variable} ${jakarta.variable}`}>
+    <html lang="pl" className={`${combo.variable} ${jakarta.variable}`}>
       <body suppressHydrationWarning>
         <I18nProvider>
           <SmoothScrollProvider>{children}</SmoothScrollProvider>
