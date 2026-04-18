@@ -35,7 +35,7 @@ const TEXT_DRIFT      = 5;
    (= on window resize, because Lenis/GSAP calls refresh automatically). ── */
 function getLogoMetrics() {
   const vw = typeof window === "undefined" ? 1200 : window.innerWidth;
-  const vh = typeof window === "undefined" ? 800 : window.innerHeight;
+  const vh = typeof window === "undefined" ? 800 : (window.visualViewport?.height ?? window.innerHeight);
   // Three breakpoints so the logo never overflows or looks tiny on tablets
   const isMobile = vw < 640;
   const isTablet = vw >= 640 && vw < 1024;
@@ -65,7 +65,7 @@ function getLogoMetrics() {
   const dockH = dockW * (LOGO_DOCKED_H / LOGO_DOCKED_W); // keep SVG aspect
   const dockY = HEADER_H / 2;
   // Hero-rest center for the fixed dock logo. Must match the SCENE logo
-  // position (top-[34%] inside a h-[120%] layer ≈ 40.8vh of the viewport)
+  // position (top-[34%] inside a h-[120%] layer ≈ 40.8dvh of the viewport)
   // so the scene→dock hand-off is visually seamless. Clamped so it never
   // overlaps the header on very short landscape viewports.
   // "A touch higher than before" per the brief — user must always see
@@ -392,7 +392,7 @@ export default function HeroVideoParallax() {
 
     <div ref={containerRef} data-parallax-container className="relative w-full overflow-hidden">
       {/* ── Parallax hero ── */}
-      <section className="relative z-2 flex min-h-svh items-center justify-center p-0">
+      <section className="relative w-full overflow-hidden z-2 flex min-h-[100dvh] items-center justify-center p-0">
         <div className="absolute left-0 top-0 h-[120%] w-full">
           <div
             ref={layersRef}
@@ -458,7 +458,7 @@ export default function HeroVideoParallax() {
             <div
               ref={textLayerRef}
               data-parallax-layer="4"
-              className="absolute left-0 top-0 z-50 flex h-svh w-full flex-col items-center justify-end gap-5 pb-28 will-change-transform sm:pb-32 md:pb-36"
+              className="absolute left-0 top-0 z-50 flex h-dvh w-full flex-col items-center justify-end gap-5 pb-28 will-change-transform sm:pb-32 md:pb-36"
               style={{ opacity: 0 }}
             >
               {/* ── Hero subtitle — delicate italic line anchored by

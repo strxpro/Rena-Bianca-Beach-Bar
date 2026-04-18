@@ -154,6 +154,13 @@ export const translations = {
     "contact.messagePlaceholder": "Twoja wiadomość...",
     "contact.submit": "Wyślij wiadomość",
     "contact.optional": "opcjonalne",
+    "contact.phone": "Numer telefonu",
+    "contact.phonePlaceholder": "+48 123 456 789",
+    "contact.phoneOptional": "Chcę podać numer telefonu",
+    "contact.noPhone": "Klient nie podał numeru telefonu",
+    "contact.sent": "Wiadomość wysłana!",
+    "contact.sentSub": "Dziękujemy za kontakt. Odpowiemy najszybciej jak to możliwe!",
+    "contact.sending": "Wysyłanie...",
 
     // Footer
     "footer.rights": "© 2026 Rena Bianca. Wszelkie prawa zastrzeżone.",
@@ -243,6 +250,13 @@ export const translations = {
     "contact.messagePlaceholder": "Il tuo messaggio...",
     "contact.submit": "Invia messaggio",
     "contact.optional": "facoltativo",
+    "contact.phone": "Numero di telefono",
+    "contact.phonePlaceholder": "+39 123 456 789",
+    "contact.phoneOptional": "Voglio fornire il mio numero di telefono",
+    "contact.noPhone": "Il cliente non ha fornito un numero di telefono",
+    "contact.sent": "Messaggio inviato!",
+    "contact.sentSub": "Grazie per averci contattato. Ti risponderemo il prima possibile!",
+    "contact.sending": "Invio in corso...",
     "footer.rights": "© 2026 Rena Bianca. Tutti i diritti riservati.",
   },
   es: {
@@ -281,6 +295,7 @@ export const translations = {
     "location.label": "Ubicación", "location.heading": "Encuéntranos", "location.address.label": "Dirección", "location.hours.label": "Horario", "location.hours.value": "Todos los días", "location.phone.label": "Contacto", "location.navigate": "Llévame allí", "location.country": "Cerdeña, Italia",
     "contact.label": "Formulario de contacto", "contact.heading": "Contáctanos", "contact.description": "¿Tienes una pregunta o quieres reservar una mesa? Escríbenos — responderemos lo antes posible.",
     "contact.name": "Nombre", "contact.namePlaceholder": "Tu nombre", "contact.email": "Email", "contact.emailPlaceholder": "tu@email.com", "contact.message": "Mensaje", "contact.messagePlaceholder": "Tu mensaje...", "contact.submit": "Enviar mensaje", "contact.optional": "opcional",
+    "contact.phone": "Número de teléfono", "contact.phonePlaceholder": "+34 123 456 789", "contact.phoneOptional": "Quiero proporcionar mi número de teléfono", "contact.noPhone": "El cliente no proporcionó número de teléfono", "contact.sent": "¡Mensaje enviado!", "contact.sentSub": "Gracias por contactarnos. ¡Responderemos lo antes posible!", "contact.sending": "Enviando...",
     "footer.rights": "© 2026 Rena Bianca. Todos los derechos reservados.",
   },
   fr: {
@@ -319,6 +334,7 @@ export const translations = {
     "location.label": "Emplacement", "location.heading": "Trouvez-nous", "location.address.label": "Adresse", "location.hours.label": "Horaires", "location.hours.value": "Tous les jours", "location.phone.label": "Contact", "location.navigate": "Nous trouver", "location.country": "Sardaigne, Italie",
     "contact.label": "Formulaire de contact", "contact.heading": "Contactez-nous", "contact.description": "Vous avez une question ou souhaitez réserver une table ? Écrivez-nous — nous répondrons dès que possible.",
     "contact.name": "Prénom", "contact.namePlaceholder": "Votre prénom", "contact.email": "Email", "contact.emailPlaceholder": "votre@email.com", "contact.message": "Message", "contact.messagePlaceholder": "Votre message...", "contact.submit": "Envoyer le message", "contact.optional": "facultatif",
+    "contact.phone": "Numéro de téléphone", "contact.phonePlaceholder": "+33 1 23 45 67 89", "contact.phoneOptional": "Je souhaite fournir mon numéro de téléphone", "contact.noPhone": "Le client n'a pas fourni de numéro de téléphone", "contact.sent": "Message envoyé !", "contact.sentSub": "Merci de nous avoir contactés. Nous vous répondrons dès que possible !", "contact.sending": "Envoi en cours...",
     "footer.rights": "© 2026 Rena Bianca. Tous droits réservés.",
   },
   de: {
@@ -357,6 +373,7 @@ export const translations = {
     "location.label": "Standort", "location.heading": "Finden Sie uns", "location.address.label": "Adresse", "location.hours.label": "Öffnungszeiten", "location.hours.value": "Täglich", "location.phone.label": "Kontakt", "location.navigate": "Dorthin navigieren", "location.country": "Sardinien, Italien",
     "contact.label": "Kontaktformular", "contact.heading": "Kontaktieren Sie uns", "contact.description": "Haben Sie eine Frage oder möchten Sie einen Tisch reservieren? Schreiben Sie uns — wir antworten so schnell wie möglich.",
     "contact.name": "Name", "contact.namePlaceholder": "Ihr Name", "contact.email": "Email", "contact.emailPlaceholder": "ihre@email.com", "contact.message": "Nachricht", "contact.messagePlaceholder": "Ihre Nachricht...", "contact.submit": "Nachricht senden", "contact.optional": "optional",
+    "contact.phone": "Telefonnummer", "contact.phonePlaceholder": "+49 123 456 789", "contact.phoneOptional": "Ich möchte meine Telefonnummer angeben", "contact.noPhone": "Der Kunde hat keine Telefonnummer angegeben", "contact.sent": "Nachricht gesendet!", "contact.sentSub": "Vielen Dank für Ihre Kontaktaufnahme. Wir antworten so schnell wie möglich!", "contact.sending": "Senden...",
     "footer.rights": "© 2026 Rena Bianca. Alle Rechte vorbehalten.",
   },
   en: {
@@ -395,6 +412,7 @@ export const translations = {
     "location.label": "Location", "location.heading": "Find Us", "location.address.label": "Address", "location.hours.label": "Hours", "location.hours.value": "Every day", "location.phone.label": "Contact", "location.navigate": "Navigate to us", "location.country": "Sardinia, Italy",
     "contact.label": "Contact form", "contact.heading": "Contact Us", "contact.description": "Have a question or want to reserve a table? Write to us — we'll respond as soon as possible.",
     "contact.name": "Name", "contact.namePlaceholder": "Your name", "contact.email": "Email", "contact.emailPlaceholder": "your@email.com", "contact.message": "Message", "contact.messagePlaceholder": "Your message...", "contact.submit": "Send message", "contact.optional": "optional",
+    "contact.phone": "Phone number", "contact.phonePlaceholder": "+1 234 567 890", "contact.phoneOptional": "I want to provide my phone number", "contact.noPhone": "Customer did not provide a phone number", "contact.sent": "Message sent!", "contact.sentSub": "Thank you for contacting us. We will respond as soon as possible!", "contact.sending": "Sending...",
     "footer.rights": "© 2026 Rena Bianca. All rights reserved.",
   },
 } as const;

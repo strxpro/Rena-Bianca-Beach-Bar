@@ -35,7 +35,7 @@ export default function TransitionMask() {
   );
 
   return (
-    <div ref={maskRef} className="relative h-[20vh] bg-sand -mt-1 z-10">
+    <div ref={maskRef} className="relative h-[20dvh] bg-sand -mt-1 z-10">
       <svg
         ref={svgRef}
         viewBox="0 0 100 100"

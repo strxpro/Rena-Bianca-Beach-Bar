@@ -28,7 +28,7 @@ export default function SunsetDivider() {
     <div
       className="relative w-full overflow-hidden"
       style={{
-        height: "clamp(300px, 45vh, 550px)",
+        height: "clamp(300px, 45dvh, 550px)",
         background: "#0A192F",
       }}
     >
@@ -159,11 +159,11 @@ export default function SunsetDivider() {
       {/* Gradient fade edges — blend with navy sections */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-20"
-        style={{ height: "clamp(50px, 10vh, 100px)", background: "linear-gradient(180deg, #0A192F 0%, transparent 100%)" }}
+        style={{ height: "clamp(50px, 10dvh, 100px)", background: "linear-gradient(180deg, #0A192F 0%, transparent 100%)" }}
       />
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-20"
-        style={{ height: "clamp(50px, 10vh, 100px)", background: "linear-gradient(0deg, #0A192F 0%, transparent 100%)" }}
+        style={{ height: "clamp(50px, 10dvh, 100px)", background: "linear-gradient(0deg, #0A192F 0%, transparent 100%)" }}
       />
 
       {/* Scoped keyframes */}

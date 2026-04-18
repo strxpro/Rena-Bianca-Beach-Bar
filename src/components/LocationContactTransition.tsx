@@ -6,6 +6,8 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { PinContainer } from "@/components/ui/3d-pin";
+import PhoneCountrySelect, { type Country } from "@/components/PhoneCountrySelect";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -47,7 +49,7 @@ function slowStartMap(progress: number): number {
 }
 
 export default function LocationContactTransition() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
@@ -58,6 +60,57 @@ export default function LocationContactTransition() {
   // React propagate to <PinContainer forceActive=...>.
   const pinActiveRef = useRef(false);
   const [pinActive, setPinActive] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formMessage, setFormMessage] = useState("");
+  const [formPhone, setFormPhone] = useState<string | undefined>(undefined);
+  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState<Country | null>(null);
+  const [formStatus, setFormStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [honeypot, setHoneypot] = useState("");
+  const formOpenTimeRef = useRef<number>(Date.now());
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName || !formEmail || !formMessage) return;
+    setFormStatus("loading");
+
+    try {
+      const phoneValue = formPhone?.replace(/[\s()-]+/g, "").trim() || "";
+      const phoneDisplay = phoneValue || "Numero non fornito";
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formName,
+          email: formEmail,
+          message: formMessage,
+          phone: phoneValue,
+          phoneDisplay,
+          dialCode: phoneValue ? selectedPhoneCountry?.dial || "" : "",
+          phoneCountry: phoneValue ? selectedPhoneCountry?.name || "" : "",
+          phoneCountryIso: phoneValue ? selectedPhoneCountry?.iso || "" : "",
+          language: locale,
+          date: new Date().toISOString().split("T")[0],
+          token: turnstileToken,
+          hp: honeypot,
+          formLoadedAt: formOpenTimeRef.current,
+        }),
+      });
+      if (!res.ok) throw new Error("api failed");
+      setFormStatus("sent");
+      setFormName("");
+      setFormEmail("");
+      setFormMessage("");
+      setFormPhone(undefined);
+      setSelectedPhoneCountry(null);
+      window.setTimeout(() => {
+        setFormStatus("idle");
+      }, 5000);
+    } catch {
+      setFormStatus("error");
+    }
+  };
 
   /* ── Lazy, staggered frame preloader ─────────────────────────
         The section uses 150 WYSPA PNGs (~100 MB total). Loading
@@ -293,6 +346,13 @@ export default function LocationContactTransition() {
         transformOrigin: "50% 50%",
       });
       gsap.set(contactPanel, { xPercent: 120, yPercent: 0, opacity: 0, rotation: 0, transformOrigin: "50% 50%" });
+      // Phone reveal section starts hidden
+      const phoneSection = section.querySelector("[data-phone-section]");
+      const phoneLetters = section.querySelectorAll("[data-phone-letter]");
+      const phoneBox = section.querySelector("[data-phone-box]");
+      if (phoneSection) gsap.set(phoneSection, { autoAlpha: 1 });
+      gsap.set(phoneLetters, { opacity: 0, y: 8 });
+      if (phoneBox) gsap.set(phoneBox, { opacity: 0, y: 30 });
       gsap.set(headingLetters, { yPercent: 120 });
       /* All sentence blocks start DIM, slightly pushed down, and
          softly blurred — they'll snap into sharp, fully-bright
@@ -307,11 +367,16 @@ export default function LocationContactTransition() {
       });
       gsap.set(formEls, { opacity: 0, y: 30 });
 
+      /* Phone elements — GSAP owns the transform, not JSX inline style */
+      gsap.set(section.querySelectorAll("[data-phone-letter]"), { opacity: 0, y: 8 });
+      const _phoneBoxEl = section.querySelector("[data-phone-box]");
+      if (_phoneBoxEl) gsap.set(_phoneBoxEl, { opacity: 0, y: 24 });
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: "+=600%",
+          end: "+=900%",
           pin: true,
           scrub: 0.5,
           anticipatePin: 1,
@@ -348,78 +413,25 @@ export default function LocationContactTransition() {
             alive the moment it peeks above the water line. ═══ */
       tl.to(framePlayer, { yPercent: 0, duration: 0.10, ease: "power2.out" }, 0.10);
 
-      const PHASE2_END_FRAME = Math.round((TOTAL_FRAMES - 1) * 0.12);
-      tl.to(frameIdxRef.current, {
-        value: PHASE2_END_FRAME,
-        duration: 0.10,
-        ease: "power1.out",
-        onUpdate: () => {
-          const idx = Math.round(frameIdxRef.current.value);
-          drawFrame(Math.min(idx, TOTAL_FRAMES - 1));
-        },
-      }, 0.08);
-
-      /* ═══ Phase 3 (0.18 → 0.66): Film plays in two segments so
-            the orbital swap lines up exactly with the last 22
-            frames of the canvas film, as the user asked for:
-
-              Segment A (FILM_START → ORBIT_START):
-                 frames PHASE2_END_FRAME (~18) → 128
-                 Cinematic slow-start ease so the intro has
-                 anticipation.
-
-              Segment B (ORBIT_START → FILM_END):
-                 frames 128 → 149
-                 Linear. This 22-frame stretch runs at exactly
-                 the same scroll speed as the contact-enter
-                 animation, so frame 128 = contact-starts-to-
-                 appear and frame 150 = contact-fully-centred.
-            ═══ */
-      const FILM_START = 0.18;
-      const ORBIT_START = 0.48;
-      const ORBIT_DUR = 0.18;
-      const FILM_END = ORBIT_START + ORBIT_DUR; // 0.66
-      const FRAME_AT_ORBIT_START = 128;
+      /* ═══ MASTER FRAME SEQUENCE (0 → 1)
+            Strictly map frames 0-149 to the entire scroll 
+            progress (0 to 1). ═══ */
       const LAST_FRAME = TOTAL_FRAMES - 1;
-
-      // Segment A — frames ~18 → 128 with slow-start curve.
-      tl.to(frameIdxRef.current, {
-        value: FRAME_AT_ORBIT_START,
-        duration: ORBIT_START - FILM_START,
-        ease: "none",
-        onUpdate: () => {
-          const rawProgress = tl.progress();
-          const segP = Math.max(
-            0,
-            Math.min(1, (rawProgress - FILM_START) / (ORBIT_START - FILM_START))
-          );
-          const mapped = slowStartMap(segP);
-          const frame =
-            PHASE2_END_FRAME +
-            Math.round(mapped * (FRAME_AT_ORBIT_START - PHASE2_END_FRAME));
-          drawFrame(Math.min(frame, LAST_FRAME));
-        },
-      }, FILM_START);
-
-      // Segment B — frames 128 → 149, tightly synced to the orbit.
+      
       tl.to(frameIdxRef.current, {
         value: LAST_FRAME,
-        duration: ORBIT_DUR,
+        duration: 0.80, // Finish all frames at 80% of scroll to make room for cinematic ending
         ease: "none",
         onUpdate: () => {
-          const rawProgress = tl.progress();
-          const segP = Math.max(
-            0,
-            Math.min(1, (rawProgress - ORBIT_START) / ORBIT_DUR)
-          );
-          const frame =
-            FRAME_AT_ORBIT_START +
-            Math.round(segP * (LAST_FRAME - FRAME_AT_ORBIT_START));
-          drawFrame(Math.min(frame, LAST_FRAME));
+          const idx = Math.round(frameIdxRef.current.value);
+          drawFrame(Math.min(idx, LAST_FRAME));
         },
-      }, ORBIT_START);
+      }, 0);
 
-      /* ── Background gradually lightens during the film play ── */
+      const ORBIT_START = 0.40;
+      const ORBIT_DUR = 0.30; // Orbit ends at 0.70 (0.40 + 0.30)
+
+      /* ── Background gradually lightens early during the film play ── */
       if (bgEl) {
         tl.to(bgEl, {
           background: "linear-gradient(180deg, #1a3a5c 0%, #2a7ab8 40%, #5ba3d9 75%, #8ec5e8 100%)",
@@ -471,12 +483,9 @@ export default function LocationContactTransition() {
         keyframes: [
           { xPercent: 85, yPercent: -4, rotation: 6, opacity: 0.45, duration: 0.18, ease: "sine.inOut" },
           { xPercent: 50, yPercent: -2, rotation: 3, opacity: 0.85, duration: 0.17, ease: "sine.inOut" },
-          /* Magnetic LOCK engages: panel crosses centre and is
-             pulled by an invisible magnet a few percent LEFT of
-             centre with a tiny scale bloom. */
+          /* Magnetic LOCK engages */
           { xPercent: -8, yPercent: -0.6, rotation: 0, opacity: 1, scale: 1.02, duration: 0.25, ease: "power3.out" },
-          /* Gentle settle — the magnet lets go. Micro-rebound in
-             scale so it doesn't feel like a hard snap. */
+          /* Gentle settle */
           { xPercent: 1.5, yPercent: 0, scale: 0.996, duration: 0.25, ease: "sine.inOut" },
           { xPercent: 0, yPercent: 0, scale: 1, duration: 0.15, ease: "power2.out" },
         ],
@@ -509,14 +518,10 @@ export default function LocationContactTransition() {
                start  + stagger * (n-1) + dur
              = 0.588 + 0.010 * 5         + 0.025
              = 0.663  ≈ FILM_END (0.66)  ✓ ═══ */
-      const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR * 0.60; // ≈ 0.588
+      const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR * 0.50; // Starts midway through orbit
       const LINE_REVEAL_DUR = 0.025;
       const LINE_STAGGER = 0.010;
 
-      // Snap the sync'd form-el init out of the way so the cascade
-      // owns their opacity/y. (formEls's initial gsap.set above is
-      // kept as an extra safety net in case older markup is ever
-      // used without `data-contact-line`.)
       tl.to(
         formEls,
         { opacity: 1, y: 0, duration: 0.001, ease: "none" },
@@ -552,15 +557,96 @@ export default function LocationContactTransition() {
         LINE_REVEAL_START + LINE_STAGGER
       );
 
-      /* ═══ Phase 6 (0.72 → 1.00): HOLD — user reads Contact and
-            it STAYS THERE.
-            Background stays BLUE (the gradient that turned blue
-            during "Znajdź nas" carries into Contact and does
-            NOT revert to dark navy).
-            Per the brief, once the contact card has reached its
-            final position we no longer animate it out — further
-            scrolling simply parks the section on the last frame
-            so the user can keep reading what's on the screen. ═══ */
+      /* ═══ Phase 6: CINEMATIC CENTERING
+            Happens AFTER ALL scenery has fully exited.
+            Scenery starts exit at 0.70 and is fully gone at 0.82.
+            Centering starts as the hero beat of the end. ═══ */
+      const MAGNET_START = 0.84; 
+      const MAGNET_DUR = 0.06;
+
+      const contactWrapper = section.querySelector("[data-contact-wrap]") as HTMLElement;
+      const contactInner = section.querySelector("[data-contact-inner]") as HTMLElement;
+
+      // Calculate the exact pixel offset to centre the card in
+      // the viewport. The card sits flush-left inside max-w-5xl.
+      // offset = (innerWidth - cardWidth) / 2
+      let centreX = 0;
+      if (contactInner && contactWrapper) {
+        centreX = (contactInner.offsetWidth - contactWrapper.offsetWidth) / 2;
+      }
+
+      // Bouncy magnetic slide to dead-centre
+      if (contactWrapper && centreX > 0) {
+        tl.to(contactWrapper, {
+          x: centreX,
+          duration: MAGNET_DUR,
+          ease: "back.out(1.7)",
+        }, MAGNET_START);
+      }
+
+      // Card background darkens + glow intensifies
+      if (contactWrapper) {
+        tl.to(contactWrapper, {
+          backgroundColor: "rgba(10, 25, 47, 0.72)",
+          borderColor: "rgba(59, 130, 196, 0.22)",
+          boxShadow: "0 0 80px rgba(59,130,196,0.15), 0 0 30px rgba(59,130,196,0.06), inset 0 1px 0 rgba(255,255,255,0.10)",
+          duration: MAGNET_DUR,
+          ease: "power2.inOut",
+        }, MAGNET_START);
+      }
+
+      // Text lines brighten
+      tl.to(
+        contactLines,
+        {
+          filter: "blur(0px) brightness(1.15) saturate(1.15)",
+          duration: MAGNET_DUR,
+          ease: "power2.out",
+        },
+        MAGNET_START
+      );
+
+      /* ═══ Phase 7 (MAGNET end → +0.04): PHONE REVEAL
+            Letter-by-letter the phone prompt text appears,
+            then the phone input slides up from below. ═══ */
+      const PHONE_START = MAGNET_START + 0.005;
+      const PHONE_TEXT_DUR = 0.03;
+      const PHONE_BOX_DUR = 0.02;
+
+      // Letter-by-letter reveal of phone prompt text
+      const phoneLettersAnim = section.querySelectorAll("[data-phone-letter]");
+      const phoneBoxAnim = section.querySelector("[data-phone-box]");
+
+      if (phoneLettersAnim.length > 0) {
+        tl.to(
+          phoneLettersAnim,
+          {
+            opacity: 1,
+            y: 0,
+            stagger: 0.0008,  // very rapid letter-by-letter
+            duration: 0.005,
+            ease: "power2.out",
+          },
+          PHONE_START
+        );
+      }
+
+      // Phone input box slides up from below
+      if (phoneBoxAnim) {
+        tl.to(
+          phoneBoxAnim,
+          {
+            opacity: 1,
+            y: 0,
+            duration: PHONE_BOX_DUR,
+            ease: "back.out(1.4)",
+          },
+          PHONE_START + PHONE_TEXT_DUR * 0.6  // overlap with tail end of text
+        );
+      }
+
+      /* ═══ Phase 8 (remaining → 1.00): HOLD — form stays centred,
+            user reads and interacts. ═══ */
     },
     { scope: sectionRef }
   );
@@ -609,7 +695,7 @@ export default function LocationContactTransition() {
               it did originally). ═══ */}
       <div
         data-frame-player
-        className="absolute inset-x-0 z-3 top-[clamp(2rem,6vh,4rem)] overflow-hidden will-change-transform md:top-[clamp(1rem,4vw,3rem)]"
+        className="absolute inset-x-0 z-3 bottom-0 overflow-hidden will-change-transform"
         style={{
           width: "100%",
           aspectRatio: "1920/1080",
@@ -686,7 +772,7 @@ export default function LocationContactTransition() {
                     <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("location.phone.label")}</span>
                     <p>
                       +39 0789 123 456<br />
-                      kontakt@renabianca.it
+                      info@renabiancabeachbar.com
                     </p>
                   </div>
                 </div>
@@ -747,17 +833,14 @@ export default function LocationContactTransition() {
         data-contact
         className="absolute inset-0 z-20 flex items-center will-change-transform"
       >
-        <div className="mx-auto w-full max-w-5xl px-6 sm:px-10 md:px-14">
-          <div className="max-w-lg">
-            {/* Each logical "sentence" of the panel carries
-                `data-contact-line` so the GSAP cascade can
-                stagger them in one-at-a-time, each brightening
-                from dim + blurred to fully crisp as it slides
-                into place. The order in the DOM is the order of
-                the reveal: eyebrow → heading → description →
-                name/email → message → submit. `will-change:
-                filter, transform` keeps the filter animation
-                GPU-accelerated on phones. */}
+        <div data-contact-inner className="mx-auto w-full max-w-5xl px-4 sm:px-8 md:px-14">
+          <div
+            data-contact-wrap
+            className="w-full max-w-lg overflow-visible rounded-2xl border border-white/8 bg-white/3 p-5 sm:p-7 md:p-9 backdrop-blur-md will-change-transform"
+            style={{
+              boxShadow: "0 0 40px rgba(59,130,196,0.06), inset 0 1px 0 rgba(255,255,255,0.05)",
+            }}
+          >
             <span
               data-contact-line
               className="mb-3 block font-body text-[10px] uppercase tracking-[0.3em] text-ocean/60 sm:text-xs"
@@ -770,7 +853,7 @@ export default function LocationContactTransition() {
               className="font-heading text-2xl text-sand sm:text-3xl md:text-4xl lg:text-5xl"
               style={{ fontWeight: 400, lineHeight: 1.1, willChange: "filter, transform, opacity" }}
             >
-              {t("contact.heading").split("").map((ch, i) => (
+              {t("contact.heading").split("").map((ch: string, i: number) => (
                 <span key={i} className="inline-block overflow-hidden">
                   <span data-h-letter className="inline-block will-change-transform">
                     {ch === " " ? "\u00A0" : ch}
@@ -788,9 +871,25 @@ export default function LocationContactTransition() {
               {t("contact.description")}
             </p>
 
+            {formStatus === "sent" ? (
+              <div 
+                className="mt-8 flex flex-col items-center justify-center gap-4 rounded-2xl border border-ocean/30 bg-ocean/10 py-12 px-6 text-center shadow-lg backdrop-blur-md md:mt-10"
+                style={{ willChange: "filter, transform, opacity" }}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ocean/20 text-ocean shadow-[inset_0_0_12px_rgba(59,130,196,0.3)]">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-heading text-lg font-medium text-sand sm:text-xl">{t("contact.sent")}</h3>
+                  <p className="mt-2 font-body text-[13px] text-sand/60">{t("contact.sentSub")}</p>
+                </div>
+              </div>
+            ) : (
             <form
               className="mt-8 flex flex-col gap-4 md:mt-10 md:gap-5"
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={handleContactSubmit}
             >
               <div
                 data-contact-line
@@ -804,6 +903,9 @@ export default function LocationContactTransition() {
                   </label>
                   <input
                     type="text"
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
                     placeholder={t("contact.namePlaceholder")}
                     className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-body text-sm text-sand placeholder-sand/25 outline-none transition-colors focus:border-ocean/40 focus:bg-white/8"
                   />
@@ -814,6 +916,9 @@ export default function LocationContactTransition() {
                   </label>
                   <input
                     type="email"
+                    required
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
                     placeholder={t("contact.emailPlaceholder")}
                     className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-body text-sm text-sand placeholder-sand/25 outline-none transition-colors focus:border-ocean/40 focus:bg-white/8"
                   />
@@ -830,25 +935,84 @@ export default function LocationContactTransition() {
                 </label>
                 <textarea
                   rows={3}
+                  required
+                  value={formMessage}
+                  onChange={(e) => setFormMessage(e.target.value)}
                   placeholder={t("contact.messagePlaceholder")}
                   className="resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-body text-sm text-sand placeholder-sand/25 outline-none transition-colors focus:border-ocean/40 focus:bg-white/8"
                 />
               </div>
+
+              {/* ═══ PHONE REVEAL — animated by GSAP ═══ */}
+              <div data-phone-section className="relative z-[80] mt-2 flex flex-col gap-2">
+                {/* Letter-by-letter text */}
+                <p className="font-body text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">
+                  {`${t("contact.phone")} (${t("contact.optional")})`
+                    .split("")
+                    .map((ch: string, i: number) => (
+                      <span
+                        key={i}
+                        data-phone-letter
+                        className="inline-block"
+                        style={{ opacity: 0 }}
+                      >
+                        {ch === " " ? "\u00A0" : ch}
+                      </span>
+                    ))}
+                </p>
+
+                {/* Phone input box — slides up from below */}
+                <div
+                  data-phone-box
+                  className="rena-phone-wrap"
+                >
+                  <PhoneCountrySelect
+                    defaultCountry={locale === "pl" ? "PL" : locale === "de" ? "DE" : locale === "fr" ? "FR" : locale === "es" ? "ES" : "IT"}
+                    value={formPhone}
+                    onChange={setFormPhone}
+                    onCountryChange={setSelectedPhoneCountry}
+                    placeholder={t("contact.phonePlaceholder")}
+                    searchPlaceholder={locale === "pl" ? "Szukaj kraju lub numeru..." : locale === "it" ? "Cerca paese o prefisso..." : locale === "es" ? "Busca país o prefijo..." : locale === "fr" ? "Rechercher un pays ou indicatif..." : locale === "de" ? "Land oder Vorwahl suchen..." : "Search country or code..."}
+                    emptyLabel={locale === "pl" ? "Brak wyników" : locale === "it" ? "Nessun risultato" : locale === "es" ? "Sin resultados" : locale === "fr" ? "Aucun résultat" : locale === "de" ? "Keine Ergebnisse" : "No results"}
+                    countryButtonLabel={locale === "pl" ? "Wybierz numer kierunkowy" : locale === "it" ? "Seleziona prefisso" : locale === "es" ? "Selecciona prefijo" : locale === "fr" ? "Choisir l'indicatif" : locale === "de" ? "Ländervorwahl wählen" : "Select country code"}
+                  />
+                </div>
+              </div>
+
+              <input
+                type="text"
+                name="website"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
+              />
+              {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+                <Turnstile
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                  onSuccess={setTurnstileToken}
+                  options={{ theme: "dark", size: "normal" }}
+                  style={{ marginBottom: "8px" }}
+                />
+              )}
               <button
                 data-contact-line
                 data-form-el
                 type="submit"
-                className="mt-2 w-fit rounded-full border border-ocean/30 bg-ocean/10 px-8 py-3 font-body text-xs font-medium uppercase tracking-wider text-sand/80 transition-all duration-300 hover:border-ocean/50 hover:bg-ocean/20 hover:text-sand sm:text-sm"
+                disabled={formStatus === "loading"}
+                className="mt-2 w-fit rounded-full border border-ocean/30 bg-ocean/10 px-8 py-3 font-body text-xs font-medium uppercase tracking-wider text-sand/80 transition-all duration-300 hover:border-ocean/50 hover:bg-ocean/20 hover:text-sand sm:text-sm disabled:opacity-50"
                 style={{ willChange: "filter, transform, opacity" }}
               >
-                {t("contact.submit")}
+                {formStatus === "loading" ? t("contact.sending") : t("contact.submit")}
               </button>
             </form>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Wave animations (scoped) */}
+      {/* Wave animations + phone input dark theme (scoped) */}
       <style>{`
         .lct-wave-back-g > use {
           animation: lct-move 25s cubic-bezier(.55,.5,.45,.5) infinite;
@@ -869,6 +1033,97 @@ export default function LocationContactTransition() {
         @keyframes lct-move {
           0%   { transform: translate3d(-120px, 0, 0); }
           100% { transform: translate3d(120px, 0, 0); }
+        }
+
+        .rena-phone-wrap {
+          position: relative;
+          width: 100%;
+          z-index: 120;
+          overflow: visible;
+        }
+        .rena-phone-wrap .rena-phone-custom {
+          position: relative;
+          width: 100%;
+          overflow: visible;
+          isolation: isolate;
+        }
+        .rena-phone-wrap .rena-phone-custom__row {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.05);
+          padding: 0 10px;
+          transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+          backdrop-filter: blur(10px);
+          min-height: 50px;
+        }
+        .rena-phone-wrap .rena-phone-custom__row:focus-within {
+          border-color: rgba(59,130,196,0.4);
+          background: rgba(255,255,255,0.08);
+          box-shadow: 0 0 0 1px rgba(59,130,196,0.08);
+        }
+        .rena-phone-wrap .rena-phone-custom__country-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          flex-shrink: 0;
+          position: relative;
+          padding: 8px 8px 8px 0;
+          border: none;
+          background: transparent;
+          color: #e8dcc8;
+          border-radius: 8px;
+          transition: color 0.25s ease, opacity 0.25s ease;
+        }
+        .rena-phone-wrap .rena-phone-custom__country-btn:hover {
+          opacity: 0.92;
+        }
+        .rena-phone-wrap .rena-phone-custom__flag-img {
+          display: block;
+          width: 22px;
+          height: 16px;
+          border-radius: 2px;
+          object-fit: cover;
+          flex-shrink: 0;
+        }
+        .rena-phone-wrap .rena-phone-custom__dial {
+          font-family: var(--font-body, sans-serif);
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.12em;
+          color: rgba(232,220,200,0.92);
+        }
+        .rena-phone-wrap .rena-phone-custom__arrow {
+          color: rgba(59,130,196,0.8);
+          transition: transform 0.25s ease;
+        }
+        .rena-phone-wrap .rena-phone-custom__arrow--open {
+          transform: rotate(180deg);
+        }
+        .rena-phone-wrap .rena-phone-custom__divider {
+          align-self: stretch;
+          width: 1px;
+          background: rgba(255,255,255,0.08);
+          margin: 8px 12px 8px 6px;
+        }
+        .rena-phone-wrap .rena-phone-custom__input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: #e8dcc8;
+          font-family: var(--font-body, sans-serif);
+          font-size: 14px;
+          min-width: 0;
+          letter-spacing: 0.04em;
+          padding: 0;
+          height: 48px;
+        }
+        .rena-phone-wrap .rena-phone-custom__input::placeholder {
+          color: rgba(232,220,200,0.25);
         }
       `}</style>
     </section>

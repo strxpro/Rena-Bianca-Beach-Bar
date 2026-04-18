@@ -20,7 +20,7 @@ export default function WaveDivider({
         viewBox="0 24 150 28"
         preserveAspectRatio="none"
         shapeRendering="auto"
-        style={{ height: "clamp(40px, 12vh, 120px)" }}
+        style={{ height: "clamp(40px, 12dvh, 120px)" }}
       >
         <defs>
           <path

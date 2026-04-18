@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { TranslationKeys } from "@/i18n/translations";
 
@@ -72,6 +73,8 @@ export default function SideDotsNav() {
      right edge. */
   const [expanded, setExpanded] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const lastVibratedIdxRef = useRef<number | null>(null);
   /* Tracks whether the user is currently scrolling. While true the
      progress border thickens; ~220 ms after the last scroll event
      it relaxes back to the subtle hairline. Gives the rail a
@@ -261,7 +264,81 @@ export default function SideDotsNav() {
     }
   }, []);
 
-  const isOut = expanded || isHovering;
+  /* ── Strict touch event handling for Safari scroll block ── */
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+
+    let localHoverIdx: number | null = null;
+    let localIsScrubbing = false;
+
+    const calcIndex = (clientY: number) => {
+      const rect = el.getBoundingClientRect();
+      const y = clientY - rect.top;
+      // Convert to a 0-1 percentage within the local container bounds
+      const pct = Math.max(0, Math.min(1, y / rect.height));
+      // We know there are SECTIONS.length dots evenly distributed
+      // Subdividing the container into mathematical buckets
+      // pct === 1 would give SECTIONS.length, so we clamp mathematically
+      const rawIdx = Math.floor(pct * SECTIONS.length);
+      return Math.max(0, Math.min(SECTIONS.length - 1, rawIdx));
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      setIsScrubbing(true);
+      localIsScrubbing = true;
+      const touch = e.touches[0];
+      const idx = calcIndex(touch.clientY);
+      
+      setHoverIdx(idx);
+      localHoverIdx = idx;
+      lastVibratedIdxRef.current = idx;
+      if ("vibrate" in navigator) navigator.vibrate(10);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // CRITICAL: Prevent the background page from scrolling!
+      e.preventDefault(); 
+      if (!localIsScrubbing) return;
+      const touch = e.touches[0];
+      const idx = calcIndex(touch.clientY);
+      
+      if (idx !== localHoverIdx) {
+        setHoverIdx(idx);
+        localHoverIdx = idx;
+        if (lastVibratedIdxRef.current !== idx) {
+          if ("vibrate" in navigator) navigator.vibrate(15);
+          lastVibratedIdxRef.current = idx;
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setIsScrubbing(false);
+      localIsScrubbing = false;
+      if (localHoverIdx !== null) {
+        go(localHoverIdx);
+        setTimeout(() => setHoverIdx(null), 300);
+      }
+      localHoverIdx = null;
+    };
+
+    // { passive: false } ensures preventDefault() actually stops scrolling on iOS
+    el.addEventListener("touchstart", handleTouchStart, { passive: false });
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    el.addEventListener("touchend", handleTouchEnd, { passive: false });
+    el.addEventListener("touchcancel", handleTouchEnd, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchmove", handleTouchMove);
+      el.removeEventListener("touchend", handleTouchEnd);
+      el.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, [go]);
+
+
+  const isOut = expanded || isHovering || isScrubbing;
   /* Special exception requested for the menu section only: when the
      interactive book menu owns the viewport the rail must hide
      halfway off the right edge so it never overlaps the page-flip
@@ -275,7 +352,7 @@ export default function SideDotsNav() {
      hovering. The progress meter therefore reads as a proper
      capsule border at all times — subtle when calm, alive when
      in motion. */
-  const strokeW = isScrolling || isHovering ? 2.4 : 1.6;
+  const strokeW = isScrolling || isHovering || isScrubbing ? 2.4 : 1.6;
 
   const w = size.w;
   const h = size.h;
@@ -312,12 +389,12 @@ export default function SideDotsNav() {
       className="pointer-events-none sm:[--rail-right:16px]"
       style={{
         position: "fixed",
-        /* `top: 50vh + translateY(-50%)` keeps the rail's
+        /* `top: 50dvh + translateY(-50%)` keeps the rail's
            VERTICAL CENTRE glued to the middle of the viewport
            on every page, every viewport size, every scroll
            position — including pages where some ancestor sets
            a transform that would otherwise break `top: 50%`. */
-        top: "50vh",
+        top: "50dvh",
         right: "var(--rail-right, 6px)",
         zIndex: 90,
         /* Subtle in/out nudge keeps the shy ↔ expanded
@@ -341,11 +418,11 @@ export default function SideDotsNav() {
         pointerEvents: !filmDone ? "none" : undefined,
       }}
     >
-      <div
+      <motion.div
         ref={wrapRef}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
-        className="pointer-events-auto relative bg-navy/45 backdrop-blur-md"
+        className="pointer-events-auto relative bg-navy/45 backdrop-blur-md touch-none"
         style={{
           /* Plain CSS border-radius — the browser clamps
              `9999px` to `min(w/2, h/2)` automatically, giving a
@@ -361,8 +438,8 @@ export default function SideDotsNav() {
              phones — the user asked for a smaller dotted menu
              on mobile. */
           padding: isOut
-            ? "clamp(5px, 1.4vh, 16px) clamp(4px, 1.0vw, 12px)"
-            : "clamp(4px, 0.8vh, 10px) clamp(3px, 0.6vw, 8px)",
+            ? "clamp(5px, 1.4dvh, 16px) clamp(4px, 1.0vw, 12px)"
+            : "clamp(4px, 0.8dvh, 10px) clamp(3px, 0.6vw, 8px)",
           boxShadow:
             "-10px 10px 30px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
           transition:
@@ -466,8 +543,8 @@ export default function SideDotsNav() {
           className="relative flex flex-col items-center"
           style={{
             gap: isOut
-              ? "clamp(5px, 1.6vh, 18px)"
-              : "clamp(4px, 1.0vh, 12px)",
+              ? "clamp(5px, 1.6dvh, 18px)"
+              : "clamp(4px, 1.0dvh, 12px)",
             transition: "gap 520ms cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
@@ -484,6 +561,7 @@ export default function SideDotsNav() {
             return (
               <li
                 key={section.id}
+                data-dot-idx={i}
                 className="relative flex items-center"
                 onMouseEnter={() => setHoverIdx(i)}
                 onMouseLeave={() => setHoverIdx(null)}
@@ -536,7 +614,7 @@ export default function SideDotsNav() {
             );
           })}
         </ul>
-      </div>
+      </motion.div>
     </nav>
   );
 }

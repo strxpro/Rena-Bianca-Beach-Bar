@@ -107,6 +107,18 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, [isMenuOpen]);
 
+  /* ── Lock body scroll when mobile menu is open ── */
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   return (
     <>
       <header
@@ -325,9 +337,9 @@ export default function Header() {
 
         {/* ═══ RIGHT — Mobile hamburger ═══ */}
         <button
-          className={`relative flex h-12 w-12 flex-col items-center justify-center rounded-full
+          className={`relative flex h-14 w-14 flex-col items-center justify-center rounded-full
                      border transition-colors md:hidden
-                     ${isDocked ? "border-navy/20 hover:bg-navy/5" : "border-white/20 hover:bg-white/10"}`}
+                     ${isDocked ? "border-navy/20 hover:bg-navy/5 text-navy" : "border-white/20 hover:bg-white/10 text-white"}`}
           aria-label={isMenuOpen ? "Zamknij menu" : "Otwórz menu"}
           onClick={() => setIsMenuOpen((p) => !p)}
         >

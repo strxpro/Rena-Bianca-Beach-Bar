@@ -199,7 +199,7 @@ export default function HeroSection() {
         setHoleMask(yellow, yellowHole.r);
       };
 
-      const tl = gsap.timeline({ defaults: { ease: "expo.inOut" } });
+      const tl = gsap.timeline({ defaults: { ease: "expo.inOut", force3D: true } });
 
       waves.forEach((w, i) => {
         tl.to(w, { yPercent: 0, duration: WAVE_DURS[i] ?? 0.6, ease: "power2.inOut" }, WAVE_DELAYS[i] ?? 0);
@@ -359,13 +359,13 @@ export default function HeroSection() {
               style={{
                 // Responsive font-size that fits ANY device:
                 //   • width cap  : 10.5vw → scales with horizontal space.
-                //   • height cap : 16vh   → won't be too tall on landscape.
+                //   • height cap : 16dvh  → won't be too tall on landscape.
                 //   • min        : 1.25rem = 20px (readable on 280px folds).
                 //   • max        : 11rem  = 176px (keeps 4K screens sharp).
                 // `min(...)` picks whichever dimension is tighter, so the
                 // whole "RENA [flower] BIANCA" row always fits horizontally
                 // AND doesn't overrun short landscape screens.
-                fontSize: "clamp(1.25rem, min(10.5vw, 16vh), 11rem)",
+                fontSize: "clamp(1.25rem, min(10.5vw, 16dvh), 11rem)",
                 fontWeight: 500,
                 lineHeight: 0.85,
               }}
@@ -413,9 +413,9 @@ export default function HeroSection() {
             <div
               className="mt-2 flex flex-wrap justify-center font-body uppercase opacity-70"
               style={{
-                // Same min/vw/vh strategy as the heading so BEACH BAR
+                // Same min/vw/dvh strategy as the heading so BEACH BAR
                 // stays proportional and readable on any device.
-                fontSize: "clamp(0.6rem, min(2.2vw, 3vh), 1.25rem)",
+                fontSize: "clamp(0.6rem, min(2.2vw, 3dvh), 1.25rem)",
                 letterSpacing: "0.3em",
               }}
             >

@@ -102,7 +102,7 @@ export default function PhotoGallery() {
 
       ScrollTrigger.create({
         trigger: section,
-        start: "top top",
+        start: "top 80px",
         end: "+=100%",
         pin: true,
         pinSpacing: true,
@@ -227,7 +227,7 @@ export default function PhotoGallery() {
            (cards can reach zIndex:10 at most via applyLayout). The heading
            also has a subtle backdrop blur on small screens so if a card
            slides close it reads as a legible title, not cropped text. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-col items-center gap-0.5 px-4 pt-2 text-center sm:pt-4 md:pt-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-col items-center gap-0.5 px-4 pt-20 text-center sm:pt-24 md:pt-28">
         <span className="rounded-full bg-navy/30 px-3 py-0.5 font-body text-[9px] uppercase tracking-[0.25em] text-sand/60 backdrop-blur-sm sm:bg-transparent sm:px-0 sm:py-0 sm:text-[10px] sm:text-sand/40 sm:tracking-[0.3em] sm:backdrop-blur-0">
           {t("gallery.label")}
         </span>

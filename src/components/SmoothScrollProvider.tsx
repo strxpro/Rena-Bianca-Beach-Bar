@@ -26,6 +26,13 @@ if (typeof window !== "undefined") {
     ignoreMobileResize: true,
     limitCallbacks: true,
   });
+  // Enable normalizeScroll strictly for mobile to kill address-bar jump bugs
+  if (window.innerWidth < 768) {
+    ScrollTrigger.normalizeScroll({
+      allowNestedScroll: true,
+      momentumSelfe: false,
+    });
+  }
 }
 
 export default function SmoothScrollProvider({

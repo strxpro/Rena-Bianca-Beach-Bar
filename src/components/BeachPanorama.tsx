@@ -9,6 +9,11 @@ import { PANORAMA_SLIDES } from "@/data/panoramaSlides";
 
 gsap.registerPlugin(ScrollTrigger);
 
+if (typeof window !== "undefined") {
+  ScrollTrigger.config({ ignoreMobileResize: true });
+  ScrollTrigger.normalizeScroll(true);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    BEACH PANORAMA
    ─────────────────────────────────────────────────────────────
@@ -149,12 +154,14 @@ export default function BeachPanorama() {
       const ADV3 = 0.82;
 
       gsap.timeline({
+        force3D: true,
         scrollTrigger: {
           trigger: section,
-          start: "top top",
+          start: "top 80px",
           end: "+=260%",
           pin: true,
           pinSpacing: true,
+          pinType: "fixed",
           /* scrub: 1 matches the gallery — a single-frame lag so
              Lenis smooth-scroll inertia doesn't race the DOM
              writes. No `snap`: snap + Lenis fights with user
@@ -278,8 +285,9 @@ export default function BeachPanorama() {
 
   return (
     <section
+      id="beach-panorama"
       ref={sectionRef}
-      className="relative h-dvh w-full overflow-hidden"
+      className="relative h-dvh w-full overflow-hidden pt-20"
       style={{
         background:
           "linear-gradient(180deg, #0A192F 0%, #0d2240 15%, #122a45 50%, #0d2240 85%, #0A192F 100%)",
@@ -337,7 +345,7 @@ export default function BeachPanorama() {
 
         {/* Slide title — absolute centre so it floats over the
             photo. Updates per `current`. */}
-        <div className="pointer-events-none absolute inset-x-0 top-[clamp(2.5rem,8vh,7rem)] z-10 flex flex-col items-center px-6 text-center">
+        <div className="pointer-events-none absolute inset-x-0 top-[clamp(2.5rem,8dvh,7rem)] z-10 flex flex-col items-center px-6 text-center">
           <h2
             key={current}
             className="font-heading text-sand"
@@ -407,7 +415,7 @@ export default function BeachPanorama() {
       </div>
 
       {/* ═══ THUMBNAIL STRIP — bottom, always interactive ═══ */}
-      <div className="pointer-events-auto absolute inset-x-0 bottom-[clamp(1.5rem,4vh,3rem)] z-20 flex flex-col items-center gap-4">
+      <div className="pointer-events-auto absolute inset-x-0 bottom-[clamp(1.5rem,4dvh,3rem)] z-20 flex flex-col items-center gap-4">
         <div className="flex items-center gap-2 overflow-hidden rounded-md p-2 md:gap-3">
           {SLIDES.map((slide, i) => (
             <button
@@ -451,6 +459,12 @@ export default function BeachPanorama() {
         @keyframes panoSlideTitleIn {
           0% { opacity: 0; transform: translateY(14px); filter: blur(6px); }
           100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        
+        /* Apply background cleanly to the GSAP pin-spacer wrapping this specific section
+           so that if recalculations delay, the background seamlessly covers the void. */
+        .pin-spacer:has(#beach-panorama) {
+          background-color: #0A192F !important;
         }
       `}</style>
     </section>

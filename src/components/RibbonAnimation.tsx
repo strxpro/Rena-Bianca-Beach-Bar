@@ -229,7 +229,7 @@ export default function RibbonAnimation() {
     <div
       ref={containerRef}
       className="relative w-full overflow-hidden"
-      style={{ height: "clamp(200px, 25vh, 320px)" }}
+      style={{ height: "clamp(200px, 25dvh, 320px)" }}
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
       {/* Fade edges into surrounding sections */}

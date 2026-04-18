@@ -18,7 +18,7 @@ export default function SectionDivider({ variant = "wave", flip = false, classNa
 
   if (variant === "wave") {
     return (
-      <div className={`relative w-full overflow-hidden ${className}`} style={{ height: "clamp(80px, 12vh, 160px)", background: "#0A192F" }}>
+      <div className={`relative w-full overflow-hidden ${className}`} style={{ height: "clamp(80px, 12dvh, 160px)", background: "#0A192F" }}>
         <svg
           className={`absolute inset-0 h-full w-full ${flipClass}`}
           viewBox="0 0 1440 120"
@@ -52,7 +52,7 @@ export default function SectionDivider({ variant = "wave", flip = false, classNa
 
   if (variant === "line") {
     return (
-      <div className={`relative flex w-full items-center justify-center ${className}`} style={{ height: "clamp(60px, 8vh, 100px)", background: "#0A192F" }}>
+      <div className={`relative flex w-full items-center justify-center ${className}`} style={{ height: "clamp(60px, 8dvh, 100px)", background: "#0A192F" }}>
         <div className="flex items-center gap-3">
           <div className="h-px w-16 md:w-24" style={{ background: "linear-gradient(90deg, transparent, rgba(59,130,196,0.3))" }} />
           <div className="h-1.5 w-1.5 rotate-45 border border-ocean/30" />
@@ -64,7 +64,7 @@ export default function SectionDivider({ variant = "wave", flip = false, classNa
 
   if (variant === "dots") {
     return (
-      <div className={`relative flex w-full items-center justify-center gap-3 ${className}`} style={{ height: "clamp(60px, 8vh, 100px)", background: "#0A192F" }}>
+      <div className={`relative flex w-full items-center justify-center gap-3 ${className}`} style={{ height: "clamp(60px, 8dvh, 100px)", background: "#0A192F" }}>
         {[0, 1, 2].map((i) => (
           <div key={i} className="h-1 w-1 rounded-full bg-sand/15" style={{ animationDelay: `${i * 150}ms` }} />
         ))}
@@ -77,7 +77,7 @@ export default function SectionDivider({ variant = "wave", flip = false, classNa
     <div
       className={`relative w-full ${className}`}
       style={{
-        height: "clamp(80px, 10vh, 140px)",
+        height: "clamp(80px, 10dvh, 140px)",
         background: "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)",
       }}
     />

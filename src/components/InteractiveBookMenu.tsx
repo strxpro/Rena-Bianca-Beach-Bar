@@ -567,7 +567,7 @@ export default function InteractiveBookMenu() {
           data: {
             vw: window.innerWidth,
             vh: window.innerHeight,
-            dvh: window.visualViewport?.height ?? null,
+            dvh: (window.visualViewport?.height ?? window.innerHeight),
             section: sr ? { h: Math.round(sr.height), scrollH: sect.scrollHeight } : null,
             book: br ? { top: Math.round(br.top), h: Math.round(br.height) } : null,
             lastCtaBottom: cr ? Math.round(cr.bottom) : null,
@@ -975,7 +975,7 @@ export default function InteractiveBookMenu() {
             }}
           >
             {/* Card content */}
-            <div className="max-h-[75vh] overflow-y-auto overscroll-contain rounded-2xl bg-[#FAFAFA] p-5 shadow-2xl sm:p-6 md:p-10">
+            <div className="max-h-[75dvh] overflow-y-auto overscroll-contain rounded-2xl bg-[#FAFAFA] p-5 shadow-2xl sm:p-6 md:p-10">
               {(() => {
                 const page = contentPages[popupIdx];
                 if (!page) return null;

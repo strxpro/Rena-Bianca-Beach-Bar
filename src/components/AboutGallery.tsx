@@ -58,14 +58,14 @@ const ABOUT_CARD_STYLES = [
 ];
 
 /* Sticky top for the stacking cards.
-   – On desktop the cards sit at 12vh (nice "floating" look under the nav).
-   – On mobile the fixed <Header /> is 72 px; 12vh on a 750 px phone is
+   – On desktop the cards sit at 12dvh (nice "floating" look under the nav).
+   – On mobile the fixed <Header /> is 72 px; 12dvh on a 750 px phone is
      only 90 px, which means the card heading ends up sitting right
      under the logo with no breathing room and visually appears to
      start ABOVE the section (the user's complaint). We drop the
-     sticky position lower on phones (`clamp(96px, 15vh, 140px)`) so
+     sticky position lower on phones (`clamp(96px, 15dvh, 140px)`) so
      the card clears the header and sits inside its own section. */
-const CARD_TOP = "clamp(96px, 15vh, 140px)";
+const CARD_TOP = "clamp(112px, 15dvh, 160px)";
 const CARD_TOP_OFFSET = 20; // px between stacked cards
 
 export default function AboutGallery() {
@@ -128,7 +128,7 @@ export default function AboutGallery() {
           onUpdate: (self) => {
             const p = self.progress;
             // GPU-accelerated: only transform + opacity
-            content.style.transform = `scale(${1 - p * 0.15}) translateY(${-p * 8}vh) rotateX(${-12 * p}deg)`;
+            content.style.transform = `scale(${1 - p * 0.15}) translateY(${-p * 8}dvh) rotateX(${-12 * p}deg)`;
             if (dimOverlay) dimOverlay.style.opacity = `${p * 0.4}`;
           },
         });
@@ -141,7 +141,7 @@ export default function AboutGallery() {
     <section
       ref={sectionRef}
       id="about"
-      className="relative"
+      className="relative pt-20"
       style={{
         background: "linear-gradient(to bottom, #ff8855 0%, #cc7744 5%, #8a6040 12%, #3a4a6e 25%, #2a6a9e 40%, #3a7ab0 50%, #3a7ab0 90%, #2a6a9e 100%)",
         /* Guarantee the About section is its OWN scroll window. Without
@@ -163,7 +163,7 @@ export default function AboutGallery() {
           maxWidth: "90vw",
           display: "grid",
           gridTemplateColumns: "1fr",
-          gridTemplateRows: `repeat(${ABOUT_CARD_STYLES.length}, clamp(300px, 55vh, 540px))`,
+          gridTemplateRows: `repeat(${ABOUT_CARD_STYLES.length}, clamp(300px, 55dvh, 540px))`,
           gap: "clamp(12px, 4vw, 40px)",
           paddingBottom: `calc(${ABOUT_CARD_STYLES.length} * 4vw)`,
           /* Bigger breathing room on phones so the first card starts
@@ -179,7 +179,7 @@ export default function AboutGallery() {
             className="sticky"
             style={{
               top: CARD_TOP,
-              height: "clamp(300px, 55vh, 540px)",
+              height: "clamp(300px, 55dvh, 540px)",
               paddingTop: `${i * CARD_TOP_OFFSET}px`,
               perspective: "1000px",
             }}

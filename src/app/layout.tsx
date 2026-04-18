@@ -26,6 +26,19 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Rena Bianca",
   description: "Modern Mediterranean dining experience",
+  icons: {
+    icon: [
+      { url: "/Favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/Favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/Favicon/favicon.ico", sizes: "any" },
+    ],
+    apple: { url: "/Favicon/apple-touch-icon.png", sizes: "180x180" },
+    other: [
+      { rel: "manifest", url: "/Favicon/manifest.json" },
+      { rel: "icon", url: "/Favicon/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { rel: "icon", url: "/Favicon/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -34,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" className={`${combo.variable} ${jakarta.variable}`}>
+    <html lang="pl" className={`${combo.variable} ${jakarta.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <I18nProvider>
           <SmoothScrollProvider>{children}</SmoothScrollProvider>

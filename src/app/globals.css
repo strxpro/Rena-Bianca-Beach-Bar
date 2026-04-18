@@ -28,6 +28,28 @@
   --spacing-section: 10rem;
   --spacing-section-sm: 6rem;
   --spacing-gutter: 2.5rem;
+
+  /* ── Header & Scroll Offsets ── */
+  --header-height: 72px;
+  --scroll-offset: 96px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --header-height: 64px;
+    --scroll-offset: 80px;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   GLOBAL SCROLL OFFSET
+   ───────────────────────────────────────────── */
+:root {
+  scroll-padding-top: var(--scroll-offset);
+}
+
+section[id] {
+  scroll-margin-top: var(--scroll-offset);
 }
 
 /* ── Base Resets ── */
@@ -212,12 +234,146 @@ a, button {
       (so a component can just read `var(--testi-height)` rather
       than re-implementing the breakpoint logic in JS). ── */
 :root {
-  --testi-height: 240vh;
+  --testi-height: 240dvh;
 }
 @media (max-width: 640px) {
   :root {
-    --testi-height: 200vh;
+    --testi-height: 200dvh;
   }
+}
+
+/* ── Phone country dropdown (portal — rendered into document.body) ──────────
+      Must be global because createPortal places the element outside the
+      component tree, so scoped styles in LocationContactTransition don't
+      reach it. All selectors use a unique `rena-phone-custom__` prefix to
+      avoid collisions. ── */
+.rena-phone-custom__dropdown {
+  border-radius: 18px;
+  border: 1px solid rgba(124, 185, 232, 0.18);
+  background: linear-gradient(180deg, rgba(7, 20, 37, 0.99) 0%, rgba(4, 14, 27, 0.98) 100%);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  overflow: hidden;
+  transform-origin: top left;
+  animation: rena-phone-dropdown-in 0.18s ease;
+}
+@keyframes rena-phone-dropdown-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.rena-phone-custom__search-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 10px 10px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+.rena-phone-custom__search-icon {
+  position: absolute;
+  left: 22px;
+  color: rgba(232, 220, 200, 0.35);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+.rena-phone-custom__search {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 185, 232, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px 14px 10px 38px;
+  color: #e8dcc8;
+  font-family: var(--font-body, sans-serif);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+.rena-phone-custom__search:focus {
+  border-color: rgba(124, 185, 232, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(124, 185, 232, 0.08);
+}
+.rena-phone-custom__search::placeholder {
+  color: rgba(232, 220, 200, 0.28);
+}
+.rena-phone-custom__list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 4px;
+  padding: 6px 6px 8px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.rena-phone-custom__list::-webkit-scrollbar { width: 5px; }
+.rena-phone-custom__list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+.rena-phone-custom__option {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(232, 220, 200, 0.85);
+  border-radius: 12px;
+  padding: 9px 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.rena-phone-custom__option:hover,
+.rena-phone-custom__option--active {
+  background: rgba(59, 130, 196, 0.14);
+  border-color: rgba(124, 185, 232, 0.14);
+  color: #fdfbf7;
+  transform: translateX(2px);
+}
+.rena-phone-custom__option-flag {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.rena-phone-custom__option-flag img {
+  display: block;
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+.rena-phone-custom__option-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-body, sans-serif);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+}
+.rena-phone-custom__option-dial {
+  font-family: var(--font-body, sans-serif);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: rgba(124, 185, 232, 0.9);
+  white-space: nowrap;
+}
+.rena-phone-custom__empty {
+  padding: 16px 12px;
+  text-align: center;
+  font-family: var(--font-body, sans-serif);
+  font-size: 12px;
+  color: rgba(232, 220, 200, 0.4);
 }
 
 /* ── Mobile performance — silence GPU-expensive effects on phones.
