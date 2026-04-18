@@ -188,8 +188,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   const [formStatus, setFormStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [honeypot, setHoneypot] = useState("");
-  const [photoBase64, setPhotoBase64] = useState("");
-  const [photoPreview, setPhotoPreview] = useState("");
+  const [photos, setPhotos] = useState<{ base64: string; preview: string }[]>([]);
   const formOpenTimeRef = useRef<number>(Date.now());
 
   const getAnonymizedName = (name: string) => {
@@ -276,7 +275,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
           rating: formRating,
           text: formText.trim(),
           avatar: finalAvatar,
-          photoBase64: photoBase64 || undefined,
+          photos: photos.length > 0 ? photos.map(p => p.base64) : undefined,
           token: turnstileToken,
           hp: honeypot,
           formLoadedAt: formOpenTimeRef.current,
@@ -297,8 +296,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
       setFormText("");
       setFormRating(5);
       setIsAnonymous(false);
-      setPhotoBase64("");
-      setPhotoPreview("");
+      setPhotos([]);
       window.setTimeout(() => {
         closeWrite();
         setFormStatus("idle");
@@ -307,7 +305,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
     } catch {
       setFormStatus("error");
     }
-  }, [formName, formRating, formText, isAnonymous, closeWrite, turnstileToken, honeypot, photoBase64]);
+  }, [formName, formRating, formText, isAnonymous, closeWrite, turnstileToken, honeypot, photos]);
 
   return (
     <>
@@ -680,47 +678,55 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
 
                         <div>
                           <label className="mb-1.5 block font-body text-[11px] uppercase tracking-[0.18em] text-sand/50">
-                            Foto (opzionale)
+                            Foto (max 3, opzionale)
                           </label>
-                          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-white/15 bg-white/5 px-4 py-3 transition-colors hover:border-white/30 hover:bg-white/10">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="sr-only"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                if (file.size > 5 * 1024 * 1024) { alert("Max 5MB"); return; }
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  const result = ev.target?.result as string;
-                                  setPhotoBase64(result);
-                                  setPhotoPreview(result);
-                                };
-                                reader.readAsDataURL(file);
-                              }}
-                            />
-                            {photoPreview ? (
-                              <img src={photoPreview} alt="preview" className="h-10 w-10 rounded-full object-cover border border-ocean/40" />
-                            ) : (
-                              <svg className="h-5 w-5 text-sand/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                <circle cx="12" cy="13" r="4" />
-                              </svg>
+                          <div className="flex flex-wrap gap-2">
+                            {photos.map((p, i) => (
+                              <div key={i} className="relative h-16 w-16">
+                                <img src={p.preview} alt={`foto ${i + 1}`} className="h-16 w-16 rounded-lg object-cover border border-ocean/40" />
+                                <button
+                                  type="button"
+                                  onClick={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                                  className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500/80 text-white text-[10px] leading-none"
+                                >✕</button>
+                              </div>
+                            ))}
+                            {photos.length < 3 && (
+                              <label className="flex h-16 w-16 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/20 bg-white/5 transition-colors hover:border-white/40 hover:bg-white/10">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  className="sr-only"
+                                  onChange={(e) => {
+                                    const files = Array.from(e.target.files || []).slice(0, 3 - photos.length);
+                                    files.forEach(file => {
+                                      if (file.size > 10 * 1024 * 1024) { alert("Max 10MB per foto"); return; }
+                                      const img = new Image();
+                                      const url = URL.createObjectURL(file);
+                                      img.onload = () => {
+                                        const MAX = 1200;
+                                        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+                                        const canvas = document.createElement("canvas");
+                                        canvas.width = Math.round(img.width * scale);
+                                        canvas.height = Math.round(img.height * scale);
+                                        canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                        const compressed = canvas.toDataURL("image/jpeg", 0.75);
+                                        URL.revokeObjectURL(url);
+                                        setPhotos(prev => prev.length < 3 ? [...prev, { base64: compressed, preview: compressed }] : prev);
+                                      };
+                                      img.src = url;
+                                    });
+                                    e.target.value = "";
+                                  }}
+                                />
+                                <svg className="h-5 w-5 text-sand/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 5v14M5 12h14" />
+                                </svg>
+                                <span className="mt-0.5 font-body text-[9px] text-sand/30">{photos.length}/3</span>
+                              </label>
                             )}
-                            <span className="font-body text-xs text-sand/50">
-                              {photoPreview ? "Cambia foto" : "Carica foto"}
-                            </span>
-                            {photoPreview && (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.preventDefault(); setPhotoBase64(""); setPhotoPreview(""); }}
-                                className="ml-auto font-body text-xs text-sand/30 hover:text-sand/60"
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </label>
+                          </div>
                         </div>
 
                         <div>

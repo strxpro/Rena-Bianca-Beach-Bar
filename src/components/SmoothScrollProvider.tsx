@@ -30,7 +30,6 @@ if (typeof window !== "undefined") {
   if (window.innerWidth < 768) {
     ScrollTrigger.normalizeScroll({
       allowNestedScroll: true,
-      momentumSelfe: false,
     });
   }
 }

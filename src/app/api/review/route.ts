@@ -42,7 +42,7 @@ function checkRateLimit(ip: string): boolean {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, rating, text, avatar, photoBase64, token, hp, formLoadedAt } = body;
+    const { name, rating, text, avatar, photos, token, hp, formLoadedAt } = body;
 
     if (hp) return NextResponse.json({ error: "rejected" }, { status: 400 });
 
@@ -68,18 +68,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "too_long" }, { status: 400 });
     }
 
-    let photoUrl = avatar || "";
-    if (photoBase64 && process.env.CLOUDINARY_CLOUD_NAME) {
-      try {
-        const upload = await cloudinary.uploader.upload(photoBase64, {
-          folder: "rena-bianca/reviews",
-          transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face" }],
-        });
-        photoUrl = upload.secure_url;
-      } catch (uploadErr) {
-        console.error("[cloudinary upload]", uploadErr);
+    const photoUrls: string[] = [];
+    const photosArray: string[] = Array.isArray(photos) ? photos.slice(0, 3) : [];
+    if (photosArray.length > 0 && process.env.CLOUDINARY_CLOUD_NAME) {
+      for (const base64 of photosArray) {
+        try {
+          const upload = await cloudinary.uploader.upload(base64, {
+            folder: "rena-bianca/reviews",
+            transformation: [{ width: 1200, height: 1200, crop: "limit", quality: "auto" }],
+          });
+          photoUrls.push(upload.secure_url);
+        } catch (uploadErr) {
+          console.error("[cloudinary upload]", uploadErr);
+        }
       }
     }
+
+    const firstPhoto = photoUrls[0] || avatar || "";
 
     const webhook = process.env.REVIEW_WEBHOOK || process.env.NEXT_PUBLIC_REVIEW_WEBHOOK;
     if (webhook) {
@@ -90,8 +95,10 @@ export async function POST(req: NextRequest) {
           Nome: name,
           Voto: rating ?? 5,
           Commento: text,
-          Avatar: photoUrl,
-          Foto: photoUrl,
+          Avatar: firstPhoto,
+          Foto1: photoUrls[0] || "",
+          Foto2: photoUrls[1] || "",
+          Foto3: photoUrls[2] || "",
           Stato: "Pendente",
           Data: new Date().toISOString().split("T")[0],
         }),
