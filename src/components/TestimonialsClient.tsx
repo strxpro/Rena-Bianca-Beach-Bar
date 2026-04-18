@@ -188,6 +188,8 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   const [formStatus, setFormStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [honeypot, setHoneypot] = useState("");
+  const [photoBase64, setPhotoBase64] = useState("");
+  const [photoPreview, setPhotoPreview] = useState("");
   const formOpenTimeRef = useRef<number>(Date.now());
 
   const getAnonymizedName = (name: string) => {
@@ -274,6 +276,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
           rating: formRating,
           text: formText.trim(),
           avatar: finalAvatar,
+          photoBase64: photoBase64 || undefined,
           token: turnstileToken,
           hp: honeypot,
           formLoadedAt: formOpenTimeRef.current,
@@ -294,6 +297,8 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
       setFormText("");
       setFormRating(5);
       setIsAnonymous(false);
+      setPhotoBase64("");
+      setPhotoPreview("");
       window.setTimeout(() => {
         closeWrite();
         setFormStatus("idle");
@@ -302,7 +307,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
     } catch {
       setFormStatus("error");
     }
-  }, [formName, formRating, formText, isAnonymous, closeWrite, turnstileToken, honeypot]);
+  }, [formName, formRating, formText, isAnonymous, closeWrite, turnstileToken, honeypot, photoBase64]);
 
   return (
     <>
@@ -672,6 +677,51 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                             Voglio rimanere anonimo {formName && <span className="opacity-60">({getAnonymizedName(formName)})</span>}
                           </span>
                         </label>
+
+                        <div>
+                          <label className="mb-1.5 block font-body text-[11px] uppercase tracking-[0.18em] text-sand/50">
+                            Foto (opzionale)
+                          </label>
+                          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-white/15 bg-white/5 px-4 py-3 transition-colors hover:border-white/30 hover:bg-white/10">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                if (file.size > 5 * 1024 * 1024) { alert("Max 5MB"); return; }
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const result = ev.target?.result as string;
+                                  setPhotoBase64(result);
+                                  setPhotoPreview(result);
+                                };
+                                reader.readAsDataURL(file);
+                              }}
+                            />
+                            {photoPreview ? (
+                              <img src={photoPreview} alt="preview" className="h-10 w-10 rounded-full object-cover border border-ocean/40" />
+                            ) : (
+                              <svg className="h-5 w-5 text-sand/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <circle cx="12" cy="13" r="4" />
+                              </svg>
+                            )}
+                            <span className="font-body text-xs text-sand/50">
+                              {photoPreview ? "Cambia foto" : "Carica foto"}
+                            </span>
+                            {photoPreview && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); setPhotoBase64(""); setPhotoPreview(""); }}
+                                className="ml-auto font-body text-xs text-sand/30 hover:text-sand/60"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </label>
+                        </div>
 
                         <div>
                           <label className="mb-1.5 block font-body text-[11px] uppercase tracking-[0.18em] text-sand/50">

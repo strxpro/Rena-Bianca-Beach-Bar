@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { v2 as cloudinary } from "cloudinary";
+
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
 
 const RATE_LIMIT = new Map<string, { count: number; reset: number }>();
 
@@ -32,7 +42,7 @@ function checkRateLimit(ip: string): boolean {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, rating, text, avatar, token, hp, formLoadedAt } = body;
+    const { name, rating, text, avatar, photoBase64, token, hp, formLoadedAt } = body;
 
     if (hp) return NextResponse.json({ error: "rejected" }, { status: 400 });
 
@@ -58,6 +68,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "too_long" }, { status: 400 });
     }
 
+    let photoUrl = avatar || "";
+    if (photoBase64 && process.env.CLOUDINARY_CLOUD_NAME) {
+      try {
+        const upload = await cloudinary.uploader.upload(photoBase64, {
+          folder: "rena-bianca/reviews",
+          transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face" }],
+        });
+        photoUrl = upload.secure_url;
+      } catch (uploadErr) {
+        console.error("[cloudinary upload]", uploadErr);
+      }
+    }
+
     const webhook = process.env.REVIEW_WEBHOOK || process.env.NEXT_PUBLIC_REVIEW_WEBHOOK;
     if (webhook) {
       await fetch(webhook, {
@@ -67,7 +90,8 @@ export async function POST(req: NextRequest) {
           Nome: name,
           Voto: rating ?? 5,
           Commento: text,
-          Avatar: avatar || "",
+          Avatar: photoUrl,
+          Foto: photoUrl,
           Stato: "Pendente",
           Data: new Date().toISOString().split("T")[0],
         }),

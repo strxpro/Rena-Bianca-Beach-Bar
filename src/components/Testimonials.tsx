@@ -21,23 +21,24 @@ export default async function Testimonials() {
   try {
     const LOCAL_CSV_URL = process.env.NEXT_PUBLIC_LOCAL_CSV || "";
 
-    const fetchOps = [fetch(CSV_URL, { next: { revalidate: 3600 } }).catch(e => null)];
+    const fetchOps = [fetch(CSV_URL, { next: { revalidate: 3600 } }).catch(() => null)];
     if (LOCAL_CSV_URL) {
-      fetchOps.push(fetch(LOCAL_CSV_URL, { next: { revalidate: 3600 } }).catch(e => null));
+      fetchOps.push(fetch(LOCAL_CSV_URL, { next: { revalidate: 3600 } }).catch(() => null));
     }
 
     const responses = await Promise.all(fetchOps);
     
     const [googleRes, localRes] = responses;
 
-    let combinedValidRows: any[] = [];
+    type CsvRow = Record<string, string>;
+    let combinedValidRows: Review[] = [];
 
     if (googleRes && googleRes.ok) {
       const csvContent = await googleRes.text();
       const parsed = Papa.parse(csvContent, { header: true, skipEmptyLines: true });
-      const validRows = parsed.data
-        .filter((row: any) => (row["Stato"] || "").trim().toLowerCase() === "accettato")
-        .map((row: any) => ({
+      const validRows = (parsed.data as CsvRow[])
+        .filter((row) => (row["Stato"] || "").trim().toLowerCase() === "accettato")
+        .map((row) => ({
           name: row["Nome"] || "Gość",
           role: "Gość",
           date: row["Data"] || new Date().toISOString().split("T")[0],
@@ -52,9 +53,9 @@ export default async function Testimonials() {
     if (localRes && localRes.ok) {
       const localCsvContent = await localRes.text();
       const parsed = Papa.parse(localCsvContent, { header: true, skipEmptyLines: true });
-      const localValidRows = parsed.data
-        .filter((row: any) => (row["Stato"] || "").trim().toLowerCase() === "accettato")
-        .map((row: any) => ({
+      const localValidRows = (parsed.data as CsvRow[])
+        .filter((row) => (row["Stato"] || "").trim().toLowerCase() === "accettato")
+        .map((row) => ({
           name: row["Nome"] || "Gość",
           role: "Gość",
           date: row["Data"] || new Date().toISOString().split("T")[0],
