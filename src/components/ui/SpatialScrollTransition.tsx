@@ -33,7 +33,7 @@ export default function SpatialScrollTransition({ topSection, bottomSection }: P
       const container = containerRef.current;
       const top = topRef.current;
       const bottom = bottomRef.current;
-      if (!container || !top || !bottom) return;
+      if (!container || !top || !bottom || window.innerWidth < 768) return;
 
       /* Pin for 200vh total:
          0–0.5  = transition animation (top shrinks, bottom slides up)
@@ -105,13 +105,13 @@ export default function SpatialScrollTransition({ topSection, bottomSection }: P
   return (
     <div
       ref={containerRef}
-      className="relative w-full overflow-hidden"
-      style={{ height: "100dvh", background: "#0A192F" }}
+      className="relative w-full overflow-hidden md:h-dvh"
+      style={{ background: "#0A192F" }}
     >
       {/* ── Scene A (top / background) ── */}
       <div
         ref={topRef}
-        className="absolute inset-0 z-0 overflow-hidden will-change-transform"
+        className="relative z-0 min-h-[220px] overflow-hidden sm:min-h-[280px] md:absolute md:inset-0 md:min-h-0 md:will-change-transform"
         style={{ transformOrigin: "50% 30%" }}
       >
         {topSection}
@@ -120,7 +120,7 @@ export default function SpatialScrollTransition({ topSection, bottomSection }: P
       {/* ── Scene B (bottom / foreground — slides over A) ── */}
       <div
         ref={bottomRef}
-        className="absolute inset-0 z-10 overflow-hidden will-change-transform"
+        className="relative z-10 -mt-24 overflow-visible rounded-t-[32px] shadow-[0_-30px_90px_-34px_rgba(0,0,0,0.82)] sm:-mt-28 md:absolute md:inset-0 md:mt-0 md:overflow-hidden md:rounded-none md:shadow-none md:will-change-transform"
         style={{ transformOrigin: "50% 0%" }}
       >
         {bottomSection}

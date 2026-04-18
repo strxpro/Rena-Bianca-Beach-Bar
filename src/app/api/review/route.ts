@@ -43,6 +43,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { name, rating, text, avatar, photos, token, hp, formLoadedAt } = body;
+    const countryCode = (req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "")
+      .trim()
+      .toUpperCase();
 
     if (hp) return NextResponse.json({ error: "rejected" }, { status: 400 });
 
@@ -101,6 +104,7 @@ export async function POST(req: NextRequest) {
           Foto3: photoUrls[2] || "",
           Stato: "Pendente",
           Data: new Date().toISOString().split("T")[0],
+          CountryCode: /^[A-Z]{2}$/.test(countryCode) ? countryCode : "",
         }),
       });
     }
@@ -113,7 +117,7 @@ export async function POST(req: NextRequest) {
     revalidatePath("/de");
     revalidatePath("/es");
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, countryCode: /^[A-Z]{2}$/.test(countryCode) ? countryCode : null });
   } catch (err) {
     console.error("[api/review]", err);
     return NextResponse.json({ error: "server_error" }, { status: 500 });

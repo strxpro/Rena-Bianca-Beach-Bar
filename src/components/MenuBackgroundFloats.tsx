@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useLayoutEffect, type ReactNode } from "react";
+import { useRef, useLayoutEffect, type CSSProperties, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -54,6 +54,12 @@ type FloatItem = {
   };
   /** Scroll parallax — yPercent drift across the pinned menu scroll. */
   scrollYPercent: number;
+  scrollXPercent: number;
+  scrollRotate: number;
+  scrollScale: number;
+  depth: number;
+  opacity: number;
+  filter: string;
   /** One of: */
   svg?: ReactNode;
   src?: string;
@@ -62,121 +68,68 @@ type FloatItem = {
 
 const ITEMS: FloatItem[] = [
   {
-    id: "parasol",
-    position: { top: "-2rem", left: "8%" },
-    width: "clamp(90px, 12vw, 160px)",
-    rotate: -12,
-    idle: { duration: 9, delay: 0, xAmp: 14, yAmp: 18, rotAmp: 4 },
-    scrollYPercent: -18,
-    svg: (
-      <svg viewBox="0 0 80 100" fill="none" className="h-full w-full">
-        <path d="M40 5 C8 5 2 35 40 35 C78 35 72 5 40 5Z" fill="currentColor" className="text-sand" />
-        <rect x="38" y="20" width="4" height="70" rx="2" fill="currentColor" className="text-sand" />
-      </svg>
-    ),
+    id: "drink",
+    position: { top: "4%", right: "4%" },
+    width: "clamp(108px, 14vw, 210px)",
+    rotate: 10,
+    idle: { duration: 8.5, delay: 0.3, xAmp: 16, yAmp: 20, rotAmp: 5 },
+    scrollYPercent: 18,
+    scrollXPercent: -12,
+    scrollRotate: 16,
+    scrollScale: 1.08,
+    depth: 1.35,
+    opacity: 0.26,
+    filter: "drop-shadow(0 28px 42px rgba(10,25,47,0.26))",
+    src: "/Latajace%20elementy%20menu/drink.png",
+    alt: "",
   },
   {
-    id: "cocktail",
-    position: { top: "12%", right: "6%" },
-    width: "clamp(70px, 9vw, 120px)",
-    rotate: 8,
-    idle: { duration: 7, delay: 1.5, xAmp: 10, yAmp: 22, rotAmp: 6 },
-    scrollYPercent: 14,
-    svg: (
-      <svg viewBox="0 0 60 80" fill="none" className="h-full w-full">
-        <path d="M12 8 L48 8 L32 38 L32 62 L42 68 L18 68 L28 62 L28 38Z" fill="currentColor" className="text-sand" />
-        <circle cx="46" cy="14" r="8" fill="currentColor" className="text-ocean" />
-        <rect x="44" y="2" width="2" height="14" rx="1" fill="currentColor" className="text-ocean" />
-      </svg>
-    ),
+    id: "arbuz",
+    position: { top: "28%", left: "3%" },
+    width: "clamp(96px, 13vw, 190px)",
+    rotate: -15,
+    idle: { duration: 10.5, delay: 1.2, xAmp: 18, yAmp: 14, rotAmp: 7 },
+    scrollYPercent: -14,
+    scrollXPercent: 10,
+    scrollRotate: -12,
+    scrollScale: 1.05,
+    depth: 1.1,
+    opacity: 0.24,
+    filter: "drop-shadow(0 24px 40px rgba(10,25,47,0.22))",
+    src: "/Latajace%20elementy%20menu/arbuz.png",
+    alt: "",
   },
   {
-    id: "palm",
-    position: { bottom: "10%", left: "4%" },
-    width: "clamp(110px, 14vw, 180px)",
-    rotate: 20,
-    idle: { duration: 11, delay: 3, xAmp: 18, yAmp: 14, rotAmp: 5 },
-    scrollYPercent: -22,
-    svg: (
-      <svg viewBox="0 0 100 80" fill="none" className="h-full w-full">
-        <path
-          d="M10 70 Q30 30 50 40 Q40 20 80 10 Q50 25 55 45 Q60 15 95 15 Q60 30 58 50 Q70 30 95 35 Q65 42 55 60Z"
-          fill="currentColor"
-          className="text-sand"
-        />
-      </svg>
-    ),
+    id: "kanapka",
+    position: { bottom: "8%", right: "8%" },
+    width: "clamp(120px, 16vw, 220px)",
+    rotate: 12,
+    idle: { duration: 11.5, delay: 2.4, xAmp: 20, yAmp: 18, rotAmp: 6 },
+    scrollYPercent: -20,
+    scrollXPercent: -14,
+    scrollRotate: 18,
+    scrollScale: 1.1,
+    depth: 1.5,
+    opacity: 0.22,
+    filter: "drop-shadow(0 34px 48px rgba(10,25,47,0.28))",
+    src: "/Latajace%20elementy%20menu/kanapka.png",
+    alt: "",
   },
   {
-    id: "coconut",
-    position: { bottom: "18%", right: "8%" },
-    width: "clamp(60px, 8vw, 100px)",
-    rotate: 0,
-    idle: { duration: 8, delay: 2, xAmp: 8, yAmp: 16, rotAmp: 10 },
-    scrollYPercent: 12,
-    svg: (
-      <svg viewBox="0 0 50 50" fill="none" className="h-full w-full">
-        <ellipse cx="25" cy="28" rx="18" ry="16" fill="currentColor" className="text-sand" />
-        <circle cx="18" cy="24" r="2.5" fill="currentColor" className="text-navy" />
-        <circle cx="32" cy="24" r="2.5" fill="currentColor" className="text-navy" />
-        <ellipse cx="25" cy="32" rx="3" ry="2" fill="currentColor" className="text-navy" />
-      </svg>
-    ),
-  },
-  {
-    id: "shell",
-    position: { top: "42%", left: "48%" },
-    width: "clamp(50px, 7vw, 90px)",
-    rotate: -25,
-    idle: { duration: 10, delay: 4.5, xAmp: 20, yAmp: 10, rotAmp: 8 },
-    scrollYPercent: -10,
-    svg: (
-      <svg viewBox="0 0 50 40" fill="none" className="h-full w-full">
-        <path d="M5 35 Q10 5 25 5 Q40 5 45 35 Q35 25 25 20 Q15 25 5 35Z" fill="currentColor" className="text-sand" />
-        <path
-          d="M25 5 L25 35 M15 10 L20 35 M35 10 L30 35"
-          stroke="currentColor"
-          className="text-sand"
-          strokeWidth="0.5"
-          opacity="0.5"
-        />
-      </svg>
-    ),
-  },
-  /* Extra layer for depth — subtle orbs drifting in the far background */
-  {
-    id: "orb-1",
-    position: { top: "25%", left: "18%" },
-    width: "clamp(90px, 12vw, 160px)",
-    idle: { duration: 14, delay: 0, xAmp: 26, yAmp: 32, rotAmp: 0 },
-    scrollYPercent: -6,
-    svg: (
-      <div
-        className="h-full w-full rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle at 30% 30%, rgba(253,251,247,0.22) 0%, rgba(59,130,196,0.08) 60%, rgba(10,25,47,0) 100%)",
-          filter: "blur(6px)",
-        }}
-      />
-    ),
-  },
-  {
-    id: "orb-2",
-    position: { bottom: "30%", right: "22%" },
-    width: "clamp(70px, 10vw, 130px)",
-    idle: { duration: 17, delay: 3, xAmp: 22, yAmp: 18, rotAmp: 0 },
-    scrollYPercent: 8,
-    svg: (
-      <div
-        className="h-full w-full rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle at 70% 40%, rgba(59,130,196,0.35) 0%, rgba(59,130,196,0.06) 55%, rgba(10,25,47,0) 100%)",
-          filter: "blur(8px)",
-        }}
-      />
-    ),
+    id: "hamburger",
+    position: { bottom: "22%", left: "14%" },
+    width: "clamp(118px, 15vw, 215px)",
+    rotate: -10,
+    idle: { duration: 9.8, delay: 3.6, xAmp: 15, yAmp: 16, rotAmp: 5 },
+    scrollYPercent: 15,
+    scrollXPercent: 12,
+    scrollRotate: -15,
+    scrollScale: 1.07,
+    depth: 1.2,
+    opacity: 0.2,
+    filter: "drop-shadow(0 30px 44px rgba(10,25,47,0.24))",
+    src: "/Latajace%20elementy%20menu/hamburger.png",
+    alt: "",
   },
 ];
 
@@ -192,17 +145,99 @@ export default function MenuBackgroundFloats() {
         const el = wrap.querySelector<HTMLElement>(`[data-float-id="${item.id}"]`);
         if (!el) return;
 
-        gsap.to(el, {
-          yPercent: item.scrollYPercent,
-          ease: "none",
-          scrollTrigger: {
-            trigger: wrap,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 1.2,
+        gsap.fromTo(
+          el,
+          {
+            xPercent: 0,
+            yPercent: 0,
+            rotate: item.rotate ?? 0,
+            scale: 1,
           },
-        });
+          {
+            xPercent: item.scrollXPercent,
+            yPercent: item.scrollYPercent,
+            rotate: (item.rotate ?? 0) + item.scrollRotate,
+            scale: item.scrollScale,
+            ease: "none",
+            scrollTrigger: {
+              trigger: wrap,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 1.2,
+            },
+          }
+        );
       });
+
+      const tiltElements = ITEMS.map((item) => ({
+        item,
+        element: wrap.querySelector<HTMLElement>(`[data-float-tilt="${item.id}"]`),
+      })).filter((entry): entry is { item: FloatItem; element: HTMLElement } => Boolean(entry.element));
+
+      const applyTilt = (nx: number, ny: number) => {
+        tiltElements.forEach(({ item, element }) => {
+          gsap.to(element, {
+            x: nx * 20 * item.depth,
+            y: ny * 16 * item.depth,
+            rotateY: nx * 8 * item.depth,
+            rotateX: ny * -7 * item.depth,
+            duration: 0.7,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+        });
+      };
+
+      const resetTilt = () => {
+        tiltElements.forEach(({ element }) => {
+          gsap.to(element, {
+            x: 0,
+            y: 0,
+            rotateY: 0,
+            rotateX: 0,
+            duration: 0.8,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+        });
+      };
+
+      const onPointerMove = (event: PointerEvent) => {
+        if (window.innerWidth < 768) return;
+        const rect = wrap.getBoundingClientRect();
+        if (
+          event.clientX < rect.left
+          || event.clientX > rect.right
+          || event.clientY < rect.top
+          || event.clientY > rect.bottom
+        ) {
+          resetTilt();
+          return;
+        }
+
+        const nx = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+        const ny = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+        applyTilt(nx, ny);
+      };
+
+      const onDeviceOrientation = (event: DeviceOrientationEvent) => {
+        if (window.innerWidth >= 768) return;
+        if (event.gamma == null && event.beta == null) return;
+
+        const nx = Math.max(-1, Math.min(1, (event.gamma ?? 0) / 18));
+        const ny = Math.max(-1, Math.min(1, ((event.beta ?? 0) - 45) / 30));
+        applyTilt(nx, ny);
+      };
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("deviceorientation", onDeviceOrientation);
+      window.addEventListener("orientationchange", resetTilt);
+
+      return () => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("deviceorientation", onDeviceOrientation);
+        window.removeEventListener("orientationchange", resetTilt);
+      };
     }, wrap);
 
     return () => ctx.revert();
@@ -211,7 +246,7 @@ export default function MenuBackgroundFloats() {
   return (
     <div
       ref={wrapRef}
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className="pointer-events-none absolute inset-0 overflow-hidden perspective-[1600px] transform-3d"
       aria-hidden="true"
     >
       <style>{`
@@ -226,31 +261,37 @@ export default function MenuBackgroundFloats() {
           style={{
             ...item.position,
             width: item.width,
-            opacity: 0.08,
+            opacity: item.opacity,
             transform: `rotate(${item.rotate ?? 0}deg)`,
           }}
         >
           <div
-            className="h-full w-full will-change-transform"
-            style={
-              {
-                animation: `menuFloatIdle_x ${item.idle.duration}s ease-in-out ${item.idle.delay}s infinite`,
-                "--xa": `${item.idle.xAmp}px`,
-                "--ya": `${item.idle.yAmp}px`,
-                "--ra": item.idle.rotAmp,
-              } as React.CSSProperties
-            }
+            data-float-tilt={item.id}
+            className="h-full w-full transform-3d will-change-transform"
           >
-            {item.src ? (
-              <img
-                src={item.src}
-                alt={item.alt ?? ""}
-                draggable={false}
-                className="h-full w-full select-none object-contain"
-              />
-            ) : (
-              item.svg
-            )}
+            <div
+              className="h-full w-full will-change-transform"
+              style={
+                {
+                  animation: `menuFloatIdle_x ${item.idle.duration}s ease-in-out ${item.idle.delay}s infinite`,
+                  "--xa": `${item.idle.xAmp}px`,
+                  "--ya": `${item.idle.yAmp}px`,
+                  "--ra": item.idle.rotAmp,
+                  filter: item.filter,
+                } as CSSProperties
+              }
+            >
+              {item.src ? (
+                <img
+                  src={item.src}
+                  alt={item.alt ?? ""}
+                  draggable={false}
+                  className="h-full w-full select-none object-contain"
+                />
+              ) : (
+                item.svg
+              )}
+            </div>
           </div>
         </div>
       ))}

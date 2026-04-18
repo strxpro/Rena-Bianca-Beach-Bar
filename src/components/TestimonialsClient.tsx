@@ -31,7 +31,155 @@ export type Review = {
   rating: number;
   photo: string;
   isLocal?: boolean;
+  countryCode?: string;
+  countryName?: string;
 };
+
+const REVIEWS_BATCH_SIZE = 12;
+
+function getGeneratedAvatarUrl(name: string) {
+  const source = (name || "Rena Bianca").trim() || "Rena Bianca";
+  let hash = 0;
+  for (let i = 0; i < source.length; i++) {
+    hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+  }
+  const palettes = [
+    ["#3B82C4", "#0A192F", "#8EC5E8"],
+    ["#2A7AB8", "#123B63", "#F2C56B"],
+    ["#5BA3D9", "#0A192F", "#DDECF7"],
+    ["#3F8FC8", "#16314F", "#7BC4E8"],
+  ];
+  const palette = palettes[hash % palettes.length];
+  const accentOffset = 24 + (hash % 28);
+  const accentSize = 52 + (hash % 20);
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none">
+      <defs>
+        <linearGradient id="bg" x1="16" y1="12" x2="144" y2="148" gradientUnits="userSpaceOnUse">
+          <stop stop-color="${palette[0]}"/>
+          <stop offset="1" stop-color="${palette[1]}"/>
+        </linearGradient>
+      </defs>
+      <rect width="160" height="160" rx="80" fill="url(#bg)"/>
+      <circle cx="80" cy="80" r="78" stroke="rgba(253,251,247,0.2)" stroke-width="2"/>
+      <circle cx="${accentOffset}" cy="${accentOffset}" r="${accentSize}" fill="${palette[2]}" fill-opacity="0.18"/>
+      <circle cx="80" cy="68" r="24" fill="rgba(253,251,247,0.88)"/>
+      <path d="M34 136c8-24 28-38 46-38s38 14 46 38" fill="rgba(253,251,247,0.88)"/>
+    </svg>
+  `;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function getDateValue(date: string) {
+  const parsed = Date.parse(date);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function parseReviewText(text: string) {
+  const normalized = (text || "").trim();
+  if (!normalized) {
+    return { displayText: "", sourceText: "", originalText: "" };
+  }
+
+  const translatedMatch = normalized.match(/\(Translated by Google\)\s*([\s\S]*?)(?:\(Original\)|$)/i);
+  const originalMatch = normalized.match(/\(Original\)\s*([\s\S]*)$/i);
+
+  if (translatedMatch) {
+    const translatedText = translatedMatch[1].trim();
+    const originalText = (originalMatch?.[1] || "").trim();
+    return {
+      displayText: translatedText,
+      sourceText: originalText || translatedText,
+      originalText,
+    };
+  }
+
+  const cleaned = normalized.replace(/\(Translated by Google\)/gi, "").trim();
+  return {
+    displayText: cleaned,
+    sourceText: cleaned,
+    originalText: "",
+  };
+}
+
+function getReviewId(review: Review) {
+  return `${review.name}__${review.date}__${review.text.slice(0, 80)}`;
+}
+
+function getCountryFlagEmoji(code?: string) {
+  if (!code || !/^[A-Z]{2}$/i.test(code)) return "";
+  return code
+    .toUpperCase()
+    .split("")
+    .map((char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
+    .join("");
+}
+
+function getCountryLabel(review: Review, locale: string) {
+  if (review.countryName) return review.countryName;
+  if (!review.countryCode) return "";
+  try {
+    const displayNames = new Intl.DisplayNames([locale], { type: "region" });
+    return displayNames.of(review.countryCode) || review.countryCode;
+  } catch {
+    return review.countryCode;
+  }
+}
+
+function SafeReviewImage({
+  review,
+  className,
+  alt,
+}: {
+  review: Review;
+  className: string;
+  alt: string;
+}) {
+  const fallbackSrc = getGeneratedAvatarUrl(review.name);
+  const [src, setSrc] = useState(review.photo || fallbackSrc);
+
+  useEffect(() => {
+    setSrc(review.photo || fallbackSrc);
+  }, [review.photo, fallbackSrc]);
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      draggable={false}
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        if (src !== fallbackSrc) {
+          setSrc(fallbackSrc);
+        }
+      }}
+    />
+  );
+}
+
+function ReviewOrigin({
+  review,
+  locale,
+  className = "",
+}: {
+  review: Review;
+  locale: string;
+  className?: string;
+}) {
+  const flag = getCountryFlagEmoji(review.countryCode);
+  const label = getCountryLabel(review, locale);
+
+  if (!flag && !label) return null;
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-body text-[10px] text-white/70 backdrop-blur-sm ${className}`}>
+      {flag && <span aria-hidden>{flag}</span>}
+      {label && <span>{label}</span>}
+    </span>
+  );
+}
 
 /* ── Sticker aesthetics: slight rotation + colored tape per card ── */
 const STICKER_TILTS = [-3.5, 2.5, -1.8, 3, -2.2, 1.2, -4, 2.8, -1, 3.4];
@@ -77,6 +225,9 @@ function ReviewCard({
   tilt?: number;
   tapeColor?: string;
 }) {
+  const { locale, t } = useI18n();
+  const parsedText = parseReviewText(review.text);
+
   return (
     <motion.div
       style={{ rotate: tilt }}
@@ -102,15 +253,10 @@ function ReviewCard({
 
         {/* Photo */}
         <div className="relative h-[60%] w-full overflow-hidden rounded-[4px] bg-navy/5">
-          <img
-            src={review.photo}
+          <SafeReviewImage
+            review={review}
             alt={review.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover/review:scale-[1.04]"
-            draggable={false}
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
           />
           {/* subtle warm photo tint */}
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.18),transparent_60%)]" />
@@ -120,17 +266,18 @@ function ReviewCard({
           <div>
             <Stars count={review.rating} />
             <p className="mt-2 line-clamp-3 font-body text-[13px] leading-snug text-navy/80 sm:text-[14px]">
-              &ldquo;{review.text}&rdquo;
+              &ldquo;{parsedText.displayText}&rdquo;
             </p>
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               {review.isLocal && (
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-50/80 px-2 py-0.5 shadow-[inset_0_0_8px_rgba(251,191,36,0.3)] backdrop-blur-sm">
                   <svg className="h-3 w-3 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="font-body text-[9px] font-semibold uppercase tracking-wider text-amber-700/90">Ospite Verificato</span>
+                  <span className="font-body text-[9px] font-semibold uppercase tracking-wider text-amber-700/90">{t("testimonials.badge.verified")}</span>
                 </div>
               )}
+              <ReviewOrigin review={review} locale={locale} className="border-navy/10 bg-navy/5 text-navy/60" />
             </div>
           </div>
           <div className="mt-2 flex items-end justify-between gap-2">
@@ -151,33 +298,21 @@ function ReviewCard({
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 
-function cleanReviewText(text: string) {
-  if (!text) return "";
-  let cleaned = text.replace(/\(Translated by Google\)/gi, "");
-  if (cleaned.toLowerCase().includes("(original)")) {
-    const splitIndex = cleaned.toLowerCase().indexOf("(original)");
-    cleaned = cleaned.substring(0, splitIndex);
-  }
-  return cleaned.trim();
-}
-
 export default function TestimonialsClient({ initialReviews = [] }: { initialReviews?: Review[] }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [localReviews, setLocalReviews] = useState<Review[]>([]);
-  const cleanedReviews = React.useMemo(() => {
-    return [
-      ...initialReviews.map(r => ({ ...r, text: cleanReviewText(r.text) })),
-      ...localReviews,
-    ];
-  }, [initialReviews, localReviews]);
-
   const ref = useRef<HTMLDivElement>(null);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [showWrite, setShowWrite] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">("newest");
   const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(REVIEWS_BATCH_SIZE);
+  const [translatedReviews, setTranslatedReviews] = useState<Record<string, string>>({});
+  const [showOriginalMap, setShowOriginalMap] = useState<Record<string, boolean>>({});
+  const [translationErrors, setTranslationErrors] = useState<Record<string, string>>({});
+  const [translatingReviewId, setTranslatingReviewId] = useState<string | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   /* Write-form state */
   const [activeTab, setActiveTab] = useState<"local" | "google">("local");
@@ -201,25 +336,95 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   };
 
   const getAvatarUrl = (name: string) => {
-    return `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${encodeURIComponent(name || "default")}`;
+    return getGeneratedAvatarUrl(name);
   };
+
+  const allReviews = React.useMemo(() => {
+    const merged = [...localReviews, ...initialReviews].map((review) => ({
+      ...review,
+      text: (review.text || "").trim(),
+    }));
+
+    const unique = new Map<string, Review>();
+    merged.forEach((review) => {
+      unique.set(getReviewId(review), review);
+    });
+
+    return Array.from(unique.values()).sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
+  }, [initialReviews, localReviews]);
+
+  const sortedReviews = React.useMemo(() => {
+    const reviews = [...allReviews];
+    reviews.sort((a, b) => {
+      if (sortBy === "newest") return getDateValue(b.date) - getDateValue(a.date);
+      if (sortBy === "oldest") return getDateValue(a.date) - getDateValue(b.date);
+      if (sortBy === "highest") return b.rating - a.rating || getDateValue(b.date) - getDateValue(a.date);
+      return a.rating - b.rating || getDateValue(b.date) - getDateValue(a.date);
+    });
+    return reviews;
+  }, [allReviews, sortBy]);
 
   useEffect(() => {
     setMounted(true);
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobileViewport(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    setTranslatedReviews({});
+    setShowOriginalMap({});
+    setTranslationErrors({});
+  }, [locale]);
+
+  useEffect(() => {
+    if (showAll) {
+      setVisibleCount(REVIEWS_BATCH_SIZE);
+    }
+  }, [showAll, sortBy]);
+
+  const anyDialogOpen = Boolean(selectedReview || showAll || showWrite);
+
+  useEffect(() => {
+    if (!anyDialogOpen) return;
+
+    const scrollY = window.scrollY;
+    const htmlOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    const bodyPosition = document.body.style.position;
+    const bodyTop = document.body.style.top;
+    const bodyWidth = document.body.style.width;
+
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+
+    return () => {
+      document.documentElement.style.overflow = htmlOverflow;
+      document.body.style.overflow = bodyOverflow;
+      document.body.style.position = bodyPosition;
+      document.body.style.top = bodyTop;
+      document.body.style.width = bodyWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, [anyDialogOpen]);
 
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
   });
 
-  const springConfig = { stiffness: 300, damping: 30, bounce: 100 };
-  const translateX = useSpring(useTransform(scrollYProgress, [0, 1], [300, -800]), springConfig);
-  const translateXReverse = useSpring(useTransform(scrollYProgress, [0, 1], [-800, 300]), springConfig);
+  const springConfig = isMobileViewport
+    ? { stiffness: 180, damping: 28, bounce: 0 }
+    : { stiffness: 300, damping: 30, bounce: 100 };
+  const translateX = useSpring(useTransform(scrollYProgress, [0, 1], isMobileViewport ? [140, -320] : [300, -800]), springConfig);
+  const translateXReverse = useSpring(useTransform(scrollYProgress, [0, 1], isMobileViewport ? [-320, 140] : [-800, 300]), springConfig);
   
   // 3D transforms apply as the section reveals. Unwind smoothly by the time it reaches the center viewport.
   const rotateX = useSpring(useTransform(scrollYProgress, [0, 0.4], [15, 0]), springConfig);
@@ -227,38 +432,106 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   const rotateZ = useSpring(useTransform(scrollYProgress, [0, 0.4], [8, 0]), springConfig);
   const translateY = useSpring(useTransform(scrollYProgress, [0, 0.4], [-150, 0]), springConfig);
 
-  // Duplicate 4 times to render 20 per row and create a massive horizontal run-way
-  const firstRow = [...cleanedReviews.slice(0, 5), ...cleanedReviews.slice(0, 5), ...cleanedReviews.slice(0, 5), ...cleanedReviews.slice(0, 5)];
-  const secondRow = [...cleanedReviews.slice(5, 10), ...cleanedReviews.slice(5, 10), ...cleanedReviews.slice(5, 10), ...cleanedReviews.slice(5, 10)];
-  const thirdRow = [...cleanedReviews.slice(10, 15), ...cleanedReviews.slice(10, 15), ...cleanedReviews.slice(10, 15), ...cleanedReviews.slice(10, 15)];
+  const featuredReviews = allReviews.slice(0, isMobileViewport ? 12 : 15);
+  const firstBaseRow = featuredReviews.slice(0, isMobileViewport ? 4 : 5);
+  const secondBaseRow = featuredReviews.slice(isMobileViewport ? 4 : 5, isMobileViewport ? 8 : 10);
+  const thirdBaseRow = featuredReviews.slice(isMobileViewport ? 8 : 10, isMobileViewport ? 12 : 15);
+  const repeatCount = isMobileViewport ? 2 : 4;
+  const firstRow = Array.from({ length: repeatCount }, () => firstBaseRow).flat();
+  const secondRow = Array.from({ length: repeatCount }, () => secondBaseRow).flat();
+  const thirdRow = Array.from({ length: repeatCount }, () => thirdBaseRow).flat();
+  const dragConstraints = isMobileViewport ? { left: -480, right: 480 } : { left: -2000, right: 2000 };
+
+  const visibleReviews = sortedReviews.slice(0, visibleCount);
+  const hasMoreReviews = visibleCount < sortedReviews.length;
 
   const openReview = useCallback((r: Review) => {
     setSelectedReview(r);
-    document.body.style.overflow = "hidden";
   }, []);
+
   const closeReview = useCallback(() => {
     setSelectedReview(null);
-    document.body.style.overflow = "";
   }, []);
 
   const openShowAll = useCallback(() => {
     setShowAll(true);
-    document.body.style.overflow = "hidden";
   }, []);
+
   const closeShowAll = useCallback(() => {
     setShowAll(false);
-    document.body.style.overflow = "";
   }, []);
 
   const openWrite = useCallback(() => {
     formOpenTimeRef.current = Date.now();
     setShowWrite(true);
-    document.body.style.overflow = "hidden";
   }, []);
+
   const closeWrite = useCallback(() => {
     setShowWrite(false);
-    document.body.style.overflow = "";
   }, []);
+
+  const openReviewFromShowAll = useCallback((review: Review) => {
+    setShowAll(false);
+    setSelectedReview(review);
+  }, []);
+
+  const loadMoreReviews = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + REVIEWS_BATCH_SIZE, sortedReviews.length));
+  }, [sortedReviews.length]);
+
+  const translateReview = useCallback(async (review: Review) => {
+    const reviewId = getReviewId(review);
+
+    setTranslationErrors((prev) => {
+      const next = { ...prev };
+      delete next[reviewId];
+      return next;
+    });
+
+    if (translatedReviews[reviewId]) {
+      setShowOriginalMap((prev) => ({ ...prev, [reviewId]: !prev[reviewId] }));
+      return;
+    }
+
+    const parsed = parseReviewText(review.text);
+    const sourceText = parsed.originalText || parsed.sourceText || parsed.displayText;
+    if (!sourceText) return;
+
+    setTranslatingReviewId(reviewId);
+
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sourceText, targetLocale: locale }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.text || typeof data.text !== "string") {
+        throw new Error("translate_failed");
+      }
+
+      setTranslatedReviews((prev) => ({ ...prev, [reviewId]: data.text.trim() }));
+      setShowOriginalMap((prev) => ({ ...prev, [reviewId]: false }));
+    } catch {
+      setTranslationErrors((prev) => ({ ...prev, [reviewId]: t("testimonials.popup.translateError") }));
+    } finally {
+      setTranslatingReviewId((prev) => (prev === reviewId ? null : prev));
+    }
+  }, [locale, t, translatedReviews]);
+
+  const activeReviewId = selectedReview ? getReviewId(selectedReview) : "";
+  const activeParsedReview = selectedReview ? parseReviewText(selectedReview.text) : null;
+  const activeTranslatedText = activeReviewId ? translatedReviews[activeReviewId] : undefined;
+  const activeShowingOriginal = activeReviewId ? Boolean(showOriginalMap[activeReviewId]) : false;
+  const activeReviewText = !selectedReview || !activeParsedReview
+    ? ""
+    : activeShowingOriginal
+      ? (activeParsedReview.originalText || activeParsedReview.sourceText || activeParsedReview.displayText)
+      : (activeTranslatedText || activeParsedReview.displayText);
+  const activeTranslateLabel = activeTranslatedText
+    ? (activeShowingOriginal ? t("testimonials.popup.translate") : t("testimonials.popup.showOriginal"))
+    : t("testimonials.popup.translate");
 
   const submitReview = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,6 +554,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
           formLoadedAt: formOpenTimeRef.current,
         }),
       });
+      const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error("api failed");
       setLocalReviews(prev => [{
         name: finalName,
@@ -290,6 +564,8 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         rating: formRating,
         photo: finalAvatar,
         isLocal: true,
+        countryCode: typeof data?.countryCode === "string" ? data.countryCode : undefined,
+        countryName: undefined,
       }, ...prev]);
       setFormStatus("sent");
       setFormName("");
@@ -328,6 +604,11 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
           <p className="mx-auto mt-4 max-w-2xl font-body text-sm leading-relaxed text-white/70 sm:mt-6 sm:text-base md:text-xl">
             {t("testimonials.description")}
           </p>
+          <div className="mt-6 flex justify-center">
+            <span className="inline-flex rounded-full border border-white/12 bg-white/6 px-4 py-1.5 font-body text-[10px] uppercase tracking-[0.24em] text-sand/75 backdrop-blur-sm sm:text-xs">
+              {t("testimonials.latestLabel")}
+            </span>
+          </div>
         </div>
 
         {/* ── 3D Grid ── */}
@@ -340,10 +621,10 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
            }}
            className="relative z-10 flex flex-col gap-6 sm:gap-12 w-full items-center pointer-events-auto"
          >
-           <motion.div style={{ x: translateX }} drag="x" dragConstraints={{ left: -2000, right: 2000 }} className="flex flex-row space-x-6 sm:space-x-12 mb-4 w-max cursor-grab active:cursor-grabbing px-[5vw] sm:px-[10vw] will-change-transform">
-             {firstRow.map((r, i) => (
-               <div key={`${r.name}-${i}-1`} className="shrink-0 flex items-center justify-center">
-                 <ReviewCard
+           <motion.div style={{ x: translateX, touchAction: "pan-y" }} drag="x" dragConstraints={dragConstraints} dragElastic={0.08} dragMomentum={false} className="flex flex-row space-x-6 sm:space-x-12 mb-4 w-max cursor-grab active:cursor-grabbing px-[5vw] sm:px-[10vw] will-change-transform">
+            {firstRow.map((r, i) => (
+              <div key={`${r.name}-${i}-1`} className="shrink-0 flex items-center justify-center">
+                <ReviewCard
                    review={r}
                    onClick={() => openReview(r)}
                    tilt={STICKER_TILTS[i % STICKER_TILTS.length]}
@@ -353,10 +634,10 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
              ))}
            </motion.div>
            
-           <motion.div style={{ x: translateXReverse }} drag="x" dragConstraints={{ left: -2000, right: 2000 }} className="flex flex-row space-x-6 sm:space-x-12 mb-4 w-max cursor-grab active:cursor-grabbing xl:-ml-[400px] ml-[-200px] px-[5vw] sm:px-[10vw] will-change-transform">
-             {secondRow.map((r, i) => (
-               <div key={`${r.name}-${i}-2`} className="shrink-0 flex items-center justify-center">
-                 <ReviewCard
+           <motion.div style={{ x: translateXReverse, touchAction: "pan-y" }} drag="x" dragConstraints={dragConstraints} dragElastic={0.08} dragMomentum={false} className="flex flex-row space-x-6 sm:space-x-12 mb-4 w-max cursor-grab active:cursor-grabbing xl:-ml-[400px] ml-[-200px] px-[5vw] sm:px-[10vw] will-change-transform">
+            {secondRow.map((r, i) => (
+              <div key={`${r.name}-${i}-2`} className="shrink-0 flex items-center justify-center">
+                <ReviewCard
                    review={r}
                    onClick={() => openReview(r)}
                    tilt={STICKER_TILTS[(i + 5) % STICKER_TILTS.length]}
@@ -366,10 +647,10 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
              ))}
            </motion.div>
            
-           <motion.div style={{ x: translateX }} drag="x" dragConstraints={{ left: -2000, right: 2000 }} className="flex flex-row space-x-6 sm:space-x-12 w-max cursor-grab active:cursor-grabbing px-[5vw] sm:px-[10vw]">
-             {thirdRow.map((r, i) => (
-               <div key={`${r.name}-${i}-3`} className="shrink-0 flex items-center justify-center">
-                 <ReviewCard
+           <motion.div style={{ x: translateX, touchAction: "pan-y" }} drag="x" dragConstraints={dragConstraints} dragElastic={0.08} dragMomentum={false} className="flex flex-row space-x-6 sm:space-x-12 w-max cursor-grab active:cursor-grabbing px-[5vw] sm:px-[10vw]">
+            {thirdRow.map((r, i) => (
+              <div key={`${r.name}-${i}-3`} className="shrink-0 flex items-center justify-center">
+                <ReviewCard
                    review={r}
                    onClick={() => openReview(r)}
                    tilt={STICKER_TILTS[(i + 10) % STICKER_TILTS.length]}
@@ -420,7 +701,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 backdrop-blur-md"
+                className="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
                 onClick={closeReview}
               >
                 <motion.div
@@ -428,15 +709,13 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                   animate={{ scale: 1, y: 0, opacity: 1 }}
                   exit={{ scale: 0.9, y: 30, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className="relative mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0d2240] shadow-2xl"
+                  className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0d2240] shadow-2xl"
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
-                  {/* Photo banner */}
                   <div className="relative h-40 w-full overflow-hidden">
-                    <img src={selectedReview.photo} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                    <SafeReviewImage review={selectedReview} alt={selectedReview.name} className="h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-linear-to-t from-[#0d2240] via-transparent to-transparent" />
                   </div>
-                  {/* Close */}
                   <button
                     onClick={closeReview}
                     className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/60"
@@ -445,20 +724,33 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                       <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                   </button>
-                  {/* Content */}
-                  <div className="-mt-8 relative z-10 px-6 pb-8">
+                  <div className="relative z-10 -mt-8 flex-1 overflow-y-auto overscroll-contain px-6 pb-8">
                     <div className="flex items-end gap-4">
-                      <img src={selectedReview.photo} alt="" className="h-16 w-16 rounded-full border-2 border-[#0d2240] object-cover shadow-lg" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-                      <div>
-                        <p className="font-heading text-lg text-sand">{selectedReview.name}</p>
+                      <SafeReviewImage review={selectedReview} alt={selectedReview.name} className="h-16 w-16 rounded-full border-2 border-[#0d2240] object-cover shadow-lg" />
+                      <div className="min-w-0">
+                        <p className="truncate font-heading text-lg text-sand">{selectedReview.name}</p>
                         <p className="font-body text-xs text-sand/40">{selectedReview.date}</p>
                       </div>
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
                       <Stars count={selectedReview.rating} size="lg" />
+                      <ReviewOrigin review={selectedReview} locale={locale} />
+                      <button
+                        type="button"
+                        onClick={() => void translateReview(selectedReview)}
+                        disabled={translatingReviewId === activeReviewId}
+                        className="ml-auto inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 font-body text-[11px] uppercase tracking-[0.18em] text-sand/80 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {translatingReviewId === activeReviewId ? t("testimonials.popup.translating") : activeTranslateLabel}
+                      </button>
                     </div>
+                    {activeReviewId && translationErrors[activeReviewId] && (
+                      <p className="mt-3 font-body text-xs text-amber-200/90">
+                        {translationErrors[activeReviewId]}
+                      </p>
+                    )}
                     <p className="mt-4 font-body text-base leading-relaxed text-sand/80">
-                      &ldquo;{selectedReview.text}&rdquo;
+                      &ldquo;{activeReviewText}&rdquo;
                     </p>
                   </div>
                 </motion.div>
@@ -473,88 +765,102 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-9999 flex items-start justify-center overflow-y-auto bg-black/70 backdrop-blur-lg"
+                className="fixed inset-0 z-9999 bg-black/70 p-3 backdrop-blur-lg sm:p-6"
                 onClick={closeShowAll}
               >
-                {/* Close */}
-                <button
-                  onClick={closeShowAll}
-                  className="fixed right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/80 backdrop-blur-sm transition-colors hover:bg-white/20 md:right-8 md:top-8"
-                >
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M4 4L14 14M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </button>
+                <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-center" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                  <div className="relative flex h-full max-h-[92dvh] w-full flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[#071a33]/95 shadow-2xl">
+                    <button
+                      onClick={closeShowAll}
+                      className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/80 backdrop-blur-sm transition-colors hover:bg-white/20 md:right-6 md:top-6"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M4 4L14 14M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
 
-                <div className="w-full max-w-6xl px-4 py-16 md:px-8" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                  {/* Popup heading */}
-                  <div className="mb-10 text-center">
-                    <span className="mb-2 block font-body text-xs uppercase tracking-[0.3em] text-sand/40">
-                      {t("testimonials.popup.label")}
-                    </span>
-                    <h3 className="font-heading text-3xl text-sand md:text-5xl" style={{ fontWeight: 400 }}>
-                      {t("testimonials.popup.heading")}
-                    </h3>
-                  </div>
+                    <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-16 md:px-8">
+                      <div className="mb-10 text-center">
+                        <span className="mb-2 block font-body text-xs uppercase tracking-[0.3em] text-sand/40">
+                          {t("testimonials.popup.label")}
+                        </span>
+                        <h3 className="font-heading text-3xl text-sand md:text-5xl" style={{ fontWeight: 400 }}>
+                          {t("testimonials.popup.heading")}
+                        </h3>
+                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                          {sortBy === "newest" && (
+                            <span className="inline-flex rounded-full border border-ocean/25 bg-ocean/10 px-4 py-1.5 font-body text-[10px] uppercase tracking-[0.22em] text-sand/75 sm:text-xs">
+                              {t("testimonials.popup.latestFirst")}
+                            </span>
+                          )}
+                          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-body text-[10px] uppercase tracking-[0.22em] text-sand/60 sm:text-xs">
+                            {t("testimonials.popup.loadedCount")} {Math.min(visibleCount, sortedReviews.length)} / {sortedReviews.length}
+                          </span>
+                        </div>
+                      </div>
 
-                  {/* Sort controls — prosta sortowalność, bez filtrów kategorii */}
-                  <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
-                    {(["newest", "oldest", "highest", "lowest"] as const).map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setSortBy(s)}
-                        className={`rounded-full border px-4 py-1.5 font-body text-xs tracking-wide transition-all duration-200
+                      <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
+                        {(["newest", "oldest", "highest", "lowest"] as const).map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setSortBy(s)}
+                            className={`rounded-full border px-4 py-1.5 font-body text-xs tracking-wide transition-all duration-200
                           ${sortBy === s ? "border-ocean bg-ocean/20 text-sand" : "border-white/15 bg-white/5 text-sand/50 hover:border-white/30 hover:text-sand/80"}`}
-                      >
-                        {t(`testimonials.sort.${s}` as Parameters<typeof t>[0])}
-                      </button>
-                    ))}
-                  </div>
+                          >
+                            {t(`testimonials.sort.${s}` as Parameters<typeof t>[0])}
+                          </button>
+                        ))}
+                      </div>
 
-                  {/* Masonry grid */}
-                  <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
-                    {[...cleanedReviews]
-                      .sort((a, b) => {
-                        if (sortBy === "newest") return b.date.localeCompare(a.date);
-                        if (sortBy === "oldest") return a.date.localeCompare(b.date);
-                        if (sortBy === "highest") return b.rating - a.rating || b.date.localeCompare(a.date);
-                        return a.rating - b.rating || b.date.localeCompare(a.date);
-                      })
-                      .map((review, i) => (
-                      <motion.div
-                        key={review.name}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.04, duration: 0.4 }}
-                        className="mb-4 break-inside-avoid cursor-pointer rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm transition-all duration-300 hover:border-ocean/30 hover:bg-white/10"
-                        onClick={() => { setShowAll(false); setSelectedReview(review); }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={review.photo}
-                            alt={review.name}
-                            className="h-10 w-10 rounded-full border border-sand/20 object-cover"
-                            draggable={false}
-                            onError={(e) => { e.currentTarget.style.display = "none"; }}
-                          />
-                          <p className="font-body text-sm font-medium text-sand">{review.name}</p>
-                          <span className="ml-auto font-body text-[10px] text-sand/30">{review.date}</span>
+                      <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
+                        {visibleReviews.map((review, i) => {
+                          const parsedText = parseReviewText(review.text);
+                          return (
+                            <motion.div
+                              key={getReviewId(review)}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.04, duration: 0.4 }}
+                              className="mb-4 break-inside-avoid cursor-pointer rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm transition-all duration-300 hover:border-ocean/30 hover:bg-white/10"
+                              onClick={() => openReviewFromShowAll(review)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <SafeReviewImage review={review} alt={review.name} className="h-10 w-10 rounded-full border border-sand/20 object-cover" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate font-body text-sm font-medium text-sand">{review.name}</p>
+                                </div>
+                                <span className="ml-auto shrink-0 font-body text-[10px] text-sand/30">{review.date}</span>
+                              </div>
+                              <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <Stars count={review.rating} />
+                                <ReviewOrigin review={review} locale={locale} />
+                              </div>
+                              <p className="mt-3 font-body text-sm leading-relaxed text-sand/70">
+                                &ldquo;{parsedText.displayText}&rdquo;
+                              </p>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+
+                      {hasMoreReviews && (
+                        <div className="mt-8 flex justify-center">
+                          <button
+                            type="button"
+                            onClick={loadMoreReviews}
+                            className="inline-flex rounded-full border border-ocean/35 bg-ocean/12 px-6 py-3 font-body text-xs uppercase tracking-[0.22em] text-sand transition-colors hover:bg-ocean/20 sm:text-sm"
+                          >
+                            {t("testimonials.popup.loadMore")}
+                          </button>
                         </div>
-                        <div className="mt-3">
-                          <Stars count={review.rating} />
-                        </div>
-                        <p className="mt-3 font-body text-sm leading-relaxed text-sand/70">
-                          &ldquo;{review.text}&rdquo;
+                      )}
+
+                      <div className="mt-12 text-center">
+                        <p className="font-body text-sm text-sand/40">
+                          {t("testimonials.popup.bottom")}
                         </p>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  {/* Bottom message */}
-                  <div className="mt-12 text-center">
-                    <p className="font-body text-sm text-sand/40">
-                      {t("testimonials.popup.bottom")}
-                    </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -634,7 +940,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                           <img
                             src={getAvatarUrl(formName)}
                             alt="Avatar preview"
-                            className="h-14 w-14 rounded-full border border-ocean/40 bg-[#0A192F] object-cover shadow-lg"
+                            className="h-14 w-14 rounded-full border border-ocean/40 bg-navy object-cover shadow-lg"
                           />
                           <div className="flex-1">
                             <label className="mb-1 block font-body text-[11px] uppercase tracking-[0.18em] text-sand/50">

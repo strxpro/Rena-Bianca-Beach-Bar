@@ -38,25 +38,27 @@ export default function Home() {
       <AboutGallery />
 
       {/* ── Spatial Push: About → Menu ── */}
-      <SpatialScrollTransition
-        topSection={
-          <div className="relative h-full w-full overflow-hidden" style={{ background: "linear-gradient(180deg, #2a6a9e 0%, #1a3a5c 25%, #0d2240 60%, #0A192F 100%)" }}>
-            {/* Wave at top */}
-            <WaveDivider topColor="#2a6a9e" bottomColor="#1a3a5c" />
-            {/* Floating gradient shapes */}
-            <div className="absolute left-1/2 top-[15%] hidden h-[300px] w-[300px] -translate-x-1/2 rotate-45 rounded-xl opacity-[0.08] sm:block" style={{ background: "linear-gradient(135deg, rgba(59,130,196,0.3), rgba(10,25,47,0.6))" }} />
-            <div className="absolute left-1/2 top-[35%] hidden h-[200px] w-[200px] -translate-x-1/2 rounded-full opacity-[0.06] sm:block" style={{ background: "linear-gradient(180deg, rgba(253,251,247,0.2), rgba(59,130,196,0.5))" }} />
-            {/* Center text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <T k="menu.subheading" className="font-body text-[10px] uppercase tracking-[0.3em] text-sand/30 sm:text-xs sm:tracking-[0.4em]" />
-              <h2 className="font-heading text-3xl text-sand/20 sm:text-5xl md:text-7xl" style={{ fontWeight: 400, letterSpacing: "0.3em" }}>
-                MENU
-              </h2>
+      <div className="relative z-20 -mt-24 sm:-mt-32 md:mt-0 md:z-auto">
+        <SpatialScrollTransition
+          topSection={
+            <div className="relative h-full w-full overflow-hidden" style={{ background: "linear-gradient(180deg, #2a6a9e 0%, #1a3a5c 25%, #0d2240 60%, #0A192F 100%)" }}>
+              {/* Wave at top */}
+              <WaveDivider topColor="#2a6a9e" bottomColor="#1a3a5c" />
+              {/* Floating gradient shapes */}
+              <div className="absolute left-1/2 top-[15%] hidden h-[300px] w-[300px] -translate-x-1/2 rotate-45 rounded-xl opacity-[0.08] sm:block" style={{ background: "linear-gradient(135deg, rgba(59,130,196,0.3), rgba(10,25,47,0.6))" }} />
+              <div className="absolute left-1/2 top-[35%] hidden h-[200px] w-[200px] -translate-x-1/2 rounded-full opacity-[0.06] sm:block" style={{ background: "linear-gradient(180deg, rgba(253,251,247,0.2), rgba(59,130,196,0.5))" }} />
+              {/* Center text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <T k="menu.subheading" className="font-body text-[10px] uppercase tracking-[0.3em] text-sand/30 sm:text-xs sm:tracking-[0.4em]" />
+                <h2 className="font-heading text-3xl text-sand/20 sm:text-5xl md:text-7xl" style={{ fontWeight: 400, letterSpacing: "0.3em" }}>
+                  MENU
+                </h2>
+              </div>
             </div>
-          </div>
-        }
-        bottomSection={<InteractiveBookMenu />}
-      />
+          }
+          bottomSection={<InteractiveBookMenu />}
+        />
+      </div>
 
       {/* ── Testimonials (above panorama) ── */}
       <Testimonials />

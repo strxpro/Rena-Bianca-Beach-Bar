@@ -26,12 +26,7 @@ if (typeof window !== "undefined") {
     ignoreMobileResize: true,
     limitCallbacks: true,
   });
-  // Enable normalizeScroll strictly for mobile to kill address-bar jump bugs
-  if (window.innerWidth < 768) {
-    ScrollTrigger.normalizeScroll({
-      allowNestedScroll: true,
-    });
-  }
+
 }
 
 export default function SmoothScrollProvider({
@@ -62,11 +57,19 @@ export default function SmoothScrollProvider({
     const isMobile =
       typeof window !== "undefined" && window.innerWidth < 768;
     const lenis = new Lenis({
-      duration: isMobile ? 0.9 : 1.1,
+      duration: isMobile ? 0.65 : 1.05,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      touchMultiplier: isMobile ? 1.4 : 1.8,
+      touchMultiplier: isMobile ? 1.1 : 1.7,
       wheelMultiplier: 1,
       infinite: false,
+      prevent: (node) => {
+        const element = node as HTMLElement | null;
+        return Boolean(
+          element?.closest(
+            "[data-lenis-prevent], [data-mobile-menu-toc], [data-mobile-menu-scroll], [data-menu-popup-scroll]"
+          )
+        );
+      },
     });
 
     lenisRef.current = lenis;

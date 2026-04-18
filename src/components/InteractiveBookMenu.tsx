@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/translations";
+import { getMenuBook, MENU_APPROX, MENU_UI, type MenuBookPage } from "@/data/menuBook";
 import MenuBackgroundFloats from "./MenuBackgroundFloats";
 
 
@@ -18,74 +20,42 @@ import MenuBackgroundFloats from "./MenuBackgroundFloats";
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Menu Data ── */
-const bookData = [
-  {
-    id: "cover",
-    title: "Rena Bianca",
-    content: null,
-    isCover: true,
-  },
-  {
-    id: "antipasti",
-    title: "Antipasti",
-    content: [
-      { name: "Bruschetta al Pomodoro", desc: "Grillowany chleb, dojrzałe pomidory, bazylia, oliwa extra vergine", price: "28 zł" },
-      { name: "Carpaccio di Manzo", desc: "Cienkie plastry wołowiny, rukola, parmezan, kaparsy", price: "42 zł" },
-      { name: "Burrata con Prosciutto", desc: "Kremowa burrata, prosciutto di Parma, grillowana brzoskwinia", price: "48 zł" },
-      { name: "Tartare di Tonno", desc: "Tatar z tuńczyka, awokado, sezam, sos ponzu", price: "52 zł" },
-      { name: "Calamari Fritti", desc: "Chrupiące kalmary, aioli cytrynowe", price: "36 zł" },
-    ],
-  },
-  {
-    id: "pasta",
-    title: "Pasta",
-    content: [
-      { name: "Spaghetti alle Vongole", desc: "Małże, czosnek, białe wino, pietruszka", price: "58 zł" },
-      { name: "Pappardelle al Ragù", desc: "Domowy makaron, wolno gotowany ragù z wołowiny", price: "52 zł" },
-      { name: "Linguine al Pesto", desc: "Pesto genovese, orzeszki piniowe, pecorino", price: "44 zł" },
-      { name: "Risotto ai Frutti di Mare", desc: "Owoce morza, szafran, białe wino", price: "68 zł" },
-      { name: "Tagliatelle al Tartufo", desc: "Świeży makaron, masło truflowe, parmezan", price: "62 zł" },
-    ],
-  },
-  {
-    id: "pesce",
-    title: "Pesce & Carne",
-    content: [
-      { name: "Branzino alla Griglia", desc: "Grillowany okoń morski, cytryna, zioła", price: "78 zł" },
-      { name: "Tagliata di Manzo", desc: "Stek wołowy, rukola, pomidory, balsamico", price: "88 zł" },
-      { name: "Gamberi alla Busara", desc: "Krewetki w sosie pomidorowym z białym winem", price: "72 zł" },
-      { name: "Pollo alla Milanese", desc: "Panierowany kurczak, sałata, cytryna", price: "56 zł" },
-    ],
-  },
-  {
-    id: "dolci",
-    title: "Dolci",
-    content: [
-      { name: "Tiramisù", desc: "Klasyczne tiramisù z mascarpone i espresso", price: "32 zł" },
-      { name: "Panna Cotta", desc: "Waniliowa panna cotta, coulis z malin", price: "28 zł" },
-      { name: "Affogato", desc: "Lody waniliowe, gorące espresso, amaretto", price: "26 zł" },
-      { name: "Cannoli Siciliani", desc: "Chrupiące rurki, ricotta, pistacje, czekolada", price: "34 zł" },
-    ],
-  },
-  {
-    id: "bevande",
-    title: "Bevande",
-    content: [
-      { name: "Aperol Spritz", desc: "Aperol, prosecco, woda gazowana, pomarańcza", price: "32 zł" },
-      { name: "Negroni", desc: "Gin, Campari, vermut czerwony", price: "36 zł" },
-      { name: "Limoncello Spritz", desc: "Limoncello, prosecco, mięta", price: "34 zł" },
-      { name: "Hugo", desc: "Prosecco, syrop z bzu, mięta, limonka", price: "30 zł" },
-      { name: "Espresso Martini", desc: "Wódka, espresso, likier kawowy", price: "38 zł" },
-      { name: "Vino della Casa", desc: "Bianco / Rosso / Rosato — lampka", price: "28 zł" },
-    ],
-  },
-  {
-    id: "back",
-    title: "Smacznego!",
-    content: null,
-    isBack: true,
-  },
-];
+const LOCALE_FORMATS: Record<Locale, string> = {
+  pl: "pl-PL",
+  it: "it-IT",
+  es: "es-ES",
+  fr: "fr-FR",
+  de: "de-DE",
+  en: "en-US",
+};
+
+function formatCurrencyValues(values: number[], currency: string, localeCode: string) {
+  const usesDecimals = values.some((value) => !Number.isInteger(value));
+  const formatter = new Intl.NumberFormat(localeCode, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: usesDecimals ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+  return values.map((value) => formatter.format(value)).join(" / ");
+}
+
+function formatApproxValues(values: number[], locale: Locale) {
+  if (!Object.prototype.hasOwnProperty.call(MENU_APPROX, locale)) return null;
+  const approx = MENU_APPROX[locale as keyof typeof MENU_APPROX];
+  const converted = values.map((value) => value * approx.rate);
+  const usesDecimals = converted.some((value) => !Number.isInteger(value));
+  const formatter = new Intl.NumberFormat(approx.locale, {
+    minimumFractionDigits: usesDecimals ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+
+  if (converted.length === 1) {
+    return `~${formatter.format(converted[0])} ${approx.currency}`;
+  }
+
+  return `~${formatter.format(Math.min(...converted))}–${formatter.format(Math.max(...converted))} ${approx.currency}`;
+}
 
 /* ── Exact geometry from vanilla JS ── */
 type V2 = [number, number];
@@ -166,7 +136,9 @@ function constrainPoint(mx: number, my: number, state: BookState): V2 {
 const CORNER_THRESHOLD = 100;
 
 export default function InteractiveBookMenu() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const bookData = useMemo(() => getMenuBook(locale), [locale]);
+  const menuUi = MENU_UI[locale];
   const bookRef = useRef<HTMLDivElement>(null);
   const leftFrontRef = useRef<HTMLDivElement>(null);
   const rightFrontRef = useRef<HTMLDivElement>(null);
@@ -175,6 +147,8 @@ export default function InteractiveBookMenu() {
   const flapRef = useRef<HTMLDivElement>(null);
   const flapContentRef = useRef<HTMLDivElement>(null);
   const foldGradientRef = useRef<HTMLDivElement>(null);
+  const mobileTocItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const mobileTocContainerRef = useRef<HTMLDivElement>(null);
 
   const stateRef = useRef<BookState>({
     width: 0, height: 0, pageWidth: 0, spineX: 0, diagonal: 0,
@@ -190,7 +164,22 @@ export default function InteractiveBookMenu() {
   const [, setTocOpen] = useState(false);
   const [, forceRender] = useState(0);
 
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobilePageIndex, setMobilePageIndex] = useState(0);
+  const mobileSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   const totalPages = bookData.length;
+  const contentPages = useMemo(() => bookData.filter((p) => !p.isCover && !p.isBack), [bookData]);
+
+  useEffect(() => {
+    setMobilePageIndex((prev) => Math.max(0, Math.min(prev, contentPages.length - 1)));
+  }, [contentPages.length]);
 
   // Sync React state → ref
   useEffect(() => { stateRef.current.leftIndex = leftIndex; }, [leftIndex]);
@@ -396,7 +385,7 @@ export default function InteractiveBookMenu() {
   /* ── Popup carousel state (must be before pointer handlers) ── */
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupIdx, setPopupIdx] = useState(0);
-  const contentPages = bookData.filter((p) => !p.isCover && !p.isBack);
+  const [showMobileSwipeCue, setShowMobileSwipeCue] = useState(false);
 
   const openPopup = useCallback((pageId: string) => {
     const idx = contentPages.findIndex((p) => p.id === pageId);
@@ -405,6 +394,57 @@ export default function InteractiveBookMenu() {
   }, [contentPages]);
 
   const closePopup = useCallback(() => setPopupOpen(false), []);
+
+  useEffect(() => {
+    if (!popupOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [popupOpen]);
+
+  useEffect(() => {
+    if (!isMobile || popupOpen || contentPages.length <= 1) {
+      setShowMobileSwipeCue(false);
+      return;
+    }
+
+    setShowMobileSwipeCue(true);
+    let hideTimeout = window.setTimeout(() => setShowMobileSwipeCue(false), 1800);
+    const interval = window.setInterval(() => {
+      setShowMobileSwipeCue(true);
+      hideTimeout = window.setTimeout(() => setShowMobileSwipeCue(false), 1600);
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(hideTimeout);
+      window.clearInterval(interval);
+    };
+  }, [contentPages.length, isMobile, mobilePageIndex, popupOpen]);
+
+  useEffect(() => {
+    const activePage = isMobile
+      ? contentPages[mobilePageIndex] ?? null
+      : contentPages.find((page) => {
+          const pageIdx = bookData.indexOf(page);
+          return leftIndex === pageIdx || leftIndex + 1 === pageIdx;
+        }) ?? null;
+
+    if (!activePage) return;
+
+    /* Scroll the TOC container horizontally to center the active
+       pill. Using container.scrollTo instead of element.scrollIntoView
+       prevents unwanted vertical page jumps on mobile. */
+    const container = mobileTocContainerRef.current;
+    const pill = mobileTocItemRefs.current[activePage.id];
+    if (container && pill) {
+      const scrollLeft = pill.offsetLeft - container.offsetWidth / 2 + pill.offsetWidth / 2;
+      container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
+    }
+  }, [bookData, contentPages, isMobile, leftIndex, mobilePageIndex]);
 
   /* ── Pointer handlers ── */
   const pointerStartRef = useRef<{ x: number; y: number; dragged: boolean } | null>(null);
@@ -417,20 +457,27 @@ export default function InteractiveBookMenu() {
     const y = e.clientY - rect.top;
     const s = stateRef.current;
     const { width, height, leftIndex: li } = s;
-    const TH = Math.min(CORNER_THRESHOLD, width * 0.15);
+    const isTouch = e.pointerType === 'touch';
 
     pointerStartRef.current = { x: e.clientX, y: e.clientY, dragged: false };
-    book.setPointerCapture(e.pointerId);
 
-    // Right page corners (can turn forward)
-    if (li + 1 < totalPages - 1) {
-      if (x > width - TH && y < TH) { pointerStartRef.current.dragged = true; return startDrag("right", [width, 0], x, y); }
-      if (x > width - TH && y > height - TH) { pointerStartRef.current.dragged = true; return startDrag("right", [width, height], x, y); }
-    }
-    // Left page corners (can turn backward)
-    if (li > 0) {
-      if (x < TH && y < TH) { pointerStartRef.current.dragged = true; return startDrag("left", [0, 0], x, y); }
-      if (x < TH && y > height - TH) { pointerStartRef.current.dragged = true; return startDrag("left", [0, height], x, y); }
+    /* On touch devices skip pointer capture and corner-drag
+       detection — let the browser handle vertical scrolling
+       (pan-y). Only desktop keeps the full fold-drag UX. */
+    if (!isTouch) {
+      book.setPointerCapture(e.pointerId);
+      const TH = Math.min(CORNER_THRESHOLD, width * 0.15);
+
+      // Right page corners (can turn forward)
+      if (li + 1 < totalPages - 1) {
+        if (x > width - TH && y < TH) { pointerStartRef.current.dragged = true; return startDrag("right", [width, 0], x, y); }
+        if (x > width - TH && y > height - TH) { pointerStartRef.current.dragged = true; return startDrag("right", [width, height], x, y); }
+      }
+      // Left page corners (can turn backward)
+      if (li > 0) {
+        if (x < TH && y < TH) { pointerStartRef.current.dragged = true; return startDrag("left", [0, 0], x, y); }
+        if (x < TH && y > height - TH) { pointerStartRef.current.dragged = true; return startDrag("left", [0, height], x, y); }
+      }
     }
   }, [totalPages, startDrag]);
 
@@ -447,15 +494,27 @@ export default function InteractiveBookMenu() {
     const s = stateRef.current;
     const ps = pointerStartRef.current;
 
-    // Click detection: no drag occurred → flip page in the tapped direction
+    // Click / tap detection: no drag occurred → flip page in the tapped direction
     if (ps && !ps.dragged && !s.isDragging) {
       const book = bookRef.current;
       if (book) {
-        book.releasePointerCapture(e.pointerId);
-        const rect = book.getBoundingClientRect();
-        const localX = e.clientX - rect.left;
-        if (localX > rect.width / 2) animateFlip("right");
-        else animateFlip("left");
+        /* On touch devices we don't capture the pointer, so
+           releasePointerCapture would throw. Guard it. */
+        if (e.pointerType !== 'touch') {
+          try { book.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+        }
+        /* Verify the pointer barely moved — if the user scrolled
+           (pan-y on mobile) the browser may fire a residual
+           pointerup with large deltas. Treat that as scroll,
+           not tap. */
+        const dx = Math.abs(e.clientX - ps.x);
+        const dy = Math.abs(e.clientY - ps.y);
+        if (dx < 15 && dy < 15) {
+          const rect = book.getBoundingClientRect();
+          const localX = e.clientX - rect.left;
+          if (localX > rect.width / 2) animateFlip("right");
+          else animateFlip("left");
+        }
       }
       pointerStartRef.current = null;
       return;
@@ -467,7 +526,9 @@ export default function InteractiveBookMenu() {
     setIsDragging(false);
 
     const book = bookRef.current;
-    if (book) book.releasePointerCapture(e.pointerId);
+    if (book && e.pointerType !== 'touch') {
+      try { book.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    }
     if (!book || !s.activeCorner) { s.activeSide = null; return; }
 
     const rect = book.getBoundingClientRect();
@@ -527,6 +588,11 @@ export default function InteractiveBookMenu() {
     setTocOpen(false);
   }, [totalPages]);
 
+  const goToMobilePage = useCallback((pageIndex: number) => {
+    setMobilePageIndex(Math.max(0, Math.min(pageIndex, contentPages.length - 1)));
+    setTocOpen(false);
+  }, [contentPages.length]);
+
   const goNext = useCallback(() => {
     animateFlip("right");
   }, [animateFlip]);
@@ -535,53 +601,30 @@ export default function InteractiveBookMenu() {
     animateFlip("left");
   }, [animateFlip]);
 
+  const goNextMobile = useCallback(() => {
+    setMobilePageIndex((prev) => Math.min(prev + 1, contentPages.length - 1));
+  }, [contentPages.length]);
+
+  const goPrevMobile = useCallback(() => {
+    setMobilePageIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") goNext();
-      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") {
+        if (isMobile) goNextMobile();
+        else goNext();
+      }
+      if (e.key === "ArrowLeft") {
+        if (isMobile) goPrevMobile();
+        else goPrev();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, goPrev]);
+  }, [goNext, goNextMobile, goPrev, goPrevMobile, isMobile]);
 
-  // #region agent log
-  useEffect(() => {
-    const send = () => {
-      const sect = document.querySelector('[data-menu-section]') as HTMLElement | null;
-      const book = document.querySelector('[data-menu-section] [data-book-stage]') as HTMLElement | null;
-      const buttons = document.querySelectorAll('[data-menu-section] [data-menu-cta]');
-      const lastBtn = buttons[buttons.length - 1] as HTMLElement | null;
-      if (!sect) return;
-      const sr = sect.getBoundingClientRect();
-      const br = book?.getBoundingClientRect();
-      const cr = lastBtn?.getBoundingClientRect();
-      fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
-        body: JSON.stringify({
-          sessionId: '5e042f',
-          runId: 'run1',
-          hypothesisId: 'H2',
-          location: 'InteractiveBookMenu.tsx:mount',
-          message: 'menu stack measure',
-          data: {
-            vw: window.innerWidth,
-            vh: window.innerHeight,
-            dvh: (window.visualViewport?.height ?? window.innerHeight),
-            section: sr ? { h: Math.round(sr.height), scrollH: sect.scrollHeight } : null,
-            book: br ? { top: Math.round(br.top), h: Math.round(br.height) } : null,
-            lastCtaBottom: cr ? Math.round(cr.bottom) : null,
-            ctaCount: buttons.length,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    };
-    // Wait a frame for layout to settle
-    const t = window.setTimeout(send, 400);
-    return () => window.clearTimeout(t);
-  }, []);
-  // #endregion
+
 
   /* ── Derived data ── */
   const leftPage = getPage(leftIndex);
@@ -593,14 +636,18 @@ export default function InteractiveBookMenu() {
 
   const canGoLeft = leftIndex > 0;
   const canGoRight = leftIndex + 2 < totalPages;
+  const activeDesktopContentPage = contentPages.find((page) => {
+    const pageIdx = bookData.indexOf(page);
+    return leftIndex === pageIdx || leftIndex + 1 === pageIdx;
+  }) ?? contentPages[0] ?? null;
+  const currentMobilePage = contentPages[mobilePageIndex] ?? contentPages[0] ?? null;
 
   /* Popup state moved above pointer handlers */
 
   return (
     <section
       id="menu"
-      data-menu-section
-      className="relative flex min-h-dvh flex-col pt-2 pb-4 sm:pt-3 sm:pb-6 md:pt-5 md:pb-10"
+      className="relative flex min-h-svh flex-col pt-[28px] pb-4 sm:pb-6 md:min-h-dvh md:pt-[80px] md:pb-10"
       style={{ background: "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)" }}
     >
       {/* ── Animated beach decorations — idle float + scroll parallax.
@@ -611,12 +658,17 @@ export default function InteractiveBookMenu() {
           viewport and the user sees noticeably more of the menu cards
           before they even scroll. */}
       <div className="relative z-10 mx-auto mb-1 max-w-7xl px-4 text-center sm:mb-2 sm:px-6 md:mb-3">
-        <span className="mb-0.5 block font-body text-[10px] uppercase tracking-[0.3em] text-sand/50 sm:mb-1 sm:text-xs">
+        <span className="mb-0.5 block font-body text-[11px] uppercase tracking-[0.28em] text-sand/50 sm:mb-1 sm:text-xs">
           {t("menu.subheading")}
         </span>
-        <h2 className="font-heading text-2xl text-sand sm:text-4xl md:text-5xl" style={{ fontWeight: 400 }}>
-          {t("menu.heading")}
-        </h2>
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <h2 className="font-heading text-2xl text-sand sm:text-4xl md:text-5xl" style={{ fontWeight: 400 }}>
+            {t("menu.heading")}
+          </h2>
+          <span className="inline-flex rounded-full border border-sand/20 bg-white/5 px-2.5 py-1 font-body text-[10px] uppercase tracking-[0.2em] text-sand/70 backdrop-blur-sm sm:px-3 sm:text-xs">
+            {menuUi.yearBadge}
+          </span>
+        </div>
         <div className="mx-auto mt-2 h-px w-24 sm:mt-2 sm:w-36 md:w-48" style={{ background: "linear-gradient(90deg, transparent, rgba(253,251,247,0.45), transparent)" }} />
       </div>
 
@@ -628,48 +680,72 @@ export default function InteractiveBookMenu() {
               {t("nav.menu")}
             </h3>
             <ul className="space-y-1">
-              {bookData.map((page, i) => (
-                <li key={page.id}>
-                  <button
-                    onClick={() => goToPage(i)}
-                    className={`w-full rounded-lg px-3 py-2 text-left font-body text-sm transition-all duration-300
-                      ${leftIndex === i || leftIndex + 1 === i
+              {bookData.filter((page) => !page.isCover && !page.isBack).map((page) => {
+                const pageIndex = bookData.indexOf(page);
+                return (
+                  <li key={page.id}>
+                    <button
+                      onClick={() => goToPage(pageIndex)}
+                      className={`w-full rounded-lg px-3 py-2 text-left font-body text-sm transition-all duration-300
+                      ${leftIndex === pageIndex || leftIndex + 1 === pageIndex
                         ? "bg-ocean/20 text-sand font-medium"
                         : "text-sand/50 hover:bg-white/5 hover:text-sand/80"
                       }`}
-                  >
-                    <span className="mr-2 font-body text-xs text-sand/30">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    {page.title}
-                  </button>
-                </li>
-              ))}
+                    >
+                      <span className="mr-2 font-body text-xs text-sand/30">
+                        {String(pageIndex + 1).padStart(2, "0")}
+                      </span>
+                      {page.title}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </nav>
         </aside>
 
         {/* ═══ BOOK + Mobile TOC ═══ */}
-        <div className="flex w-full max-w-[1220px] flex-col items-center">
+        <div className="flex w-full max-w-[1220px] min-h-0 flex-col items-center">
           {/* ── Mobile TOC — horizontal pills above book. Tight bottom
                 margin so the book card sits as high as possible and
                 more of the menu surface shows in the viewport. ── */}
-          <div className="mb-1 w-full overflow-x-auto scrollbar-none sm:mb-2 xl:hidden">
-            <div className="flex items-center gap-2 px-1 pb-2">
-              {bookData.filter(p => !p.isCover && !(p as { isBack?: boolean }).isBack).map((page) => {
+          <div
+            ref={mobileTocContainerRef}
+            className="mb-2 w-full overflow-x-auto overflow-y-hidden overscroll-x-contain scrollbar-none [scrollbar-width:none] touch-pan-x xl:hidden"
+            data-mobile-menu-toc
+            data-lenis-prevent
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x", overscrollBehaviorX: "contain" }}
+          >
+            <div className="flex min-w-max items-center gap-2 px-1 pb-2 snap-x snap-mandatory">
+              {contentPages.map((page, tocIndex) => {
                 const pageIdx = bookData.indexOf(page);
-                const isActive = leftIndex === pageIdx || leftIndex + 1 === pageIdx;
+                const isActive = isMobile
+                  ? mobilePageIndex === tocIndex
+                  : leftIndex === pageIdx || leftIndex + 1 === pageIdx;
                 return (
-                  <button
+                  <div
                     key={page.id}
-                    onClick={() => goToPage(pageIdx)}
-                    className={`shrink-0 rounded-full px-4 py-2 font-body text-xs transition-all duration-300 whitespace-nowrap
-                      ${isActive
-                        ? "bg-ocean/30 text-sand border border-ocean/40"
-                        : "bg-white/5 text-sand/50 border border-white/10 hover:bg-white/10 hover:text-sand/80"}`}
+                    ref={(el) => {
+                      mobileTocItemRefs.current[page.id] = el;
+                    }}
+                    className={`snap-start shrink-0 rounded-full border transition-all duration-300 ${isActive
+                      ? "border-ocean/45 bg-ocean/22 shadow-[0_10px_30px_-20px_rgba(59,130,196,0.9)]"
+                      : "border-white/10 bg-white/5"}`}
                   >
-                    {page.title}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isMobile) goToMobilePage(tocIndex);
+                        else goToPage(pageIdx);
+                      }}
+                      className={`rounded-full px-4 py-2 font-body text-xs whitespace-nowrap transition-colors duration-300 sm:px-4 sm:py-2 sm:text-xs ${isActive
+                        ? "text-sand"
+                        : "text-sand/60 hover:text-sand/85"}`}
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      {page.title}
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -688,14 +764,61 @@ export default function InteractiveBookMenu() {
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none" className="shrink-0 opacity-70 sm:h-3 sm:w-3">
                 <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span>{t("menu.flipTip")}</span>
+              <span>{isMobile ? menuUi.popupSwipeHint : t("menu.flipTip")}</span>
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none" className="shrink-0 opacity-70 sm:h-3 sm:w-3">
                 <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
           </div>
 
-          <div data-book-stage className="relative z-10 w-full" style={{ aspectRatio: "2 / 1.3", minHeight: "clamp(420px, 64vw, 880px)" }}>
+          <div data-book-stage className="relative z-10 w-full min-h-0 md:hidden">
+            <div
+              data-lenis-prevent
+              className="relative mx-auto flex min-h-0 w-full max-w-[560px] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#FAFAFA] shadow-[0_28px_90px_-30px_rgba(0,0,0,0.55)]"
+              style={{ height: "min(760px, calc(100svh - 148px))", minHeight: "430px", touchAction: "pan-y" }}
+              onTouchStart={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.closest("[data-no-card-swipe], button, a, input, textarea, select, label")) {
+                  mobileSwipeStartRef.current = null;
+                  return;
+                }
+                const touch = e.touches[0];
+                mobileSwipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+              }}
+              onTouchEnd={(e) => {
+                const start = mobileSwipeStartRef.current;
+                mobileSwipeStartRef.current = null;
+                if (!start) return;
+                const end = e.changedTouches[0];
+                const dx = end.clientX - start.x;
+                const dy = end.clientY - start.y;
+                if (Math.abs(dx) < 44 || Math.abs(dx) <= Math.abs(dy)) return;
+                if (dx < 0) goNextMobile();
+                else goPrevMobile();
+              }}
+              onTouchCancel={() => {
+                mobileSwipeStartRef.current = null;
+              }}
+            >
+              <div className={`pointer-events-none absolute inset-0 z-20 transition-opacity duration-700 ${showMobileSwipeCue ? "opacity-100" : "opacity-0"}`} aria-hidden>
+                <div className={`absolute inset-y-5 left-0 w-16 rounded-l-[28px] bg-linear-to-r from-navy/16 via-navy/6 to-transparent transition-opacity duration-500 ${mobilePageIndex > 0 ? "opacity-100" : "opacity-0"}`} />
+                <div className={`absolute inset-y-5 right-0 w-16 rounded-r-[28px] bg-linear-to-l from-navy/16 via-navy/6 to-transparent transition-opacity duration-500 ${mobilePageIndex < contentPages.length - 1 ? "opacity-100" : "opacity-0"}`} />
+                <div className={`absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-navy/10 bg-white/84 text-navy/55 shadow-[0_10px_30px_-18px_rgba(10,25,47,0.55)] backdrop-blur-sm transition-all duration-500 ${mobilePageIndex > 0 ? "translate-x-0 opacity-100 animate-pulse" : "-translate-x-2 opacity-0"}`}>
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div className={`absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-navy/10 bg-white/84 text-navy/55 shadow-[0_10px_30px_-18px_rgba(10,25,47,0.55)] backdrop-blur-sm transition-all duration-500 ${mobilePageIndex < contentPages.length - 1 ? "translate-x-0 opacity-100 animate-pulse" : "translate-x-2 opacity-0"}`}>
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              </div>
+              <PageView page={currentMobilePage} side="right" locale={locale} onExpand={openPopup} mobileCard />
+            </div>
+          </div>
+
+          <div data-book-stage className="relative z-10 hidden w-full md:block" style={{ aspectRatio: "2 / 1.3", minHeight: "clamp(360px, 78vw, 880px)" }}>
             {/* ── Side arrows — clickable page-turn affordance.
                   Hidden on small screens (they overlap the book
                   there); the bottom-nav arrows handle mobile. On
@@ -749,7 +872,7 @@ export default function InteractiveBookMenu() {
               className="relative h-full w-full select-none overflow-visible rounded-lg bg-[#f0f0f0] shadow-2xl"
               style={{
                 cursor: isDragging ? "grabbing" : "grab",
-                touchAction: "none",
+                touchAction: isMobile ? "pan-y" : "none",
               }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
@@ -759,11 +882,11 @@ export default function InteractiveBookMenu() {
               {/* ── Under pages (revealed when front page folds away) ── */}
               <div ref={leftUnderRef} className="absolute left-0 top-0 h-full w-1/2"
                 style={{ backgroundImage: "linear-gradient(to left, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 8%)" }}>
-                <PageView page={getPage(activeSide === "left" ? underLeftIdx : leftIndex)} side="left" />
+                <PageView page={getPage(activeSide === "left" ? underLeftIdx : leftIndex)} side="left" locale={locale} />
               </div>
               <div ref={rightUnderRef} className="absolute left-1/2 top-0 h-full w-1/2 border-l border-[#ddd]"
                 style={{ backgroundImage: "linear-gradient(to right, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 8%)" }}>
-                <PageView page={getPage(activeSide === "right" ? underRightIdx : leftIndex + 1)} side="right" />
+                <PageView page={getPage(activeSide === "right" ? underRightIdx : leftIndex + 1)} side="right" locale={locale} />
               </div>
 
               {/* ── Front pages (z-2, clipped during fold) ── */}
@@ -772,14 +895,14 @@ export default function InteractiveBookMenu() {
                 className="absolute left-0 top-0 z-2 h-full w-1/2"
                 style={{ backgroundImage: "linear-gradient(to left, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 8%)" }}
               >
-                <PageView page={leftPage} side="left" onExpand={openPopup} />
+                <PageView page={leftPage} side="left" locale={locale} onExpand={openPopup} />
               </div>
               <div
                 ref={rightFrontRef}
                 className="absolute left-1/2 top-0 z-2 h-full w-1/2 border-l border-[#ddd]"
                 style={{ backgroundImage: "linear-gradient(to right, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 8%)" }}
               >
-                <PageView page={rightPage} side="right" onExpand={openPopup} />
+                <PageView page={rightPage} side="right" locale={locale} onExpand={openPopup} />
               </div>
 
               {/* ── FLAP (z-5, full book width, clip-path applied) ── */}
@@ -797,6 +920,7 @@ export default function InteractiveBookMenu() {
                   <PageView
                     page={getPage(flapPageIdx)}
                     side={activeSide === "right" ? "left" : "right"}
+                    locale={locale}
                     isFlap
                   />
                 </div>
@@ -830,10 +954,10 @@ export default function InteractiveBookMenu() {
                 stays visible on every viewport. ── */}
           <div className="mt-3 flex items-center gap-4 sm:mt-6 sm:gap-6">
             <button
-              onClick={goPrev}
-              disabled={!canGoLeft}
-              className={`hidden h-10 w-10 items-center justify-center rounded-full border transition-all duration-300 sm:flex
-                ${canGoLeft
+              onClick={isMobile ? goPrevMobile : goPrev}
+              disabled={isMobile ? mobilePageIndex <= 0 : !canGoLeft}
+              className={`h-10 w-10 items-center justify-center rounded-full border transition-all duration-300 ${isMobile ? "flex" : "hidden sm:flex"}
+                ${(isMobile ? mobilePageIndex > 0 : canGoLeft)
                   ? "border-sand/30 text-sand/70 hover:border-sand/60 hover:text-sand"
                   : "border-sand/10 text-sand/20 cursor-not-allowed"}`}
               aria-label={t("menu.prevPage")}
@@ -843,14 +967,15 @@ export default function InteractiveBookMenu() {
               </svg>
             </button>
             <span className="font-body text-xs tabular-nums text-sand/40 tracking-wider">
-              {String(leftIndex + 1).padStart(2, "0")}–{String(Math.min(leftIndex + 2, totalPages)).padStart(2, "0")}
-              {" / "}{String(totalPages).padStart(2, "0")}
+              {isMobile
+                ? `${String(mobilePageIndex + 1).padStart(2, "0")} / ${String(contentPages.length).padStart(2, "0")}`
+                : `${String(leftIndex + 1).padStart(2, "0")}–${String(Math.min(leftIndex + 2, totalPages)).padStart(2, "0")} / ${String(totalPages).padStart(2, "0")}`}
             </span>
             <button
-              onClick={goNext}
-              disabled={!canGoRight}
-              className={`hidden h-10 w-10 items-center justify-center rounded-full border transition-all duration-300 sm:flex
-                ${canGoRight
+              onClick={isMobile ? goNextMobile : goNext}
+              disabled={isMobile ? mobilePageIndex >= contentPages.length - 1 : !canGoRight}
+              className={`h-10 w-10 items-center justify-center rounded-full border transition-all duration-300 ${isMobile ? "flex" : "hidden sm:flex"}
+                ${(isMobile ? mobilePageIndex < contentPages.length - 1 : canGoRight)
                   ? "border-sand/30 text-sand/70 hover:border-sand/60 hover:text-sand"
                   : "border-sand/10 text-sand/20 cursor-not-allowed"}`}
               aria-label={t("menu.nextPage")}
@@ -861,7 +986,7 @@ export default function InteractiveBookMenu() {
             </button>
           </div>
           <p className="mt-2 px-4 text-center font-body text-[10px] text-sand/35 sm:mt-3 sm:text-xs">
-            {t("menu.hint")}
+            {isMobile ? menuUi.popupSwipeHint : t("menu.hint")}
           </p>
           <a
             data-menu-cta="reservation"
@@ -891,11 +1016,7 @@ export default function InteractiveBookMenu() {
           <button
             data-menu-cta="open-popup"
             onClick={() => {
-              const page = contentPages.find((_, i) => {
-                const idx = bookData.indexOf(contentPages[i]);
-                return idx === leftIndex || idx === leftIndex + 1;
-              });
-              openPopup(page?.id ?? contentPages[0]?.id ?? "antipasti");
+              openPopup((isMobile ? currentMobilePage : activeDesktopContentPage)?.id ?? contentPages[0]?.id ?? bookData[1]?.id ?? "coffee-bar");
             }}
             className="mt-3 flex items-center gap-2 rounded-full border border-ocean/40 bg-ocean/20 px-6 py-2.5 font-body text-sm font-medium tracking-wide text-sand backdrop-blur-sm transition-all duration-300 hover:border-ocean/60 hover:bg-ocean/30 sm:hidden"
           >
@@ -910,36 +1031,15 @@ export default function InteractiveBookMenu() {
       {/* ═══ POPUP CAROUSEL — swipeable cards ═══ */}
       {popupOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/72 backdrop-blur-md sm:items-center"
           onClick={closePopup}
         >
-          {/* Close button */}
-          <button
-            onClick={closePopup}
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/80 backdrop-blur-sm transition-colors hover:bg-white/20 md:right-8 md:top-8"
-            aria-label="Zamknij"
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M4 4L14 14M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-
-          {/* Category label */}
-          <div className="absolute left-0 right-0 top-16 z-10 text-center md:top-8">
-            <span className="font-body text-xs uppercase tracking-[0.3em] text-white/40">
-              {contentPages[popupIdx]?.title}
-            </span>
-            <span className="ml-3 font-body text-xs text-white/30">
-              {popupIdx + 1} / {contentPages.length}
-            </span>
-          </div>
-
           {/* Prev arrow — desktop */}
           {popupIdx > 0 && (
             <button
               onClick={(e) => { e.stopPropagation(); setPopupIdx((p) => p - 1); }}
               className="absolute left-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/80 transition-colors hover:bg-white/20 sm:flex md:left-8"
-              aria-label="Poprzednia"
+              aria-label={menuUi.popupPrevLabel}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -949,7 +1049,8 @@ export default function InteractiveBookMenu() {
 
           {/* Swipeable card container */}
           <div
-            className="mx-4 w-full max-w-lg sm:mx-14 md:mx-20"
+            className="w-full sm:mx-14 sm:max-w-lg md:mx-20"
+            data-lenis-prevent
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => {
               const t = e.touches[0];
@@ -974,52 +1075,79 @@ export default function InteractiveBookMenu() {
               el._swipeY = null;
             }}
           >
-            {/* Card content */}
-            <div className="max-h-[75dvh] overflow-y-auto overscroll-contain rounded-2xl bg-[#FAFAFA] p-5 shadow-2xl sm:p-6 md:p-10">
-              {(() => {
-                const page = contentPages[popupIdx];
-                if (!page) return null;
-                return (
-                  <>
-                    <h3 className="mb-4 font-heading text-xl text-navy sm:text-2xl md:text-3xl" style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
-                      {page.title}
-                    </h3>
-                    <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="flex h-dvh w-full flex-col overflow-hidden rounded-t-[28px] bg-[#FAFAFA] shadow-2xl sm:h-auto sm:max-h-[82dvh] sm:rounded-[28px]">
+              <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-navy/10 bg-[#FAFAFA]/96 px-4 py-4 backdrop-blur-sm sm:px-6 sm:py-5 md:px-8">
+                <div className="min-w-0 pr-2">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="font-body text-[10px] uppercase tracking-[0.3em] text-navy/35 sm:text-xs">
+                      {contentPages[popupIdx]?.title}
+                    </span>
+                    <span className="font-body text-[10px] text-navy/28 sm:text-xs">
+                      {popupIdx + 1} / {contentPages.length}
+                    </span>
+                  </div>
+                  {contentPages[popupIdx]?.subtitle && (
+                    <p className="mt-2 font-body text-[10px] uppercase tracking-[0.24em] text-navy/35 sm:text-xs">
+                      {contentPages[popupIdx]?.subtitle}
+                    </p>
+                  )}
+                  <h3 className="mt-2 font-heading text-xl text-navy sm:text-2xl md:text-3xl" style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
+                    {contentPages[popupIdx]?.title}
+                  </h3>
+                </div>
+                <button
+                  onClick={closePopup}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-navy/10 bg-navy/5 text-navy/70 shadow-[0_12px_28px_-20px_rgba(10,25,47,0.4)] transition-colors hover:bg-navy/10"
+                  aria-label={menuUi.popupCloseLabel}
+                  data-no-card-swipe
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M4 4L14 14M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+              <div data-menu-popup-scroll data-lenis-prevent className="flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-5 md:px-8 md:pb-10" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
+                {(() => {
+                  const page = contentPages[popupIdx];
+                  if (!page) return null;
+                  return (
+                    <div className="flex flex-col gap-2.5 sm:gap-4">
                       {page.content?.map((item, i) => (
-                        <div key={i} className="border-b border-navy/10 pb-3 last:border-0">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <h4 className="font-heading text-sm font-medium text-navy sm:text-base md:text-lg">
+                        <div key={i} className="border-b border-navy/10 pb-2.5 last:border-0 sm:pb-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <h4 className="flex-1 font-heading text-[13px] font-medium text-navy sm:text-base md:text-lg">
                               {item.name}
                             </h4>
-                            <span className="shrink-0 font-body text-sm font-medium text-ocean sm:text-base">
-                              {item.price}
-                            </span>
+                            <MenuPrice values={item.pricesEur} locale={locale} />
                           </div>
-                          <p className="mt-1 font-body text-xs text-navy/50 sm:text-sm">
+                          <p className="mt-1 font-body text-[11px] text-navy/50 sm:text-sm">
                             {item.desc}
                           </p>
                         </div>
                       ))}
                     </div>
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Dot indicators + swipe hint */}
-            <div className="mt-4 flex flex-col items-center gap-2">
-              <div className="flex items-center gap-2">
-                {contentPages.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setPopupIdx(i)}
-                    className={`h-2 rounded-full transition-all duration-300 ${popupIdx === i ? "w-6 bg-ocean" : "w-2 bg-white/20 hover:bg-white/40"}`}
-                  />
-                ))}
+                  );
+                })()}
               </div>
-              <span className="font-body text-xs text-white/30 sm:hidden">
-                ← Przesuń aby zmienić →
-              </span>
+
+              <div className="border-t border-navy/10 bg-[#FAFAFA]/96 px-4 py-3 backdrop-blur-sm sm:px-6 md:px-8">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    {contentPages.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setPopupIdx(i)}
+                        className={`h-2 rounded-full transition-all duration-300 ${popupIdx === i ? "w-6 bg-ocean" : "w-2 bg-navy/15 hover:bg-navy/30"}`}
+                        data-no-card-swipe
+                      />
+                    ))}
+                  </div>
+                  <span className="font-body text-xs text-navy/35 sm:hidden">
+                    {menuUi.popupSwipeHint}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1028,7 +1156,7 @@ export default function InteractiveBookMenu() {
             <button
               onClick={(e) => { e.stopPropagation(); setPopupIdx((p) => p + 1); }}
               className="absolute right-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/80 transition-colors hover:bg-white/20 sm:flex md:right-8"
-              aria-label="Następna"
+              aria-label={menuUi.popupNextLabel}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -1083,12 +1211,38 @@ function EyeIcon() {
   );
 }
 
-interface PageData {
-  id: string;
-  title: string;
-  content: { name: string; desc: string; price: string }[] | null;
-  isCover?: boolean;
-  isBack?: boolean;
+type PageData = MenuBookPage;
+
+function MenuPrice({
+  values,
+  locale,
+  compact = false,
+}: {
+  values: number[];
+  locale: Locale;
+  compact?: boolean;
+}) {
+  const euroPrice = formatCurrencyValues(values, "EUR", LOCALE_FORMATS[locale]);
+  const approxPrice = formatApproxValues(values, locale);
+
+  return (
+    <div className="flex shrink-0 flex-col items-end text-right">
+      <span
+        className={compact ? "font-body font-medium text-ocean" : "shrink-0 font-body text-sm font-medium text-ocean sm:text-base"}
+        style={compact ? { fontSize: "clamp(0.75rem, 1.35vw, 1.02rem)" } : undefined}
+      >
+        {euroPrice}
+      </span>
+      {approxPrice && (
+        <span
+          className={compact ? "font-body text-navy/35" : "font-body text-[11px] text-navy/40 sm:text-xs"}
+          style={compact ? { fontSize: "clamp(0.5rem, 0.92vw, 0.7rem)" } : undefined}
+        >
+          {approxPrice}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function PageView({
@@ -1100,11 +1254,15 @@ function PageView({
      preserving the external prop name. */
   side: _side,
   isFlap = false,
+  mobileCard = false,
+  locale,
   onExpand,
 }: {
   page: PageData | null;
   side: "left" | "right";
   isFlap?: boolean;
+  mobileCard?: boolean;
+  locale: Locale;
   onExpand?: (pageId: string) => void;
 }) {
   if (!page) {
@@ -1116,6 +1274,8 @@ function PageView({
     );
   }
 
+  const pageUi = MENU_UI[locale];
+
   // Cover page — no eye-icon (it's just the book cover, nothing to expand)
   if (page.isCover) {
     return (
@@ -1125,6 +1285,9 @@ function PageView({
           background: "linear-gradient(145deg, #0A192F 0%, #1a3a5c 50%, #2a6a9e 100%)",
         }}
       >
+        <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-white/10 px-3 py-1 font-body text-[10px] uppercase tracking-[0.22em] text-sand/75 backdrop-blur-sm md:left-6 md:top-6">
+          {pageUi.yearBadge}
+        </div>
         <div className="flex flex-col items-center gap-3 text-center md:gap-5">
           <div
             className="mb-1 h-px w-12 md:w-16"
@@ -1144,7 +1307,7 @@ function PageView({
             className="mt-2 font-body text-sand/40"
             style={{ fontSize: "clamp(0.45rem, 0.8vw, 0.65rem)", letterSpacing: "0.15em" }}
           >
-            MENU 2026
+            {page.subtitle ?? pageUi.yearBadge}
           </p>
         </div>
       </div>
@@ -1164,13 +1327,13 @@ function PageView({
           className="font-heading text-sand/60"
           style={{ fontSize: "clamp(1rem, 2.5vw, 2rem)", fontWeight: 400 }}
         >
-          Smacznego!
+          {page.title}
         </p>
         <p
           className="mt-3 font-body text-sand/30"
           style={{ fontSize: "clamp(0.45rem, 0.7vw, 0.6rem)", letterSpacing: "0.2em" }}
         >
-          RENA BIANCA • 2026
+          {page.subtitle ?? pageUi.yearBadge}
         </p>
       </div>
     );
@@ -1179,12 +1342,12 @@ function PageView({
   // Content pages
   return (
     <div
-      className="relative flex h-full w-full flex-col overflow-hidden"
+      className="relative flex h-full min-h-0 w-full flex-col overflow-hidden"
       style={{
         background: isFlap
           ? "linear-gradient(135deg, #f5f0e8 0%, #FAFAFA 100%)"
           : "#FAFAFA",
-        padding: "clamp(14px, 2.8vw, 36px)",
+        padding: mobileCard ? "clamp(18px, 5vw, 26px)" : "clamp(10px, 2.3vw, 36px)",
       }}
     >
       {/* Page header — title on the left, eye-icon preview button
@@ -1192,12 +1355,12 @@ function PageView({
            Tapping the eye opens the full-screen readable popup —
            much easier than squinting at the tilted book page on
            mobile or peering at a small card on desktop. */}
-      <div className="mb-2 flex items-center justify-between gap-2 border-b border-navy/10 pb-2 md:mb-3 md:pb-3">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className={`${mobileCard ? "mb-4 flex items-start justify-between gap-3 border-b border-navy/10 pb-3" : "mb-2 flex items-center justify-between gap-2 border-b border-navy/10 pb-2 md:mb-3 md:pb-3"}`}>
+        <div className={`${mobileCard ? "flex min-w-0 flex-1 items-start gap-3" : "flex min-w-0 items-center gap-2"}`}>
           <h3
-            className="min-w-0 truncate font-heading text-navy"
+            className={`${mobileCard ? "min-w-0 whitespace-normal wrap-break-word font-heading leading-[1.05] text-navy" : "min-w-0 truncate font-heading text-navy"}`}
             style={{
-              fontSize: "clamp(1.05rem, 2.6vw, 2.15rem)",
+              fontSize: mobileCard ? "clamp(1.22rem, 5.1vw, 1.8rem)" : "clamp(0.92rem, 2.25vw, 2.15rem)",
               fontWeight: 500,
               letterSpacing: "0.02em",
             }}
@@ -1206,14 +1369,19 @@ function PageView({
           </h3>
           {onExpand && !isFlap && (
             <button
-              onClick={(e) => { e.stopPropagation(); onExpand(page.id); }}
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onExpand(page.id); }}
               onPointerDown={(e) => e.stopPropagation()}
-              aria-label="Otwórz czytelny podgląd tego rozdziału"
-              title="Otwórz podgląd"
-              className="pointer-events-auto flex shrink-0 items-center justify-center rounded-full border border-navy/15 bg-white/80 text-navy/60 backdrop-blur-sm transition-all duration-300 hover:border-ocean/40 hover:bg-white hover:text-ocean hover:shadow-[0_4px_14px_rgba(59,130,196,0.25)]"
+              onTouchStart={(e) => e.stopPropagation()}
+              aria-label={pageUi.previewLabel}
+              title={pageUi.previewLabel}
+              data-no-card-swipe
+              data-lenis-prevent
+              className="pointer-events-auto relative z-10 flex shrink-0 items-center justify-center rounded-full border border-navy/15 bg-white/80 text-navy/60 backdrop-blur-sm transition-all duration-300 hover:border-ocean/40 hover:bg-white hover:text-ocean hover:shadow-[0_4px_14px_rgba(59,130,196,0.25)]"
               style={{
-                width: "clamp(28px, 2.8vw, 36px)",
-                height: "clamp(28px, 2.8vw, 36px)",
+                width: mobileCard ? "44px" : "clamp(24px, 2.4vw, 36px)",
+                height: mobileCard ? "44px" : "clamp(24px, 2.4vw, 36px)",
+                touchAction: "manipulation",
               }}
             >
               <EyeIcon />
@@ -1222,37 +1390,41 @@ function PageView({
         </div>
         <span
           className="shrink-0 font-body text-navy/20"
-          style={{ fontSize: "clamp(0.4rem, 0.7vw, 0.6rem)", letterSpacing: "0.15em" }}
+          style={{ fontSize: mobileCard ? "0.62rem" : "clamp(0.4rem, 0.7vw, 0.6rem)", letterSpacing: "0.15em" }}
         >
           RENA BIANCA
         </span>
       </div>
 
+      {page.subtitle && (
+        <p
+          className={`${mobileCard ? "mb-3 font-body uppercase text-navy/35" : "mb-2 font-body uppercase text-navy/35 md:mb-3"}`}
+          style={{ fontSize: mobileCard ? "0.72rem" : "clamp(0.4rem, 0.66vw, 0.62rem)", letterSpacing: "0.16em" }}
+        >
+          {page.subtitle}
+        </p>
+      )}
+
       {/* Menu items */}
-      <div className="flex flex-1 flex-col justify-start gap-1 overflow-hidden md:gap-2">
+      <div data-mobile-menu-scroll data-lenis-prevent={mobileCard ? true : undefined} className={`${mobileCard ? "flex min-h-0 flex-1 flex-col justify-start gap-3 overflow-y-auto overscroll-y-contain pr-1 pb-2" : "flex flex-1 flex-col justify-start gap-1 overflow-hidden md:gap-2"}`} style={mobileCard ? { WebkitOverflowScrolling: "touch", touchAction: "pan-y", overflowY: "auto" } : undefined}>
         {page.content?.map((item, i) => (
-          <div key={i} className="group">
-            <div className="flex items-baseline justify-between gap-2">
+          <div key={i} className={`${mobileCard ? "group border-b border-navy/8 pb-3 last:border-0 last:pb-0" : "group"}`}>
+            <div className="flex items-start justify-between gap-3">
               <h4
-                className="font-heading text-navy"
+                className="min-w-0 font-heading text-navy"
                 style={{
-                  fontSize: "clamp(0.8rem, 1.6vw, 1.2rem)",
+                  fontSize: mobileCard ? "clamp(0.95rem, 3.8vw, 1.12rem)" : "clamp(0.68rem, 1.35vw, 1.2rem)",
                   fontWeight: 500,
                 }}
               >
                 {item.name}
               </h4>
-              <div className="mx-1 min-w-4 flex-1 border-b border-dotted border-navy/15" />
-              <span
-                className="shrink-0 font-body font-medium text-ocean"
-                style={{ fontSize: "clamp(0.75rem, 1.35vw, 1.02rem)" }}
-              >
-                {item.price}
-              </span>
+              <div className={`${mobileCard ? "mx-1 mt-4 min-w-4 flex-1 border-b border-dotted border-navy/15" : "mx-1 mt-3 min-w-4 flex-1 border-b border-dotted border-navy/15"}`} />
+              <MenuPrice values={item.pricesEur} locale={locale} compact={!mobileCard} />
             </div>
             <p
-              className="font-body text-navy/45 leading-snug"
-              style={{ fontSize: "clamp(0.6rem, 1.15vw, 0.84rem)" }}
+              className="font-body leading-snug text-navy/45"
+              style={{ fontSize: mobileCard ? "clamp(0.72rem, 2.9vw, 0.88rem)" : "clamp(0.52rem, 0.95vw, 0.84rem)" }}
             >
               {item.desc}
             </p>
@@ -1261,10 +1433,10 @@ function PageView({
       </div>
 
       {/* Page number */}
-      <div className="mt-auto pt-1 text-center md:pt-2">
+      <div className={`${mobileCard ? "pt-3 text-center" : "mt-auto pt-1 text-center md:pt-2"}`}>
         <span
           className="font-body text-navy/20"
-          style={{ fontSize: "clamp(0.4rem, 0.6vw, 0.5rem)" }}
+          style={{ fontSize: mobileCard ? "0.6rem" : "clamp(0.4rem, 0.6vw, 0.5rem)" }}
         >
           — {page.id} —
         </span>
