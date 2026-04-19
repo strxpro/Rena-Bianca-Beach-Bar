@@ -392,7 +392,7 @@ export default function HeroVideoParallax() {
 
     <div ref={containerRef} data-parallax-container className="relative w-full overflow-hidden">
       {/* ── Parallax hero ── */}
-      <section className="relative w-full overflow-hidden z-2 flex min-h-[100dvh] items-center justify-center p-0">
+      <section className="relative z-2 flex min-h-dvh w-full items-center justify-center overflow-hidden p-0">
         <div className="absolute left-0 top-0 h-[120%] w-full">
           <div
             ref={layersRef}
@@ -560,6 +560,14 @@ export default function HeroVideoParallax() {
                 </span>
               </span>
             ))}
+          </p>
+
+          <p className="mt-4 max-w-2xl mx-auto text-center font-body text-sm sm:text-base md:text-lg text-sand/75 leading-relaxed tracking-[0.03em]">
+            {t("about.descriptionSecondary")}
+          </p>
+
+          <p className="mt-8 max-w-4xl mx-auto text-center font-heading text-lg uppercase tracking-[0.28em] text-sand/80 sm:text-2xl md:mt-10 md:text-4xl lg:text-5xl">
+            {t("about.quote")}
           </p>
         </div>
 

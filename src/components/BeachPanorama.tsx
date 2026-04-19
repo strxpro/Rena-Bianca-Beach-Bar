@@ -76,6 +76,7 @@ export default function BeachPanorama() {
       return;
     }
     animatingRef.current = true;
+    const wipeDuration = typeof window !== "undefined" && window.innerWidth < 768 ? 0.85 : WIPE_DUR;
 
     const dir = targetIndex > cur ? 1 : -1;
     const curSlide = slideEls.current[cur];
@@ -90,7 +91,7 @@ export default function BeachPanorama() {
 
     gsap
       .timeline({
-        defaults: { duration: WIPE_DUR, ease: "expo.inOut" },
+        defaults: { duration: wipeDuration, ease: "expo.inOut" },
         onStart: () => {
           nextSlide.style.opacity = "1";
           nextSlide.style.pointerEvents = "auto";
@@ -157,8 +158,8 @@ export default function BeachPanorama() {
         force3D: true,
         scrollTrigger: {
           trigger: section,
-          start: "top 80px",
-          end: "+=260%",
+          start: "top top",
+          end: () => (window.innerWidth < 768 ? "+=180%" : "+=220%"),
           pin: true,
           pinSpacing: true,
           pinType: "fixed",
@@ -285,7 +286,7 @@ export default function BeachPanorama() {
 
   return (
     <section
-      id="beach-panorama"
+      id="panorama"
       ref={sectionRef}
       className="relative h-dvh w-full overflow-hidden pt-20"
       style={{
@@ -463,7 +464,7 @@ export default function BeachPanorama() {
         
         /* Apply background cleanly to the GSAP pin-spacer wrapping this specific section
            so that if recalculations delay, the background seamlessly covers the void. */
-        .pin-spacer:has(#beach-panorama) {
+        .pin-spacer:has(#panorama) {
           background-color: #0A192F !important;
         }
       `}</style>

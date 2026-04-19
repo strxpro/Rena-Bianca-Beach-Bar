@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { LOCALE_LABELS, LOCALE_FLAGS, type Locale } from "@/i18n/translations";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 /* ═══════════════════════════════════════════════════════════════
    HEADER — fixed top-0 z-100
@@ -107,17 +108,16 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, [isMenuOpen]);
 
-  /* ── Lock body scroll when mobile menu is open ── */
+  /* ── Lock body scroll when mobile menu is open.
+     We intentionally do NOT lock scroll here so that Lenis can
+     still perform programmatic scrolls when an item is tapped.
+     The backdrop already stops accidental touch-throughs.
+   ── */
   useEffect(() => {
-    if (isMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isMenuOpen]);
+  }, []);
 
   return (
     <>
@@ -402,9 +402,32 @@ export default function Header() {
                   e.preventDefault();
                   setIsMenuOpen(false);
                   setTimeout(() => {
-                    const target = document.querySelector(item.href);
-                    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }, 320);
+                    const sectionId = item.href.slice(1); // strip leading '#'
+                    const lenis = (window as unknown as { __lenis?: { scrollTo: (t: number | string | HTMLElement, o?: Record<string, unknown>) => void } }).__lenis;
+                    if (sectionId === "home") {
+                      if (lenis) lenis.scrollTo(0, { duration: 1.4 });
+                      else window.scrollTo({ top: 0, behavior: "smooth" });
+                      return;
+                    }
+                    const el = document.getElementById(sectionId);
+                    if (!el) return;
+                    // Check if inside a pinned ScrollTrigger (use start offset)
+                    let pinStart: number | null = null;
+                    try {
+                      for (const st of ScrollTrigger.getAll()) {
+                        if (st.pin && st.trigger && st.trigger.contains(el)) {
+                          pinStart = st.start; break;
+                        }
+                      }
+                    } catch { /* ST not ready */ }
+                    if (lenis) {
+                      if (pinStart !== null) lenis.scrollTo(pinStart, { duration: 1.4 });
+                      else lenis.scrollTo(el, { duration: 1.4, offset: -40 });
+                    } else {
+                      if (pinStart !== null) window.scrollTo({ top: pinStart, behavior: "smooth" });
+                      else el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  }, 380);
                 }}
                 style={{
                   transitionDelay: isMenuOpen ? `${80 + i * 50}ms` : "0ms",

@@ -53,6 +53,7 @@ export default function LocationContactTransition() {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
+  const frameStepRef = useRef(1);
   const frameIdxRef = useRef({ value: 0 });
   // Auto-activates the 3D PinContainer while the location panel is
   // orbiting out of view — "tu jesteśmy" label + cyan pin appear by
@@ -127,19 +128,13 @@ export default function LocationContactTransition() {
         Net effect: landing page transfer drops by ~100 MB, and
         the frame sequence is always ready by the time the
         scroll-driven timeline actually reaches it. ── */
-  /* On phones we only decode every SECOND frame — cuts the
-     Znajdź-nas asset payload from ~100 MB to ~50 MB and halves
-     the image-decode work the compositor has to do while the
-     user scrubs through Phase 3. `drawFrame` below rounds the
-     requested index down to the nearest loaded frame so the
-     animation looks identical (the scrolling film still plays
-     smoothly thanks to Lenis' easing — the slight loss in
-     frame granularity is invisible at typical scroll speeds). */
-  const isMobileDevice =
-    typeof window !== "undefined" && window.innerWidth < 768;
-  const FRAME_STEP = isMobileDevice ? 2 : 1;
-
   useEffect(() => {
+    /* On phones we only decode every THIRD frame — cuts the
+       Znajdź-nas asset payload and reduces image-decode work.
+       The frame step is resolved on the client only so SSR markup
+       stays identical between server and browser. */
+    const frameStep = window.innerWidth < 768 ? 3 : 1;
+    frameStepRef.current = frameStep;
     const imgs: HTMLImageElement[] = new Array(TOTAL_FRAMES);
     for (let i = 0; i < TOTAL_FRAMES; i++) {
       imgs[i] = new Image();
@@ -167,12 +162,12 @@ export default function LocationContactTransition() {
       if (started || cancelled) return;
       started = true;
       const BATCH = 8;
-      let next = FRAME_STEP;
+      let next = frameStep;
       const pump = () => {
         if (cancelled) return;
         let inFlight = 0;
-        const end = Math.min(next + BATCH * FRAME_STEP, TOTAL_FRAMES);
-        for (let i = next; i < end; i += FRAME_STEP) {
+        const end = Math.min(next + BATCH * frameStep, TOTAL_FRAMES);
+        for (let i = next; i < end; i += frameStep) {
           const img = imgs[i];
           if (!img.src) {
             inFlight++;
@@ -218,53 +213,22 @@ export default function LocationContactTransition() {
 
   // #region agent log
   useEffect(() => {
-    const send = () => {
-      const section = sectionRef.current;
-      if (!section) return;
-      const framePlayer = section.querySelector('[data-frame-player]') as HTMLElement | null;
-      const locationPanel = section.querySelector('[data-location]') as HTMLElement | null;
-      const locationHeading = locationPanel?.querySelector('h2') as HTMLElement | null;
-      const waveFront = section.querySelector('[data-wave-front]') as HTMLElement | null;
-      const sr = section.getBoundingClientRect();
-      fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
-        body: JSON.stringify({
-          sessionId: '5e042f',
-          runId: 'run1',
-          hypothesisId: 'H5',
-          location: 'LocationContactTransition.tsx:mount',
-          message: 'loc-contact layout measure',
-          data: {
-            vw: window.innerWidth,
-            vh: window.innerHeight,
-            headerH: (document.querySelector('header') as HTMLElement | null)?.offsetHeight ?? null,
-            section: { h: Math.round(sr.height), top: Math.round(sr.top) },
-            framePlayer: framePlayer ? { top: Math.round(framePlayer.getBoundingClientRect().top - sr.top), bottom: Math.round(framePlayer.getBoundingClientRect().bottom - sr.top), h: Math.round(framePlayer.getBoundingClientRect().height) } : null,
-            waveFront: waveFront ? { top: Math.round(waveFront.getBoundingClientRect().top - sr.top) } : null,
-            locationHeading: locationHeading ? { top: Math.round(locationHeading.getBoundingClientRect().top - sr.top) } : null,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    };
-    const t = window.setTimeout(send, 700);
-    return () => window.clearTimeout(t);
   }, []);
   // #endregion
 
   const drawFrame = useCallback((idx: number) => {
     const canvas = canvasRef.current;
+    const frameStep = frameStepRef.current;
     /* Snap to the nearest frame we actually loaded. On desktop
-       `FRAME_STEP` is 1 so this is a no-op; on phones it rounds
+       `frameStep` is 1 so this is a no-op; on phones it rounds
        odd indices down to the preceding even frame that was
        actually fetched. If the chosen frame is still in flight
        we walk backwards until we find one that's decoded — so
        the canvas is NEVER blank once the first frame arrives. */
-    let snapped = Math.floor(idx / FRAME_STEP) * FRAME_STEP;
+    let snapped = Math.floor(idx / frameStep) * frameStep;
     let img = imagesRef.current[snapped];
     while ((!img || !img.complete) && snapped > 0) {
-      snapped -= FRAME_STEP;
+      snapped -= frameStep;
       img = imagesRef.current[snapped];
     }
     if (!canvas || !img || !img.complete) return;
@@ -274,12 +238,13 @@ export default function LocationContactTransition() {
     if (canvas.height !== img.naturalHeight) canvas.height = img.naturalHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0);
-  }, [FRAME_STEP]);
+  }, []);
 
   useGSAP(
     () => {
       const section = sectionRef.current;
       if (!section) return;
+      const isMobileDevice = window.innerWidth < 768;
 
       const waveBack = section.querySelector("[data-wave-back]") as HTMLElement;
       const waveFront = section.querySelector("[data-wave-front]") as HTMLElement;
@@ -376,9 +341,9 @@ export default function LocationContactTransition() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: "+=900%",
+          end: isMobileDevice ? "+=560%" : "+=900%",
           pin: true,
-          scrub: 0.5,
+          scrub: isMobileDevice ? 0.3 : 0.5,
           anticipatePin: 1,
           /* Share the `"pinned"` group so this pin can never
              overlap with the menu-transition, panorama or gallery
@@ -479,16 +444,21 @@ export default function LocationContactTransition() {
            0.85–1.00 — final settle to dead centre at scale 1.
       */
       tl.set(contactPanel, { opacity: 0, xPercent: 120, yPercent: 0, rotation: 8, scale: 1 }, ORBIT_START);
+      const contactKeyframes = isMobileDevice
+        ? [
+            { xPercent: 72, yPercent: -3, rotation: 4, opacity: 0.45, duration: 0.32, ease: "sine.inOut" },
+            { xPercent: 18, yPercent: -1, rotation: 1, opacity: 0.9, duration: 0.33, ease: "power2.out" },
+            { xPercent: 0, yPercent: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" },
+          ]
+        : [
+            { xPercent: 85, yPercent: -4, rotation: 6, opacity: 0.45, duration: 0.18, ease: "sine.inOut" },
+            { xPercent: 50, yPercent: -2, rotation: 3, opacity: 0.85, duration: 0.17, ease: "sine.inOut" },
+            { xPercent: -8, yPercent: -0.6, rotation: 0, opacity: 1, scale: 1.02, duration: 0.25, ease: "power3.out" },
+            { xPercent: 1.5, yPercent: 0, scale: 0.996, duration: 0.25, ease: "sine.inOut" },
+            { xPercent: 0, yPercent: 0, scale: 1, duration: 0.15, ease: "power2.out" },
+          ];
       tl.to(contactPanel, {
-        keyframes: [
-          { xPercent: 85, yPercent: -4, rotation: 6, opacity: 0.45, duration: 0.18, ease: "sine.inOut" },
-          { xPercent: 50, yPercent: -2, rotation: 3, opacity: 0.85, duration: 0.17, ease: "sine.inOut" },
-          /* Magnetic LOCK engages */
-          { xPercent: -8, yPercent: -0.6, rotation: 0, opacity: 1, scale: 1.02, duration: 0.25, ease: "power3.out" },
-          /* Gentle settle */
-          { xPercent: 1.5, yPercent: 0, scale: 0.996, duration: 0.25, ease: "sine.inOut" },
-          { xPercent: 0, yPercent: 0, scale: 1, duration: 0.15, ease: "power2.out" },
-        ],
+        keyframes: contactKeyframes,
         duration: ORBIT_DUR,
       }, ORBIT_START);
 
@@ -576,7 +546,7 @@ export default function LocationContactTransition() {
       }
 
       // Bouncy magnetic slide to dead-centre
-      if (contactWrapper && centreX > 0) {
+      if (contactWrapper && centreX > 0 && !isMobileDevice) {
         tl.to(contactWrapper, {
           x: centreX,
           duration: MAGNET_DUR,
@@ -609,7 +579,7 @@ export default function LocationContactTransition() {
       /* ═══ Phase 7 (MAGNET end → +0.04): PHONE REVEAL
             Letter-by-letter the phone prompt text appears,
             then the phone input slides up from below. ═══ */
-      const PHONE_START = MAGNET_START + 0.005;
+      const PHONE_START = MAGNET_START + (isMobileDevice ? 0.025 : 0.005);
       const PHONE_TEXT_DUR = 0.03;
       const PHONE_BOX_DUR = 0.02;
 
@@ -695,11 +665,8 @@ export default function LocationContactTransition() {
               it did originally). ═══ */}
       <div
         data-frame-player
-        className="absolute inset-x-0 z-3 bottom-0 overflow-hidden will-change-transform"
-        style={{
-          width: "100%",
-          aspectRatio: "1920/1080",
-        }}
+        className="absolute bottom-[6%] left-1/2 z-3 w-[126%] -translate-x-1/2 overflow-hidden will-change-transform md:inset-x-0 md:bottom-0 md:left-0 md:w-full md:translate-x-0"
+        style={{ aspectRatio: "1920/1080" }}
       >
         <canvas
           ref={canvasRef}
@@ -944,7 +911,7 @@ export default function LocationContactTransition() {
               </div>
 
               {/* ═══ PHONE REVEAL — animated by GSAP ═══ */}
-              <div data-phone-section className="relative z-[80] mt-2 flex flex-col gap-2">
+              <div data-phone-section className="relative z-80 mt-2 flex flex-col gap-2">
                 {/* Letter-by-letter text */}
                 <p className="font-body text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">
                   {`${t("contact.phone")} (${t("contact.optional")})`

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { TranslationKeys } from "@/i18n/translations";
 
@@ -250,6 +251,8 @@ export default function SideDotsNav() {
     setActiveIdx(idx);
 
     const lenis = (window as unknown as { __lenis?: LenisLike }).__lenis;
+    const headerOffset = (document.querySelector("[data-header]") as HTMLElement | null)?.offsetHeight ?? 72;
+    const sectionOffset = headerOffset + 12;
     if (section.id === "home") {
       if (lenis) lenis.scrollTo(0, { duration: 1.4 });
       else window.scrollTo({ top: 0, behavior: "smooth" });
@@ -257,10 +260,34 @@ export default function SideDotsNav() {
     }
     const el = document.getElementById(section.id);
     if (!el) return;
+
+    /* For elements inside a pinned ScrollTrigger, lenis.scrollTo(el)
+       computes the wrong position because the element is position:fixed
+       during the pin. Use the ScrollTrigger's start offset instead. */
+    let pinStart: number | null = null;
+    try {
+      const triggers = ScrollTrigger.getAll();
+      for (const st of triggers) {
+        if (st.pin && st.trigger && st.trigger.contains(el)) {
+          pinStart = st.start;
+          break;
+        }
+      }
+    } catch { /* ScrollTrigger not ready */ }
+
     if (lenis) {
-      lenis.scrollTo(el, { duration: 1.4, offset: -40 });
+      if (pinStart !== null) {
+        lenis.scrollTo(pinStart, { duration: 1.4 });
+      } else {
+        lenis.scrollTo(el, { duration: 1.4, offset: -sectionOffset });
+      }
     } else {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (pinStart !== null) {
+        window.scrollTo({ top: pinStart, behavior: "smooth" });
+      } else {
+        const top = el.getBoundingClientRect().top + window.scrollY - sectionOffset;
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      }
     }
   }, []);
 
@@ -314,13 +341,17 @@ export default function SideDotsNav() {
     };
 
     const handleTouchEnd = () => {
+      const idx = localHoverIdx;
       setIsScrubbing(false);
       localIsScrubbing = false;
-      if (localHoverIdx !== null) {
-        go(localHoverIdx);
+      localHoverIdx = null;
+      if (idx !== null) {
+        /* Defer navigation past the touch event lifecycle so
+           the browser has finished processing the gesture before
+           we start a programmatic scroll. */
+        requestAnimationFrame(() => go(idx));
         setTimeout(() => setHoverIdx(null), 300);
       }
-      localHoverIdx = null;
     };
 
     // { passive: false } ensures preventDefault() actually stops scrolling on iOS

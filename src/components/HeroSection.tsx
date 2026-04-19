@@ -57,6 +57,8 @@ function setHoleMask(el: HTMLElement, r: number, cx = "50%", cy = "50%") {
 }
 
 function firePreloaderComplete() {
+  window.__renaPreloaderComplete = true;
+  document.documentElement.dataset.preloaderComplete = "true";
   window.dispatchEvent(new CustomEvent("preloader-complete"));
 }
 

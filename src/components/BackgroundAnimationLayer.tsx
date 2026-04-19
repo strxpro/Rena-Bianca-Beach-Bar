@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -22,9 +22,18 @@ const SHAPES = [
 
 export default function BackgroundAnimationLayer() {
   const layerRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useGSAP(
     () => {
+      if (isMobile) return;
       const shapes = layerRef.current?.querySelectorAll("[data-float]");
       if (!shapes?.length) return;
 
@@ -44,8 +53,12 @@ export default function BackgroundAnimationLayer() {
         });
       });
     },
-    { scope: layerRef }
+    { scope: layerRef, dependencies: [isMobile] }
   );
+
+  if (isMobile) {
+    return null;
+  }
 
   return (
     <div

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Combo, Plus_Jakarta_Sans } from "next/font/google";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import "./globals.css";
 
@@ -51,6 +52,7 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <I18nProvider>
           <SmoothScrollProvider>{children}</SmoothScrollProvider>
+          <CookieConsentBanner />
         </I18nProvider>
       </body>
     </html>

@@ -21,41 +21,58 @@ gsap.registerPlugin(ScrollTrigger);
 const ABOUT_CARD_STYLES = [
   {
     number: "01",
+    badgeKey: "about.card1.badge" as const,
     titleKey: "about.card1.title" as const,
     textKey: "about.card1.text" as const,
+    noteKey: "about.card1.note" as const,
     bg: "linear-gradient(135deg, #0A192F 0%, #1a3a5c 100%)",
     color: "#FDFBF7",
     accent: "rgba(59, 130, 196, 0.4)",
-    image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&h=600&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1547592180-85f173990554?w=1200&h=900&fit=crop&q=80",
+    showCrown: true,
+    highlight: true,
   },
   {
     number: "02",
+    badgeKey: "about.card2.badge" as const,
     titleKey: "about.card2.title" as const,
     textKey: "about.card2.text" as const,
     bg: "linear-gradient(135deg, #1a3a5c 0%, #2a6a9e 100%)",
     color: "#FDFBF7",
     accent: "rgba(42, 106, 158, 0.5)",
-    image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&h=600&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=1200&h=900&fit=crop&q=80",
+    showSun: true,
   },
   {
     number: "03",
+    badgeKey: "about.card3.badge" as const,
     titleKey: "about.card3.title" as const,
     textKey: "about.card3.text" as const,
     bg: "linear-gradient(135deg, #3B82C4 0%, #7CB9E8 100%)",
     color: "#0A192F",
     accent: "rgba(124, 185, 232, 0.5)",
-    image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=600&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=1200&h=900&fit=crop&q=80",
   },
   {
     number: "04",
+    badgeKey: "about.card4.badge" as const,
     titleKey: "about.card4.title" as const,
     textKey: "about.card4.text" as const,
     bg: "linear-gradient(135deg, #FDFBF7 0%, #e8f0f8 100%)",
     color: "#0A192F",
     accent: "rgba(253, 251, 247, 0.6)",
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=600&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=900&fit=crop&q=80",
   },
 ];
+
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+      <circle cx="12" cy="12" r="4" fill="currentColor" />
+      <path d="M12 2v3M12 19v3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M2 12h3M19 12h3M4.9 19.1l2.2-2.2M16.9 7.1l2.2-2.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 /* Sticky top for the stacking cards.
    – On desktop the cards sit at 12dvh (nice "floating" look under the nav).
@@ -75,37 +92,6 @@ export default function AboutGallery() {
 
   // #region agent log
   useEffect(() => {
-    const send = () => {
-      const sect = sectionRef.current;
-      if (!sect) return;
-      const firstCard = cardsRef.current[0];
-      const prev = sect.previousElementSibling as HTMLElement | null;
-      const sr = sect.getBoundingClientRect();
-      const fc = firstCard?.getBoundingClientRect();
-      const pv = prev?.getBoundingClientRect();
-      fetch('http://127.0.0.1:7448/ingest/e851fae5-0f43-4007-a667-b05ec1b0c1b7', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5e042f' },
-        body: JSON.stringify({
-          sessionId: '5e042f',
-          runId: 'run1',
-          hypothesisId: 'H6',
-          location: 'AboutGallery.tsx:mount',
-          message: 'about layout measure',
-          data: {
-            vw: window.innerWidth,
-            vh: window.innerHeight,
-            headerH: (document.querySelector('header') as HTMLElement | null)?.offsetHeight ?? null,
-            section: { offsetTop: sect.offsetTop, h: Math.round(sr.height), scrollH: sect.scrollHeight, rectTop: Math.round(sr.top) },
-            firstCard: fc ? { topRel: Math.round(fc.top - sr.top), h: Math.round(fc.height) } : null,
-            prevSibling: prev && pv ? { tag: prev.tagName, id: prev.id, bottom: Math.round(pv.bottom), h: Math.round(pv.height) } : null,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    };
-    const t = window.setTimeout(send, 800);
-    return () => window.clearTimeout(t);
   }, []);
   // #endregion
 
@@ -186,7 +172,7 @@ export default function AboutGallery() {
           >
             <div
               data-card-content
-              className="relative flex h-full w-full flex-col justify-center overflow-hidden border border-white/10 px-5 py-6 sm:px-8 sm:py-10 md:px-14 md:py-14"
+              className={`relative flex h-full w-full flex-col justify-center border px-5 py-6 sm:px-8 sm:py-10 md:px-14 md:py-14 ${card.highlight ? "overflow-visible border-[#f3c96a]/80 shadow-[0_28px_90px_-24px_rgba(243,201,106,0.55),0_18px_40px_-18px_rgba(0,0,0,0.45)]" : "overflow-hidden border-white/10"}`}
               style={{
                 background: card.bg,
                 color: card.color,
@@ -194,8 +180,15 @@ export default function AboutGallery() {
                 transformOrigin: "50% 0%",
                 willChange: "transform",
                 transformStyle: "preserve-3d",
+                boxShadow: card.highlight
+                  ? "0 0 0 1px rgba(255, 223, 128, 0.35), inset 0 0 0 1px rgba(255, 227, 158, 0.22)"
+                  : undefined,
               }}
             >
+              {card.highlight && (
+                <div className="pointer-events-none absolute inset-[10px] rounded-[calc(clamp(20px,4vw,50px)-10px)] border border-[#ffe4a1]/45" />
+              )}
+
               {/* Dim overlay — GPU-accelerated opacity only (replaces filter:brightness + box-shadow) */}
               <div
                 data-card-dim
@@ -203,22 +196,68 @@ export default function AboutGallery() {
                 style={{ opacity: 0, zIndex: 20 }}
               />
 
+              <div
+                className="pointer-events-none absolute -right-10 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full blur-3xl"
+                style={{ background: card.accent, opacity: 0.9 }}
+              />
 
-              <div className="relative z-10 flex h-full flex-col md:flex-row md:items-center md:gap-8 lg:gap-12">
-                <div className="flex flex-1 flex-col justify-center">
-                  <h3 className="mb-3 font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl" style={{ fontWeight: 400 }}>
+
+              <div className="relative z-10 flex h-full flex-col justify-between gap-4 md:flex-row md:items-center md:gap-8 lg:gap-12">
+                <div className="flex flex-1 flex-col justify-center min-h-0">
+                  {card.showCrown && (
+                    <img
+                      src="/korona.svg"
+                      alt=""
+                      aria-hidden
+                      className="pointer-events-none absolute -left-7 -top-9 z-30 h-16 w-16 -rotate-12 drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] sm:-left-9 sm:-top-11 sm:h-20 sm:w-20 md:h-24 md:w-24"
+                    />
+                  )}
+                  <div className="mb-5 flex items-start justify-between gap-4">
+                    <div
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-body text-[10px] uppercase tracking-[0.24em] sm:text-xs ${card.highlight ? "shadow-[0_10px_30px_-18px_rgba(243,201,106,0.9)]" : ""}`}
+                      style={{
+                        borderColor: card.highlight
+                          ? "rgba(243, 201, 106, 0.8)"
+                          : card.color === "#0A192F"
+                            ? "rgba(10, 25, 47, 0.18)"
+                            : "rgba(255, 255, 255, 0.2)",
+                        background: card.highlight
+                          ? "linear-gradient(135deg, rgba(255,244,200,0.18), rgba(243,201,106,0.28))"
+                          : card.color === "#0A192F"
+                            ? "rgba(10, 25, 47, 0.06)"
+                            : "rgba(255, 255, 255, 0.08)",
+                        color: card.highlight ? "#ffe9b4" : card.color,
+                      }}
+                    >
+                      {card.showSun && (
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                          <SunIcon />
+                        </span>
+                      )}
+                      <span>{t(card.badgeKey)}</span>
+                    </div>
+                    <span className="font-body text-[10px] uppercase tracking-[0.3em] opacity-45 sm:text-xs">
+                      {card.number}
+                    </span>
+                  </div>
+                  <h3 className="mb-3 max-w-xl font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl" style={{ fontWeight: 400 }}>
                     {t(card.titleKey)}
                   </h3>
-                  <p className="max-w-xl font-body text-sm leading-relaxed opacity-80 sm:text-base md:text-lg lg:text-xl">
+                  <p className="max-w-xl font-body text-sm leading-relaxed opacity-85 sm:text-base md:text-lg lg:text-xl">
                     {t(card.textKey)}
                   </p>
+                  {card.noteKey && (
+                    <p className="mt-4 max-w-xl font-body text-xs leading-relaxed text-sand/75 sm:text-sm md:text-base">
+                      {t(card.noteKey)}
+                    </p>
+                  )}
                 </div>
-                <div className="mt-4 aspect-video w-full max-w-[200px] shrink-0 overflow-hidden rounded-2xl shadow-xl sm:mt-6 sm:aspect-4/3 sm:max-w-xs md:mt-0 md:rounded-3xl lg:max-w-sm">
+                <div className={`mt-2 h-[148px] w-full shrink-0 self-end overflow-hidden rounded-[28px] border shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:mt-4 sm:h-[180px] sm:max-w-xs md:mt-0 md:h-auto md:self-auto ${card.highlight ? "max-w-[220px] border-[#f3c96a]/65 md:max-w-[280px] lg:max-w-[420px]" : "max-w-[200px] border-white/15 md:max-w-[240px] lg:max-w-sm"}`}>
                   <img
                     src={card.image}
                     alt={t(card.titleKey)}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                    className="h-full w-full object-cover object-center transition-transform duration-700 hover:scale-105"
                   />
                 </div>
               </div>
