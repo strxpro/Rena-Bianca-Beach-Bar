@@ -412,6 +412,7 @@ export default function SideDotsNav() {
 
   return (
     <nav
+      id="side-dots-nav"
       aria-label="Sections"
       /* Position is driven entirely by inline styles below so a
          Tailwind utility can never partially override the

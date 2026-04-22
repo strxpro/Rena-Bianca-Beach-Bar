@@ -4,8 +4,9 @@ import { useEffect, useRef } from "react";
 import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ── Global ScrollTrigger defaults ──────────────────────────────
       These apply to EVERY ScrollTrigger created anywhere in the
@@ -56,17 +57,87 @@ export default function SmoothScrollProvider({
           every pinned section gets a chance to engage. ── */
     const isMobile =
       typeof window !== "undefined" && window.innerWidth < 768;
+    const prefersReducedMotion = typeof window !== "undefined"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const hardwareThreads = typeof navigator !== "undefined" ? navigator.hardwareConcurrency : undefined;
+    const lowPowerDevice = prefersReducedMotion || (typeof hardwareThreads === "number" && hardwareThreads <= 4);
+    /* Track scroll direction so the prevent callback can decide
+       whether to pass through at scroll-container bounds.
+       -1 = scrolling UP, +1 = scrolling DOWN, 0 = unknown */
+    let scrollDir = 0;
+    let lastTouchY = 0;
+    const onWheelDir = (e: WheelEvent) => { scrollDir = e.deltaY > 0 ? 1 : -1; };
+    const onTouchStartDir = (e: TouchEvent) => { lastTouchY = e.touches[0].clientY; scrollDir = 0; };
+    const onTouchMoveDir = (e: TouchEvent) => {
+      const y = e.touches[0].clientY;
+      scrollDir = y < lastTouchY ? 1 : -1; // finger moves up → scroll down
+      lastTouchY = y;
+    };
+    window.addEventListener("wheel", onWheelDir, { passive: true });
+    window.addEventListener("touchstart", onTouchStartDir, { passive: true });
+    window.addEventListener("touchmove", onTouchMoveDir, { passive: true });
+
+    if (isMobile || lowPowerDevice) {
+      document.documentElement.classList.add("intro-locked");
+      document.body.classList.add("intro-locked");
+      const releaseLock = () => {
+        document.documentElement.classList.remove("intro-locked");
+        document.body.classList.remove("intro-locked");
+      };
+      window.addEventListener("video-ended", releaseLock, { once: true });
+      const safetyUnlock = window.setTimeout(releaseLock, 12000);
+
+      let rafId = 0;
+      const onResize = () => {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          ScrollTrigger.refresh();
+        });
+      };
+      const onNativeScroll = () => ScrollTrigger.update();
+      window.addEventListener("scroll", onNativeScroll, { passive: true });
+      window.addEventListener("resize", onResize);
+      window.addEventListener("orientationchange", onResize);
+
+      return () => {
+        window.removeEventListener("wheel", onWheelDir);
+        window.removeEventListener("touchstart", onTouchStartDir);
+        window.removeEventListener("touchmove", onTouchMoveDir);
+        window.removeEventListener("scroll", onNativeScroll);
+        window.removeEventListener("resize", onResize);
+        window.removeEventListener("orientationchange", onResize);
+        window.removeEventListener("video-ended", releaseLock);
+        window.clearTimeout(safetyUnlock);
+        cancelAnimationFrame(rafId);
+        document.documentElement.classList.remove("intro-locked");
+        document.body.classList.remove("intro-locked");
+      };
+    }
+
     const lenis = new Lenis({
-      duration: isMobile ? 0.65 : 1.05,
+      duration: 1.05,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      touchMultiplier: isMobile ? 1.1 : 1.7,
+      touchMultiplier: 1.7,
       wheelMultiplier: 1,
       infinite: false,
       prevent: (node) => {
-        const element = node as HTMLElement | null;
+        const element = node instanceof Element
+          ? node
+          : (node as Node | null)?.parentElement ?? null;
+        if (!element) return false;
+
+        const scrollEl = element.closest("[data-mobile-menu-scroll]") as HTMLElement | null;
+        if (scrollEl) {
+          const atBottom = scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 2;
+          const atTop = scrollEl.scrollTop <= 2;
+          if (atBottom && scrollDir > 0) return false;
+          if (atTop && scrollDir < 0) return false;
+          return true;
+        }
+
         return Boolean(
-          element?.closest(
-            "[data-lenis-prevent], [data-mobile-menu-toc], [data-mobile-menu-scroll], [data-menu-popup-scroll]"
+          element.closest(
+            "[data-lenis-prevent], [data-mobile-menu-toc], [data-menu-popup-scroll]"
           )
         );
       },
@@ -101,9 +172,10 @@ export default function SmoothScrollProvider({
 
     lenis.on("scroll", ScrollTrigger.update);
 
-    gsap.ticker.add((time) => {
+    const onTick = (time: number) => {
       lenis.raf(time * 1000);
-    });
+    };
+    gsap.ticker.add(onTick);
     gsap.ticker.lagSmoothing(0);
 
     let rafId = 0;
@@ -117,12 +189,15 @@ export default function SmoothScrollProvider({
     window.addEventListener("orientationchange", onResize);
 
     return () => {
+      window.removeEventListener("wheel", onWheelDir);
+      window.removeEventListener("touchstart", onTouchStartDir);
+      window.removeEventListener("touchmove", onTouchMoveDir);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
       window.removeEventListener("video-ended", releaseLock);
       window.clearTimeout(safetyUnlock);
       cancelAnimationFrame(rafId);
-      gsap.ticker.remove(lenis.raf as never);
+      gsap.ticker.remove(onTick);
       lenis.destroy();
       lenisRef.current = null;
       delete (window as unknown as { __lenis?: Lenis }).__lenis;

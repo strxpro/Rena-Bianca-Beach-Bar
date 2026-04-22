@@ -5,7 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ═══════════════════════════════════════════════════════════════
    SPATIAL SCROLL TRANSITION
@@ -27,77 +27,51 @@ export default function SpatialScrollTransition({ topSection, bottomSection }: P
   const containerRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const topOverlayRef = useRef<HTMLDivElement>(null);
+  const bottomShadowRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {
       const container = containerRef.current;
       const top = topRef.current;
       const bottom = bottomRef.current;
-      if (!container || !top || !bottom || window.innerWidth < 768) return;
+      const topOverlay = topOverlayRef.current;
+      const bottomShadow = bottomShadowRef.current;
+      if (!container || !top || !bottom || !topOverlay || !bottomShadow) return;
 
-      /* Pin for 200vh total:
-         0–0.5  = transition animation (top shrinks, bottom slides up)
-         0.5–1  = menu visible, user interacts with the book */
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: container,
-          start: "top top",
-          end: "+=200%",
-          pin: true,
-          scrub: 0.4,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          /* Join the shared `"pinned"` group with the other
-             ScrollTrigger pins on the page (panorama, gallery,
-             location) so they never overlap, and clamp fast
-             swipes so the spatial push always plays through on
-             phones. */
-          fastScrollEnd: true,
-          preventOverlaps: "pinned",
-          snap: container.classList.contains("snap-container") ? {
-            snapTo(progress: number) {
-              if (progress < 0.17) return 0;
-              if (progress < 0.66) return 0.33;
-              return 1;
-            },
-            duration: { min: 0.2, max: 0.6 },
-            delay: 0.12,
-            ease: "power1.inOut",
-          } : undefined,
-        },
+      /* matchMedia ensures GSAP reverts ALL inline transforms when
+         the viewport drops below md — fixes the huge gap on mobile
+         caused by `yPercent: 100` leaking onto Scene B. */
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 768px)", () => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: container,
+            start: "top top",
+            end: "+=200%",
+            pin: true,
+            scrub: 1,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
+        });
+
+        /* ── Scene A: push backward (0 → 0.5) ── */
+        tl.fromTo(
+          top,
+          { scale: 1, borderRadius: "0px" },
+          { scale: 0.90, borderRadius: "20px", ease: "power2.inOut", duration: 0.5 },
+          0
+        );
+        tl.fromTo(topOverlay, { opacity: 0 }, { opacity: 0.6, ease: "power2.inOut", duration: 0.5 }, 0);
+
+        /* ── Scene B: slide up from bottom (0 → 0.5) ── */
+        tl.fromTo(bottom, { yPercent: 100 }, { yPercent: 0, ease: "power2.inOut", duration: 0.5 }, 0);
+        tl.fromTo(bottomShadow, { opacity: 0 }, { opacity: 1, ease: "power2.inOut", duration: 0.5 }, 0);
+
+        /* 0.5 → 1.0 = menu stays visible, nothing animates (hold) */
+        return () => { tl.kill(); };
       });
-
-      /* ── Scene A: push backward (0 → 0.5) ── */
-      tl.fromTo(
-        top,
-        { scale: 1, borderRadius: "0px", filter: "brightness(1)" },
-        {
-          scale: 0.90,
-          borderRadius: "20px",
-          filter: "brightness(0.4)",
-          ease: "power2.inOut",
-          duration: 0.5,
-        },
-        0
-      );
-
-      /* ── Scene B: slide up from bottom (0 → 0.5) ── */
-      tl.fromTo(
-        bottom,
-        {
-          yPercent: 100,
-          boxShadow: "0 -40px 100px rgba(0,0,0,0)",
-        },
-        {
-          yPercent: 0,
-          boxShadow: "0 -40px 100px rgba(0,0,0,0.8)",
-          ease: "power2.inOut",
-          duration: 0.5,
-        },
-        0
-      );
-
-      /* 0.5 → 1.0 = menu stays visible, nothing animates (hold) */
     },
     { scope: containerRef }
   );
@@ -105,24 +79,34 @@ export default function SpatialScrollTransition({ topSection, bottomSection }: P
   return (
     <div
       ref={containerRef}
-      className="relative w-full overflow-hidden md:h-dvh"
+      className="pointer-events-none relative w-full overflow-visible md:h-dvh md:overflow-x-clip md:overflow-y-auto md:overscroll-y-contain"
       style={{ background: "#0A192F" }}
     >
       {/* ── Scene A (top / background) ── */}
       <div
         ref={topRef}
-        className="relative z-0 min-h-[220px] overflow-hidden sm:min-h-[280px] md:absolute md:inset-0 md:min-h-0 md:will-change-transform"
+        className="pointer-events-none relative z-0 min-h-[140px] overflow-hidden sm:min-h-[200px] md:absolute md:inset-0 md:min-h-0 md:will-change-transform"
         style={{ transformOrigin: "50% 30%" }}
       >
         {topSection}
+        <div
+          ref={topOverlayRef}
+          className="pointer-events-none absolute inset-0 bg-black"
+          style={{ opacity: 0 }}
+        />
       </div>
 
       {/* ── Scene B (bottom / foreground — slides over A) ── */}
       <div
         ref={bottomRef}
-        className="relative z-10 -mt-24 overflow-visible rounded-t-[32px] shadow-[0_-30px_90px_-34px_rgba(0,0,0,0.82)] sm:-mt-28 md:absolute md:inset-0 md:mt-0 md:overflow-hidden md:rounded-none md:shadow-none md:will-change-transform"
+        className="pointer-events-auto relative z-10 -mt-24 overflow-visible rounded-t-[32px] shadow-[0_-30px_90px_-34px_rgba(0,0,0,0.82)] sm:-mt-28 md:absolute md:inset-0 md:mt-0 md:min-h-0 md:overflow-x-clip md:overflow-y-auto md:rounded-none md:shadow-none md:will-change-transform md:overscroll-y-contain"
         style={{ transformOrigin: "50% 0%" }}
       >
+        <div
+          ref={bottomShadowRef}
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-linear-to-b from-black/70 via-black/25 to-transparent"
+          style={{ opacity: 0 }}
+        />
         {bottomSection}
       </div>
     </div>

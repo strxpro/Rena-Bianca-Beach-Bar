@@ -7,7 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { HEADER_H, LOGO_DOCKED_W, LOGO_DOCKED_H } from "./Header";
 import { useI18n } from "@/i18n/I18nProvider";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ═══════════════════════════════════════════════════════════════
    PARALLAX LAYERS + LOGO DOCKING
@@ -141,10 +141,10 @@ export default function HeroVideoParallax() {
     const textLayer = textLayerRef.current;
     // Scene logo (absolute, sandwiched between parallax layers) fades in first
     if (sceneLogo) {
-      gsap.to(sceneLogo, { opacity: 1, duration: 1.2, ease: "power2.out" });
+      gsap.to(sceneLogo, { opacity: 1, duration: 0.8, ease: "power2.out" });
     }
     if (textLayer) {
-      gsap.to(textLayer, { opacity: 1, duration: 1.2, ease: "power2.out", delay: 0.2 });
+      gsap.to(textLayer, { opacity: 1, duration: 0.8, ease: "power2.out", delay: 0.1 });
     }
   }, [videoEnded]);
 
@@ -458,7 +458,7 @@ export default function HeroVideoParallax() {
             <div
               ref={textLayerRef}
               data-parallax-layer="4"
-              className="absolute left-0 top-0 z-50 flex h-dvh w-full flex-col items-center justify-end gap-5 pb-28 will-change-transform sm:pb-32 md:pb-36"
+              className="absolute left-0 top-0 z-50 flex h-dvh w-full flex-col items-center justify-end gap-5 pb-52 sm:pb-64 md:pb-72 will-change-transform"
               style={{ opacity: 0 }}
             >
               {/* ── Hero subtitle — delicate italic line anchored by
@@ -466,13 +466,16 @@ export default function HeroVideoParallax() {
                     the logo above it stays fully visible, while
                     still being the first thing the eye reads once
                     the video fades. ── */}
-              <div className="flex w-full max-w-3xl flex-col items-center gap-2 px-5 text-center sm:gap-3 sm:px-8">
+              <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-5 text-center sm:gap-3 sm:px-8">
                 <p
                   className="font-heading italic text-white"
                   style={{
                     fontSize: "clamp(20px, 3.4vw, 38px)",
                     lineHeight: 1.25,
                     letterSpacing: "0.015em",
+                    textAlign: "center",
+                    marginInline: "auto",
+                    fontFamily: 'Combo, "Combo Fallback", Combo, serif',
                     textShadow:
                       "0 2px 14px rgba(0,0,0,0.82), 0 0 32px rgba(59,130,196,0.28), 0 0 60px rgba(0,0,0,0.35)",
                     maxInlineSize: "24ch",
@@ -497,13 +500,15 @@ export default function HeroVideoParallax() {
                 >
                   {t("hero.reservation")}
                 </a>
-                <a
-                  href="#menu"
-                  onClick={(e) => smoothScrollTo(e, "#menu")}
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent("open-menu-popup"));
+                  }}
                   className="rounded-full border border-white/40 bg-white/5 px-5 py-3 font-body text-xs font-semibold uppercase tracking-[0.2em] text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-white/70 hover:bg-white/15 sm:px-7 sm:py-3.5 sm:text-sm"
                 >
                   {t("hero.menu")}
-                </a>
+                </button>
               </div>
               <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
                 <div className="flex flex-col items-center gap-2 text-white/70">

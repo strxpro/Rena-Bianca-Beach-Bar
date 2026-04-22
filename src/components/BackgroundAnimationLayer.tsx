@@ -5,7 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const SHAPES = [
   { top: "8%",  left: "6%",  size: 80,  type: "circle-outline", speed: -120, rot: 60 },
@@ -14,10 +14,6 @@ const SHAPES = [
   { top: "58%", right: "7%", size: 36,  type: "dot",            speed: 200,  rot: 0 },
   { top: "15%", left: "55%", size: 120, type: "line",           speed: -60,  rot: 30 },
   { top: "70%", left: "12%", size: 56,  type: "circle-outline", speed: 130,  rot: -60 },
-  { top: "82%", right: "20%",size: 72,  type: "rounded",        speed: -160, rot: 75 },
-  { top: "50%", left: "40%", size: 28,  type: "dot",            speed: 100,  rot: 0 },
-  { top: "35%", right: "25%",size: 40,  type: "circle-outline", speed: -140, rot: -45 },
-  { top: "90%", left: "60%", size: 96,  type: "line",           speed: 80,   rot: -20 },
 ];
 
 export default function BackgroundAnimationLayer() {
@@ -37,20 +33,24 @@ export default function BackgroundAnimationLayer() {
       const shapes = layerRef.current?.querySelectorAll("[data-float]");
       if (!shapes?.length) return;
 
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: document.documentElement,
+          start: "0% 0%",
+          end: "100% 100%",
+          scrub: 1.25,
+        },
+      });
+
       shapes.forEach((shape, i) => {
         const s = SHAPES[i];
         if (!s) return;
-        gsap.to(shape, {
+        tl.to(shape, {
           y: s.speed,
           rotation: s.rot,
           ease: "none",
-          scrollTrigger: {
-            trigger: document.documentElement,
-            start: "0% 0%",
-            end: "100% 100%",
-            scrub: 1.5,
-          },
-        });
+          duration: 1,
+        }, 0);
       });
     },
     { scope: layerRef, dependencies: [isMobile] }

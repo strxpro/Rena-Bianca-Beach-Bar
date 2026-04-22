@@ -25,6 +25,34 @@ async function verifyTurnstile(token: string): Promise<boolean> {
   return data.success === true;
 }
 
+function isValidCountryCode(value: string): boolean {
+  return /^[A-Z]{2}$/.test(value);
+}
+
+function getCountryName(countryCode: string): string {
+  if (!isValidCountryCode(countryCode)) return "";
+  try {
+    const displayNames = new Intl.DisplayNames(["it"], { type: "region" });
+    return displayNames.of(countryCode) || countryCode;
+  } catch {
+    return countryCode;
+  }
+}
+
+function isLocalRequest(req: NextRequest): boolean {
+  const sources = [
+    req.headers.get("origin"),
+    req.headers.get("referer"),
+    req.headers.get("host"),
+    req.headers.get("x-forwarded-host"),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return sources.includes("localhost") || sources.includes("127.0.0.1") || sources.includes("0.0.0.0");
+}
+
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const windowMs = 5 * 60 * 1000;
@@ -46,6 +74,9 @@ export async function POST(req: NextRequest) {
     const countryCode = (req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "")
       .trim()
       .toUpperCase();
+    const countryName = getCountryName(countryCode);
+    const normalizedCountryCode = isValidCountryCode(countryCode) ? countryCode : "";
+    const requiresTurnstile = process.env.TURNSTILE_SECRET_KEY && !isLocalRequest(req);
 
     if (hp) return NextResponse.json({ error: "rejected" }, { status: 400 });
 
@@ -58,7 +89,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "rate_limit" }, { status: 429 });
     }
 
-    if (token) {
+    if (requiresTurnstile && !token) {
+      return NextResponse.json({ error: "captcha_required" }, { status: 400 });
+    }
+
+    if (requiresTurnstile) {
       const valid = await verifyTurnstile(token);
       if (!valid) return NextResponse.json({ error: "captcha_failed" }, { status: 403 });
     }
@@ -87,8 +122,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const firstPhoto = photoUrls[0] || avatar || "";
-
     const webhook = process.env.REVIEW_WEBHOOK || process.env.NEXT_PUBLIC_REVIEW_WEBHOOK;
     if (webhook) {
       await fetch(webhook, {
@@ -98,13 +131,14 @@ export async function POST(req: NextRequest) {
           Nome: name,
           Voto: rating ?? 5,
           Commento: text,
-          Avatar: firstPhoto,
+          Avatar: typeof avatar === "string" ? avatar : "",
           Foto1: photoUrls[0] || "",
           Foto2: photoUrls[1] || "",
           Foto3: photoUrls[2] || "",
           Stato: "Pendente",
           Data: new Date().toISOString().split("T")[0],
-          CountryCode: /^[A-Z]{2}$/.test(countryCode) ? countryCode : "",
+          Paese: countryName,
+          CountryCode: normalizedCountryCode,
         }),
       });
     }
@@ -117,7 +151,11 @@ export async function POST(req: NextRequest) {
     revalidatePath("/de");
     revalidatePath("/es");
 
-    return NextResponse.json({ success: true, countryCode: /^[A-Z]{2}$/.test(countryCode) ? countryCode : null });
+    return NextResponse.json({
+      success: true,
+      countryCode: normalizedCountryCode || null,
+      countryName: countryName || null,
+    });
   } catch (err) {
     console.error("[api/review]", err);
     return NextResponse.json({ error: "server_error" }, { status: 500 });

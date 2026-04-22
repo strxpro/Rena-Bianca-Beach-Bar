@@ -7,11 +7,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { PANORAMA_SLIDES } from "@/data/panoramaSlides";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 if (typeof window !== "undefined") {
   ScrollTrigger.config({ ignoreMobileResize: true });
-  ScrollTrigger.normalizeScroll(true);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -155,7 +154,6 @@ export default function BeachPanorama() {
       const ADV3 = 0.82;
 
       gsap.timeline({
-        force3D: true,
         scrollTrigger: {
           trigger: section,
           start: "top top",

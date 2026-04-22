@@ -45,8 +45,8 @@ export default function WaveDivider({
         .wd-parallax > use:nth-child(3) { animation-delay: -4s; animation-duration: 10s; }
         .wd-parallax > use:nth-child(4) { animation-delay: -5s; animation-duration: 14s; }
         @keyframes wd-move {
-          0%   { transform: translate3d(-120px, 0, 0); }
-          100% { transform: translate3d(120px, 0, 0); }
+          0%   { transform: translate3d(-90px, 0, 0); }
+          100% { transform: translate3d(86px, 0, 0); }
         }
       `}</style>
     </div>

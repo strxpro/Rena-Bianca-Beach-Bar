@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
 const RATE_LIMIT = new Map<string, { count: number; reset: number }>();
 
@@ -77,6 +79,35 @@ export async function POST(req: NextRequest) {
         }),
       });
       if (!res.ok) throw new Error("webhook failed");
+    }
+
+    const messagesPath = path.join(process.cwd(), "src/data/messages.json");
+    try {
+      const existing = JSON.parse(fs.readFileSync(messagesPath, "utf-8")) as unknown[];
+      const thread = {
+        id: `cf-${Date.now()}`,
+        name,
+        email,
+        subject: message.slice(0, 60).replace(/\n/g, " ") + (message.length > 60 ? "…" : ""),
+        channel: "contact_form",
+        status: "new",
+        unreadCount: 1,
+        updatedAt: new Date().toISOString(),
+        location: phoneCountry || language?.toUpperCase() || "",
+        phone: phoneDisplay || phone || "",
+        messages: [
+          {
+            id: `cf-${Date.now()}-1`,
+            sender: "client",
+            content: message,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      };
+      existing.unshift(thread);
+      fs.writeFileSync(messagesPath, JSON.stringify(existing, null, 2), "utf-8");
+    } catch {
+      // non-blocking
     }
 
     return NextResponse.json({ success: true });

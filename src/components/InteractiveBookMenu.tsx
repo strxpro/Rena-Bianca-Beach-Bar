@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/translations";
 import { getMenuBook, MENU_APPROX, MENU_UI, type MenuBookPage } from "@/data/menuBook";
@@ -167,6 +168,8 @@ export default function InteractiveBookMenu() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobilePageIndex, setMobilePageIndex] = useState(0);
   const mobileSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  /** Gdy dotyk zaczyna się na oku — nie traktuj gestu jako zmiany strony (żeby klik otwierał popup). */
+  const mobileTouchOnEyeRef = useRef(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -642,12 +645,22 @@ export default function InteractiveBookMenu() {
   }) ?? contentPages[0] ?? null;
   const currentMobilePage = contentPages[mobilePageIndex] ?? contentPages[0] ?? null;
 
-  /* Popup state moved above pointer handlers */
+  /* Listen for the global "open-menu-popup" event dispatched by the
+     hero "Zobacz menu" button so it can open the popup from anywhere. */
+  useEffect(() => {
+    const handler = () => {
+      const id = (isMobile ? currentMobilePage : activeDesktopContentPage)?.id
+        ?? contentPages[0]?.id ?? bookData[1]?.id ?? "coffee-bar";
+      openPopup(id);
+    };
+    window.addEventListener("open-menu-popup", handler);
+    return () => window.removeEventListener("open-menu-popup", handler);
+  }, [isMobile, currentMobilePage, activeDesktopContentPage, contentPages, bookData, openPopup]);
 
   return (
     <section
       id="menu"
-      className="relative flex min-h-svh flex-col pt-[28px] pb-4 sm:pb-6 md:min-h-dvh md:pt-[80px] md:pb-10"
+      className="relative z-[140] isolate flex min-h-svh flex-col pt-[28px] pb-4 pointer-events-auto sm:pb-6 md:min-h-dvh md:pt-[80px] md:pb-10"
       style={{ background: "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)" }}
     >
       {/* ── Animated beach decorations — idle float + scroll parallax.
@@ -672,7 +685,7 @@ export default function InteractiveBookMenu() {
         <div className="mx-auto mt-2 h-px w-24 sm:mt-2 sm:w-36 md:w-48" style={{ background: "linear-gradient(90deg, transparent, rgba(253,251,247,0.45), transparent)" }} />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full flex-1 max-w-[1500px] items-start justify-center gap-4 px-3 pb-6 sm:gap-8 sm:px-4 md:px-6">
+      <div className="relative z-10 mx-auto flex min-h-0 w-full flex-1 max-w-[1500px] items-start justify-center gap-4 px-3 pb-6 sm:gap-8 sm:px-4 md:min-h-0 md:px-6 pointer-events-auto">
         {/* ═══ TOC Sidebar ═══ */}
         <aside className="hidden w-56 shrink-0 xl:block">
           <nav className="sticky top-28 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-md">
@@ -705,18 +718,18 @@ export default function InteractiveBookMenu() {
         </aside>
 
         {/* ═══ BOOK + Mobile TOC ═══ */}
-        <div className="flex w-full max-w-[1220px] min-h-0 flex-col items-center">
+        <div className="relative z-[60] flex w-full max-w-[1220px] min-h-0 flex-col items-center pointer-events-auto">
           {/* ── Mobile TOC — horizontal pills above book. Tight bottom
                 margin so the book card sits as high as possible and
                 more of the menu surface shows in the viewport. ── */}
           <div
             ref={mobileTocContainerRef}
-            className="mb-2 w-full overflow-x-auto overflow-y-hidden overscroll-x-contain scrollbar-none [scrollbar-width:none] touch-pan-x xl:hidden"
+            className="pointer-events-auto relative z-[100] mb-2 flex w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden px-1 pb-2 scrollbar-none [scrollbar-width:none] xl:hidden [&::-webkit-scrollbar]:hidden"
             data-mobile-menu-toc
             data-lenis-prevent
-            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x", overscrollBehaviorX: "contain" }}
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
           >
-            <div className="flex min-w-max items-center gap-2 px-1 pb-2 snap-x snap-mandatory">
               {contentPages.map((page, tocIndex) => {
                 const pageIdx = bookData.indexOf(page);
                 const isActive = isMobile
@@ -728,17 +741,24 @@ export default function InteractiveBookMenu() {
                     ref={(el) => {
                       mobileTocItemRefs.current[page.id] = el;
                     }}
-                    className={`snap-start shrink-0 rounded-full border transition-all duration-300 ${isActive
+                    className={`shrink-0 rounded-full border transition-all duration-300 ${isActive
                       ? "border-ocean/45 bg-ocean/22 shadow-[0_10px_30px_-20px_rgba(59,130,196,0.9)]"
                       : "border-white/10 bg-white/5"}`}
                   >
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (isMobile) goToMobilePage(tocIndex);
                         else goToPage(pageIdx);
                       }}
-                      className={`rounded-full px-4 py-2 font-body text-xs whitespace-nowrap transition-colors duration-300 sm:px-4 sm:py-2 sm:text-xs ${isActive
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (isMobile) goToMobilePage(tocIndex);
+                        else goToPage(pageIdx);
+                      }}
+                      className={`cursor-pointer rounded-full px-4 py-2.5 font-body text-xs whitespace-nowrap transition-colors duration-300 sm:px-4 sm:py-2 sm:text-xs ${isActive
                         ? "text-sand"
                         : "text-sand/60 hover:text-sand/85"}`}
                       style={{ touchAction: "manipulation" }}
@@ -748,7 +768,6 @@ export default function InteractiveBookMenu() {
                   </div>
                 );
               })}
-            </div>
           </div>
 
           {/* ── How-to-flip tip — sits in the normal flow ABOVE the
@@ -771,32 +790,38 @@ export default function InteractiveBookMenu() {
             </div>
           </div>
 
-          <div data-book-stage className="relative z-10 w-full min-h-0 md:hidden">
+          <div data-book-stage className="relative z-[60] w-full min-h-0 md:hidden pointer-events-auto">
             <div
-              data-lenis-prevent
-              className="relative mx-auto flex min-h-0 w-full max-w-[560px] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#FAFAFA] shadow-[0_28px_90px_-30px_rgba(0,0,0,0.55)]"
-              style={{ height: "min(760px, calc(100svh - 148px))", minHeight: "430px", touchAction: "pan-y" }}
+              className="relative mx-auto flex min-h-0 w-full max-w-[560px] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#FAFAFA] shadow-[0_28px_90px_-30px_rgba(0,0,0,0.55)] pointer-events-auto"
+              style={{ height: "min(680px, calc(100svh - 200px))", minHeight: "400px", touchAction: "pan-y" }}
               onTouchStart={(e) => {
-                const target = e.target as HTMLElement;
-                if (target.closest("[data-no-card-swipe], button, a, input, textarea, select, label")) {
+                if ((e.target as HTMLElement).closest("[data-menu-eye]")) {
+                  mobileTouchOnEyeRef.current = true;
                   mobileSwipeStartRef.current = null;
                   return;
                 }
+                mobileTouchOnEyeRef.current = false;
                 const touch = e.touches[0];
                 mobileSwipeStartRef.current = { x: touch.clientX, y: touch.clientY };
               }}
               onTouchEnd={(e) => {
+                if (mobileTouchOnEyeRef.current) {
+                  mobileTouchOnEyeRef.current = false;
+                  mobileSwipeStartRef.current = null;
+                  return;
+                }
                 const start = mobileSwipeStartRef.current;
                 mobileSwipeStartRef.current = null;
                 if (!start) return;
                 const end = e.changedTouches[0];
                 const dx = end.clientX - start.x;
                 const dy = end.clientY - start.y;
-                if (Math.abs(dx) < 44 || Math.abs(dx) <= Math.abs(dy)) return;
+                if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
                 if (dx < 0) goNextMobile();
                 else goPrevMobile();
               }}
               onTouchCancel={() => {
+                mobileTouchOnEyeRef.current = false;
                 mobileSwipeStartRef.current = null;
               }}
             >
@@ -818,7 +843,11 @@ export default function InteractiveBookMenu() {
             </div>
           </div>
 
-          <div data-book-stage className="relative z-10 hidden w-full md:block" style={{ aspectRatio: "2 / 1.3", minHeight: "clamp(360px, 78vw, 880px)" }}>
+          <div
+            data-book-stage
+            className="relative z-[60] hidden min-h-0 w-full md:block md:max-h-[min(920px,calc(100dvh-220px))] pointer-events-auto"
+            style={{ aspectRatio: "2 / 1.22", minHeight: "min(880px, max(360px, calc(100dvh - 260px)))", maxHeight: "min(920px, calc(100dvh - 200px))" }}
+          >
             {/* ── Side arrows — clickable page-turn affordance.
                   Hidden on small screens (they overlap the book
                   there); the bottom-nav arrows handle mobile. On
@@ -1029,9 +1058,9 @@ export default function InteractiveBookMenu() {
       </div>
 
       {/* ═══ POPUP CAROUSEL — swipeable cards ═══ */}
-      {popupOpen && (
+      {popupOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/72 backdrop-blur-md sm:items-center"
+          className="fixed inset-0 z-200 flex items-end justify-center bg-black/72 backdrop-blur-md sm:items-center"
           onClick={closePopup}
         >
           {/* Prev arrow — desktop */}
@@ -1075,7 +1104,7 @@ export default function InteractiveBookMenu() {
               el._swipeY = null;
             }}
           >
-            <div className="flex h-dvh w-full flex-col overflow-hidden rounded-t-[28px] bg-[#FAFAFA] shadow-2xl sm:h-auto sm:max-h-[82dvh] sm:rounded-[28px]">
+            <div className="animate-menu-popout-in mb-3 flex h-[calc(100dvh-96px)] w-full flex-col overflow-hidden rounded-[28px] bg-[#FAFAFA] shadow-2xl sm:mb-0 sm:h-auto sm:max-h-[82dvh] sm:rounded-[28px]">
               <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-navy/10 bg-[#FAFAFA]/96 px-4 py-4 backdrop-blur-sm sm:px-6 sm:py-5 md:px-8">
                 <div className="min-w-0 pr-2">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -1163,10 +1192,11 @@ export default function InteractiveBookMenu() {
               </svg>
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
       {/* ── Decorative wave at bottom of menu ── */}
-      <div className="pointer-events-none absolute inset-x-0 -bottom-px z-30">
+      <div className="pointer-events-none absolute inset-x-0 -bottom-px z-20">
         <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="block w-full" style={{ height: "clamp(60px, 10vw, 130px)" }}>
           <path
             d="M0,60 C180,100 360,20 540,65 C720,110 900,25 1080,70 C1200,95 1350,35 1440,55 L1440,120 L0,120Z"
@@ -1355,7 +1385,7 @@ function PageView({
            Tapping the eye opens the full-screen readable popup —
            much easier than squinting at the tilted book page on
            mobile or peering at a small card on desktop. */}
-      <div className={`${mobileCard ? "mb-4 flex items-start justify-between gap-3 border-b border-navy/10 pb-3" : "mb-2 flex items-center justify-between gap-2 border-b border-navy/10 pb-2 md:mb-3 md:pb-3"}`}>
+      <div className={`relative z-[60] pointer-events-auto ${mobileCard ? "mb-4 flex items-start justify-between gap-3 border-b border-navy/10 pb-3" : "mb-2 flex items-center justify-between gap-2 border-b border-navy/10 pb-2 md:mb-3 md:pb-3"}`}>
         <div className={`${mobileCard ? "flex min-w-0 flex-1 items-start gap-3" : "flex min-w-0 items-center gap-2"}`}>
           <h3
             className={`${mobileCard ? "min-w-0 whitespace-normal wrap-break-word font-heading leading-[1.05] text-navy" : "min-w-0 truncate font-heading text-navy"}`}
@@ -1370,14 +1400,22 @@ function PageView({
           {onExpand && !isFlap && (
             <button
               type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onExpand(page.id); }}
+              data-menu-eye
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpand(page.id);
+              }}
               onPointerDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onExpand(page.id);
+              }}
               aria-label={pageUi.previewLabel}
               title={pageUi.previewLabel}
               data-no-card-swipe
               data-lenis-prevent
-              className="pointer-events-auto relative z-10 flex shrink-0 items-center justify-center rounded-full border border-navy/15 bg-white/80 text-navy/60 backdrop-blur-sm transition-all duration-300 hover:border-ocean/40 hover:bg-white hover:text-ocean hover:shadow-[0_4px_14px_rgba(59,130,196,0.25)]"
+              className="pointer-events-auto relative z-[90] cursor-pointer flex shrink-0 items-center justify-center rounded-full border border-navy/15 bg-white/80 text-navy/60 backdrop-blur-sm transition-all duration-300 hover:border-ocean/40 hover:bg-white hover:text-ocean hover:shadow-[0_4px_14px_rgba(59,130,196,0.25)]"
               style={{
                 width: mobileCard ? "44px" : "clamp(24px, 2.4vw, 36px)",
                 height: mobileCard ? "44px" : "clamp(24px, 2.4vw, 36px)",
@@ -1406,7 +1444,16 @@ function PageView({
       )}
 
       {/* Menu items */}
-      <div data-mobile-menu-scroll data-lenis-prevent={mobileCard ? true : undefined} className={`${mobileCard ? "flex min-h-0 flex-1 flex-col justify-start gap-3 overflow-y-auto overscroll-y-contain pr-1 pb-2" : "flex flex-1 flex-col justify-start gap-1 overflow-hidden md:gap-2"}`} style={mobileCard ? { WebkitOverflowScrolling: "touch", touchAction: "pan-y", overflowY: "auto" } : undefined}>
+      <div
+        data-mobile-menu-scroll
+        data-no-card-swipe
+        className={`${mobileCard ? "flex min-h-0 flex-1 flex-col justify-start gap-3 overflow-y-auto pr-1 pb-2" : "flex min-h-0 flex-1 flex-col justify-start gap-1 overflow-y-auto md:gap-2"}`}
+        style={
+          mobileCard
+            ? { WebkitOverflowScrolling: "touch", touchAction: "pan-y", overflowY: "auto" }
+            : { WebkitOverflowScrolling: "touch", touchAction: "pan-y", minHeight: 0 }
+        }
+      >
         {page.content?.map((item, i) => (
           <div key={i} className={`${mobileCard ? "group border-b border-navy/8 pb-3 last:border-0 last:pb-0" : "group"}`}>
             <div className="flex items-start justify-between gap-3">

@@ -1,0 +1,866 @@
+[
+  {
+    "ts": 1776825057473,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776825055527-x76aha",
+    "referrer": "http://localhost:3001/?edit=1"
+  },
+  {
+    "ts": 1776825059607,
+    "path": "/admin",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776825055527-x76aha",
+    "referrer": "http://localhost:3001/?edit=1"
+  },
+  {
+    "ts": 1776825123641,
+    "path": "/admin/messages",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776825055527-x76aha",
+    "referrer": "http://localhost:3001/?edit=1"
+  },
+  {
+    "ts": 1776825135555,
+    "path": "/admin/reviews",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776825055527-x76aha",
+    "referrer": "http://localhost:3001/admin/messages"
+  },
+  {
+    "ts": 1776825175828,
+    "path": "/admin/messages",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776825055527-x76aha",
+    "referrer": "http://localhost:3001/admin/messages"
+  },
+  {
+    "ts": 1776825412817,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776825055527-x76aha",
+    "referrer": "http://localhost:3001/admin/messages"
+  },
+  {
+    "ts": 1776825469711,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776825055527-x76aha",
+    "referrer": ""
+  },
+  {
+    "ts": 1776826478845,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776825055527-x76aha",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776827963463,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776827962403-pmq3w3",
+    "referrer": ""
+  },
+  {
+    "ts": 1776828910820,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828910787-h1eb2g",
+    "referrer": ""
+  },
+  {
+    "ts": 1776828922755,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": ""
+  },
+  {
+    "ts": 1776829069161,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": ""
+  },
+  {
+    "ts": 1776829096178,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": ""
+  },
+  {
+    "ts": 1776829365140,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828910787-h1eb2g",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776829369197,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776829486594,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776829687678,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776829700806,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776829708430,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776830105276,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776830113129,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776830392980,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776830846811,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828922721-awctjg",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776831470476,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": ""
+  },
+  {
+    "ts": 1776831481268,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": ""
+  },
+  {
+    "ts": 1776831490780,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": ""
+  },
+  {
+    "ts": 1776831496249,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": ""
+  },
+  {
+    "ts": 1776831508281,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": ""
+  },
+  {
+    "ts": 1776831514957,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": ""
+  },
+  {
+    "ts": 1776831521633,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776828910787-h1eb2g",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776831522628,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776833089310,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776833097546,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776833104027,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776833113510,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776833130415,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776831469638-ztiyku",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776834594757,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": ""
+  },
+  {
+    "ts": 1776834605905,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": ""
+  },
+  {
+    "ts": 1776834662681,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": ""
+  },
+  {
+    "ts": 1776834678099,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": ""
+  },
+  {
+    "ts": 1776834721028,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": ""
+  },
+  {
+    "ts": 1776835055185,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": ""
+  },
+  {
+    "ts": 1776835062293,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776835068842,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776835075743,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776835084917,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836315404,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836324082,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836338218,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836345567,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836383365,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836396705,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836704068,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836707301,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836713903,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836783377,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836786968,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836790410,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776834594739-nuwrdj",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776836894123,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776836894095-2vd5lz",
+    "referrer": ""
+  },
+  {
+    "ts": 1776836938151,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776836894095-2vd5lz",
+    "referrer": ""
+  },
+  {
+    "ts": 1776837319907,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776836894095-2vd5lz",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1776838195628,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": ""
+  },
+  {
+    "ts": 1776838202121,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": ""
+  },
+  {
+    "ts": 1776838205502,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838208775,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838216995,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838221124,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838225130,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838229890,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838540642,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838544834,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838883610,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838891508,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776838929180,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838927398-tww9yh",
+    "referrer": ""
+  },
+  {
+    "ts": 1776838938113,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838927398-tww9yh",
+    "referrer": ""
+  },
+  {
+    "ts": 1776839243350,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838927398-tww9yh",
+    "referrer": ""
+  },
+  {
+    "ts": 1776839254280,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838927398-tww9yh",
+    "referrer": ""
+  },
+  {
+    "ts": 1776839358681,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838927398-tww9yh",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776839468505,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838927398-tww9yh",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776840231400,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838927398-tww9yh",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776840377510,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": ""
+  },
+  {
+    "ts": 1776841394164,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": ""
+  },
+  {
+    "ts": 1776841397805,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776841400633,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776841408799,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776841415950,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776841474993,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776841825176,
+    "path": "/",
+    "country": "XX",
+    "device": "mobile",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776842436998,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776838194724-mu2t9t",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1776843429248,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776843697530,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776843705807,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776843709982,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776844446726,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776844812988,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776844821110,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776845183666,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776845205445,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776845660535,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776845674462,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776845684480,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776845697688,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776846208532,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776846218734,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776846385392,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776846395645,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776846406278,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1776846624067,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": "http://localhost:3000/"
+  }
+]

@@ -124,7 +124,7 @@ export default function Header() {
       <header
         ref={headerRef}
         data-header
-        className={`fixed top-0 left-1/2 -translate-x-1/2 z-100 flex items-center justify-between
+        className={`fixed top-0 left-1/2 -translate-x-1/2 z-100 flex items-center justify-between pointer-events-none
                     w-[calc(100%-1rem)] sm:w-[calc(100%-1.5rem)] md:w-[calc(100%-3rem)] max-w-[1400px]
                     px-3 sm:px-5 md:px-8 rounded-b-2xl
                     transition-all duration-500
@@ -139,7 +139,7 @@ export default function Header() {
               Compact, fully responsive: everything stays visible from
               the tiniest phone up to desktop. Icons shrink on small
               screens so we never overflow the header. ═══ */}
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div className="pointer-events-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <div className="relative">
             <button
               onClick={() => setLangOpen((p) => !p)}
@@ -260,7 +260,7 @@ export default function Header() {
               shown once there's genuine room for it; below that
               the mobile hamburger owns the right edge. ═══ */}
         <nav
-          className="hidden min-w-0 shrink-0 items-center md:flex"
+          className="pointer-events-auto hidden min-w-0 shrink-0 items-center md:flex"
           style={{ gap: "clamp(2px, 0.5vw, 18px)" }}
         >
           {NAV_KEYS.map((item, index) => {
@@ -275,7 +275,7 @@ export default function Header() {
                     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
                     setIsMenuOpen(false);
                   }}
-                  className={`group/reservation relative ml-1 flex h-10 items-center justify-center overflow-hidden whitespace-nowrap rounded-full border font-body font-medium uppercase transition-colors duration-300
+                  className={`group/reservation relative ml-1 flex h-10 items-center justify-center overflow-hidden whitespace-nowrap rounded-full border font-heading font-medium uppercase transition-colors duration-300
                              ${isDocked
                                ? "border-navy/15 bg-navy/5 text-navy hover:border-ocean/30 hover:bg-ocean/10"
                                : "border-white/20 bg-white/8 text-white hover:border-white/35 hover:bg-white/14"}`}
@@ -311,7 +311,7 @@ export default function Header() {
                   if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
                   setIsMenuOpen(false);
                 }}
-                className={`group/nav relative select-none whitespace-nowrap py-1.5 font-body uppercase transition-colors duration-300
+                className={`group/nav relative select-none whitespace-nowrap py-1.5 font-heading uppercase transition-colors duration-300
                            ${isDocked ? "text-navy hover:text-ocean" : "text-white/85 hover:text-white"}`}
                 style={{
                   fontSize: "clamp(10px, 0.88vw, 14px)",
@@ -337,7 +337,7 @@ export default function Header() {
 
         {/* ═══ RIGHT — Mobile hamburger ═══ */}
         <button
-          className={`relative flex h-14 w-14 flex-col items-center justify-center rounded-full
+          className={`pointer-events-auto relative flex h-14 w-14 flex-col items-center justify-center rounded-full
                      border transition-colors md:hidden
                      ${isDocked ? "border-navy/20 hover:bg-navy/5 text-navy" : "border-white/20 hover:bg-white/10 text-white"}`}
           aria-label={isMenuOpen ? "Zamknij menu" : "Otwórz menu"}
@@ -379,7 +379,7 @@ export default function Header() {
 
       {/* 3D-folding panel */}
       <div
-        className="fixed left-1/2 z-99 w-[calc(100%-1.5rem)] max-w-[420px] -translate-x-1/2 md:hidden"
+        className="pointer-events-none fixed left-1/2 z-99 w-[calc(100%-1.5rem)] max-w-[420px] -translate-x-1/2 md:hidden"
         style={{
           top: HEADER_H + 10,
           perspective: "1200px",

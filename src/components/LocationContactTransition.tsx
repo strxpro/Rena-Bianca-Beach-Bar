@@ -9,7 +9,7 @@ import { PinContainer } from "@/components/ui/3d-pin";
 import PhoneCountrySelect, { type Country } from "@/components/PhoneCountrySelect";
 import { Turnstile } from "@marsidev/react-turnstile";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ═══════════════════════════════════════════════════════════════
    LOCATION ↔ CONTACT  —  Orbital Scroll Transition
@@ -38,18 +38,8 @@ function getFrameSrc(i: number) {
   return `/wyspa/WYSPA${String(i).padStart(FRAME_PAD, "0")}.png`;
 }
 
-// Custom easing for slow-start frames: first 30% of frames play in 60% of the timeline
-function slowStartMap(progress: number): number {
-  if (progress < 0.6) {
-    // First 60% of scroll → first 30% of frames (slow)
-    return (progress / 0.6) * 0.3;
-  }
-  // Remaining 40% of scroll → last 70% of frames (fast)
-  return 0.3 + ((progress - 0.6) / 0.4) * 0.7;
-}
-
-export default function LocationContactTransition() {
-  const { t, locale } = useI18n();
+export default function LocationContactTransition({ isEditMode = false }: { isEditMode?: boolean }) {
+  const { t, locale, overrides, setOverride } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
@@ -70,6 +60,28 @@ export default function LocationContactTransition() {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const formOpenTimeRef = useRef<number>(Date.now());
+  const [locEditOpen, setLocEditOpen] = useState(false);
+  const [locDraft, setLocDraft] = useState({ addressLine1: "", addressLine2: "", hours: "", phone: "", email: "" });
+
+  const openLocEdit = () => {
+    setLocDraft({
+      addressLine1: overrides["location.address.line1"] ?? "Spiaggia di Rena Bianca",
+      addressLine2: overrides["location.address.line2"] ?? "07028 Santa Teresa Gallura",
+      hours: overrides["location.hours.times"] ?? "10:00 – 01:00",
+      phone: overrides["location.phone.value"] ?? "+39 0789 123 456",
+      email: overrides["location.email"] ?? "info@renabiancabeachbar.com",
+    });
+    setLocEditOpen(true);
+  };
+
+  const applyLocEdit = () => {
+    setOverride("location.address.line1", locDraft.addressLine1);
+    setOverride("location.address.line2", locDraft.addressLine2);
+    setOverride("location.hours.times", locDraft.hours);
+    setOverride("location.phone.value", locDraft.phone);
+    setOverride("location.email", locDraft.email);
+    setLocEditOpen(false);
+  };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,7 +256,8 @@ export default function LocationContactTransition() {
     () => {
       const section = sectionRef.current;
       if (!section) return;
-      const isMobileDevice = window.innerWidth < 768;
+      const mqMobile = window.matchMedia("(max-width: 767px)");
+      const isMobileDevice = mqMobile.matches;
 
       const waveBack = section.querySelector("[data-wave-back]") as HTMLElement;
       const waveFront = section.querySelector("[data-wave-front]") as HTMLElement;
@@ -261,6 +274,7 @@ export default function LocationContactTransition() {
          brightening as they slide into place. */
       const contactLines = section.querySelectorAll("[data-contact-line]");
       const bgEl = section.querySelector("[data-bg]") as HTMLElement;
+      const contactWrapper = section.querySelector("[data-contact-wrap]") as HTMLElement;
 
       if (!waveBack || !waveFront || !framePlayer || !sceneWrap || !locationPanel || !contactPanel) return;
 
@@ -287,15 +301,8 @@ export default function LocationContactTransition() {
          0.90 – 1.00   Contact holds, then gently lifts for footer.
          ═══════════════════════════════════════════════════════════════ */
 
-      // Initial states — location VISIBLE, waves + frame below screen, bg static
-      // NOTE: transform-origin on sceneWrap kept as "center" so any tiny
-      // tween never introduces a visual flip. No rotation is ever applied
-      // to this wrap (waves + film stay perfectly upright).
+      // Initial states — location VISIBLE, waves + frame below screen
       gsap.set(sceneWrap, { yPercent: 0, xPercent: 0, rotation: 0, transformOrigin: "center center" });
-      // Waves start fully hidden BELOW the viewport so the very
-      // first pixel of the section shows only the dark gradient
-      // + location panel — no waves visible until they rise in
-      // during Phase 1.
       gsap.set(waveBack, { yPercent: 130 });
       gsap.set(waveFront, { yPercent: 140 });
       gsap.set(framePlayer, { yPercent: 130 });
@@ -310,7 +317,10 @@ export default function LocationContactTransition() {
         rotation: 0,
         transformOrigin: "50% 50%",
       });
-      gsap.set(contactPanel, { xPercent: 120, yPercent: 0, opacity: 0, rotation: 0, transformOrigin: "50% 50%" });
+      gsap.set(contactPanel, { x: 0, xPercent: 0, yPercent: 0, opacity: 0, rotation: 0, transformOrigin: "50% 50%" });
+      if (contactWrapper) {
+        gsap.set(contactWrapper, { x: 0, xPercent: 0, transformOrigin: "50% 50%" });
+      }
       // Phone reveal section starts hidden
       const phoneSection = section.querySelector("[data-phone-section]");
       const phoneLetters = section.querySelectorAll("[data-phone-letter]");
@@ -341,7 +351,7 @@ export default function LocationContactTransition() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMobileDevice ? "+=560%" : "+=900%",
+          end: isMobileDevice ? "+=280%" : "+=900%",
           pin: true,
           scrub: isMobileDevice ? 0.3 : 0.5,
           anticipatePin: 1,
@@ -355,6 +365,13 @@ export default function LocationContactTransition() {
           fastScrollEnd: true,
           preventOverlaps: "pinned",
           invalidateOnRefresh: true,
+          onRefresh: () => {
+            if (!window.matchMedia("(max-width: 767px)").matches) return;
+            gsap.set(contactPanel, { x: 0, xPercent: 0, yPercent: 0, rotation: 0, scale: 1 });
+            if (contactWrapper) {
+              gsap.set(contactWrapper, { x: 0, xPercent: 0, clearProps: "transform" });
+            }
+          },
           onUpdate: (self) => {
             // Auto-activate the 3D pin while the panel is orbiting away.
             const p = self.progress;
@@ -367,15 +384,11 @@ export default function LocationContactTransition() {
         },
       });
 
-      /* ═══ Phase 1 (0.02 → 0.12): Waves rise — back first, then front.
-            Start AFTER a tiny delay so the first scroll shows ONLY
-            the dark gradient + location panel (no waves yet). ═══ */
+      /* ═══ Phase 1 (0.02 → 0.12): Waves rise — back first, then front. ═══ */
       tl.to(waveBack, { yPercent: 55, duration: 0.08, ease: "power2.out" }, 0.02);
       tl.to(waveFront, { yPercent: 60, duration: 0.08, ease: "power2.out" }, 0.04);
 
-      /* ═══ Phase 2 (0.10 → 0.18): Film rises between waves.
-            First ~12% of frames already play so the canvas is
-            alive the moment it peeks above the water line. ═══ */
+      /* ═══ Phase 2 (0.10 → 0.18): Film rises between waves. ═══ */
       tl.to(framePlayer, { yPercent: 0, duration: 0.10, ease: "power2.out" }, 0.10);
 
       /* ═══ MASTER FRAME SEQUENCE (0 → 1)
@@ -394,7 +407,7 @@ export default function LocationContactTransition() {
       }, 0);
 
       const ORBIT_START = 0.40;
-      const ORBIT_DUR = 0.30; // Orbit ends at 0.70 (0.40 + 0.30)
+      const ORBIT_DUR = isMobileDevice ? 0.18 : 0.30; // Mobile: faster transition
 
       /* ── Background gradually lightens early during the film play ── */
       if (bgEl) {
@@ -443,24 +456,54 @@ export default function LocationContactTransition() {
                        rebound in scale (the delicate magnet tug).
            0.85–1.00 — final settle to dead centre at scale 1.
       */
-      tl.set(contactPanel, { opacity: 0, xPercent: 120, yPercent: 0, rotation: 8, scale: 1 }, ORBIT_START);
-      const contactKeyframes = isMobileDevice
-        ? [
-            { xPercent: 72, yPercent: -3, rotation: 4, opacity: 0.45, duration: 0.32, ease: "sine.inOut" },
-            { xPercent: 18, yPercent: -1, rotation: 1, opacity: 0.9, duration: 0.33, ease: "power2.out" },
-            { xPercent: 0, yPercent: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" },
-          ]
-        : [
+      /* ── Responsive orbit: gsap.matchMedia — desktop (≥768) uses
+         xPercent entry; mobile (≤767) has NO horizontal motion on
+         contactPanel or data-contact-wrap (opacity / color only). ── */
+      const mm = gsap.matchMedia();
+      mm.add("(max-width: 767px)", () => {
+        gsap.set(contactPanel, { x: 0, xPercent: 0, yPercent: 0, rotation: 0, scale: 1 });
+        if (contactWrapper) {
+          gsap.set(contactWrapper, { x: 0, xPercent: 0, clearProps: "transform" });
+        }
+        tl.set(contactPanel, { x: 0, xPercent: 0, yPercent: 0, opacity: 0, rotation: 0, scale: 1 }, ORBIT_START);
+        tl.to(
+          contactPanel,
+          {
+            x: 0,
+            xPercent: 0,
+            yPercent: 0,
+            opacity: 1,
+            rotation: 0,
+            scale: 1,
+            duration: ORBIT_DUR,
+            ease: "power2.out",
+          },
+          ORBIT_START
+        );
+        if (contactWrapper) {
+          tl.set(contactWrapper, { x: 0, xPercent: 0, clearProps: "transform" }, 0);
+        }
+        return () => {
+          gsap.set(contactPanel, { x: 0, xPercent: 0, clearProps: "transform" });
+          if (contactWrapper) gsap.set(contactWrapper, { x: 0, clearProps: "transform" });
+        };
+      });
+      mm.add("(min-width: 768px)", () => {
+        tl.set(contactPanel, { xPercent: 120, yPercent: 0, opacity: 0, rotation: 8, scale: 1 }, ORBIT_START);
+        tl.to(contactPanel, {
+          keyframes: [
             { xPercent: 85, yPercent: -4, rotation: 6, opacity: 0.45, duration: 0.18, ease: "sine.inOut" },
             { xPercent: 50, yPercent: -2, rotation: 3, opacity: 0.85, duration: 0.17, ease: "sine.inOut" },
             { xPercent: -8, yPercent: -0.6, rotation: 0, opacity: 1, scale: 1.02, duration: 0.25, ease: "power3.out" },
             { xPercent: 1.5, yPercent: 0, scale: 0.996, duration: 0.25, ease: "sine.inOut" },
             { xPercent: 0, yPercent: 0, scale: 1, duration: 0.15, ease: "power2.out" },
-          ];
-      tl.to(contactPanel, {
-        keyframes: contactKeyframes,
-        duration: ORBIT_DUR,
-      }, ORBIT_START);
+          ],
+          duration: ORBIT_DUR,
+        }, ORBIT_START);
+        return () => {
+          gsap.set(contactPanel, { clearProps: "transform" });
+        };
+      });
 
       /* ═══ Phase 5 (FILM_END → +0.12): Scenery hides DOWN.
             Only AFTER the contact panel has locked to centre do the
@@ -534,26 +577,6 @@ export default function LocationContactTransition() {
       const MAGNET_START = 0.84; 
       const MAGNET_DUR = 0.06;
 
-      const contactWrapper = section.querySelector("[data-contact-wrap]") as HTMLElement;
-      const contactInner = section.querySelector("[data-contact-inner]") as HTMLElement;
-
-      // Calculate the exact pixel offset to centre the card in
-      // the viewport. The card sits flush-left inside max-w-5xl.
-      // offset = (innerWidth - cardWidth) / 2
-      let centreX = 0;
-      if (contactInner && contactWrapper) {
-        centreX = (contactInner.offsetWidth - contactWrapper.offsetWidth) / 2;
-      }
-
-      // Bouncy magnetic slide to dead-centre
-      if (contactWrapper && centreX > 0 && !isMobileDevice) {
-        tl.to(contactWrapper, {
-          x: centreX,
-          duration: MAGNET_DUR,
-          ease: "back.out(1.7)",
-        }, MAGNET_START);
-      }
-
       // Card background darkens + glow intensifies
       if (contactWrapper) {
         tl.to(contactWrapper, {
@@ -617,6 +640,10 @@ export default function LocationContactTransition() {
 
       /* ═══ Phase 8 (remaining → 1.00): HOLD — form stays centred,
             user reads and interacts. ═══ */
+
+      return () => {
+        mm.revert();
+      };
     },
     { scope: sectionRef }
   );
@@ -665,7 +692,7 @@ export default function LocationContactTransition() {
               it did originally). ═══ */}
       <div
         data-frame-player
-        className="absolute bottom-[6%] left-1/2 z-3 w-[126%] -translate-x-1/2 overflow-hidden will-change-transform md:inset-x-0 md:bottom-0 md:left-0 md:w-full md:translate-x-0"
+        className="absolute bottom-[6%] left-[-13%] z-3 w-[126%] overflow-hidden will-change-transform md:bottom-0 md:left-0 md:right-0 md:w-full"
         style={{ aspectRatio: "1920/1080" }}
       >
         <canvas
@@ -711,19 +738,31 @@ export default function LocationContactTransition() {
               <span className="mb-3 block font-body text-xs uppercase tracking-[0.3em] text-sand/40">
                 {t("location.label")}
               </span>
-              <h2
-                className="font-heading text-3xl text-sand sm:text-4xl md:text-5xl lg:text-6xl"
-                style={{ fontWeight: 400 }}
-              >
-                {t("location.heading")}
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2
+                  className="font-heading text-3xl text-sand sm:text-4xl md:text-5xl lg:text-6xl"
+                  style={{ fontWeight: 400 }}
+                >
+                  {t("location.heading")}
+                </h2>
+                {isEditMode && (
+                  <button
+                    type="button"
+                    onClick={openLocEdit}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/75 hover:scale-105"
+                    title="Edytuj lokalizację"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                  </button>
+                )}
+              </div>
 
               <div className="mt-8 space-y-5 font-body text-sm leading-relaxed text-sand/60 sm:text-base">
                 <div>
                   <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("location.address.label")}</span>
                   <p>
-                    Spiaggia di Rena Bianca<br />
-                    07028 Santa Teresa Gallura<br />
+                    {overrides["location.address.line1"] ?? "Spiaggia di Rena Bianca"}<br />
+                    {overrides["location.address.line2"] ?? "07028 Santa Teresa Gallura"}<br />
                     {t("location.country")}
                   </p>
                 </div>
@@ -733,13 +772,13 @@ export default function LocationContactTransition() {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("location.hours.label")}</span>
-                    <p>{t("location.hours.value")}<br />10:00 – 01:00</p>
+                    <p>{t("location.hours.value")}<br />{overrides["location.hours.times"] ?? "10:00 – 01:00"}</p>
                   </div>
                   <div>
                     <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("location.phone.label")}</span>
                     <p>
-                      +39 0789 123 456<br />
-                      info@renabiancabeachbar.com
+                      {overrides["location.phone.value"] ?? "+39 0789 123 456"}<br />
+                      {overrides["location.email"] ?? "info@renabiancabeachbar.com"}
                     </p>
                   </div>
                 </div>
@@ -800,10 +839,10 @@ export default function LocationContactTransition() {
         data-contact
         className="absolute inset-0 z-20 flex items-center will-change-transform"
       >
-        <div data-contact-inner className="mx-auto w-full max-w-5xl px-4 sm:px-8 md:px-14">
+        <div data-contact-inner className="mx-auto flex w-full max-w-5xl justify-center px-4 sm:px-8 md:px-14">
           <div
             data-contact-wrap
-            className="w-full max-w-lg overflow-visible rounded-2xl border border-white/8 bg-white/3 p-5 sm:p-7 md:p-9 backdrop-blur-md will-change-transform"
+            className="mx-auto w-full max-w-lg overflow-visible rounded-2xl border border-white/8 bg-white/3 p-5 sm:p-7 md:p-9 backdrop-blur-md will-change-transform max-[767px]:mx-auto"
             style={{
               boxShadow: "0 0 40px rgba(59,130,196,0.06), inset 0 1px 0 rgba(255,255,255,0.05)",
             }}
@@ -957,8 +996,10 @@ export default function LocationContactTransition() {
               />
               {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
                 <Turnstile
+                  id="contact-turnstile"
                   siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
                   onSuccess={setTurnstileToken}
+                  onError={() => setTurnstileToken("")}
                   options={{ theme: "dark", size: "normal" }}
                   style={{ marginBottom: "8px" }}
                 />
@@ -1093,6 +1134,64 @@ export default function LocationContactTransition() {
           color: rgba(232,220,200,0.25);
         }
       `}</style>
+
+      {/* ── Location edit modal ── */}
+      {locEditOpen && (
+        <div
+          className="fixed inset-0 z-[350] flex items-center justify-center p-4"
+          style={{ background: "rgba(5, 15, 35, 0.85)", backdropFilter: "blur(8px)" }}
+        >
+          <div className="w-full max-w-sm overflow-y-auto rounded-[28px] border border-white/12 bg-[#0d2240] p-6 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.95)]" style={{ maxHeight: "90dvh" }}>
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="font-heading text-xl text-sand">Edytuj lokalizację</h3>
+              <button
+                type="button"
+                onClick={() => setLocEditOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-sand/50 hover:text-sand transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {[
+                { label: "Adres — linia 1", key: "addressLine1" as const, placeholder: "Spiaggia di Rena Bianca" },
+                { label: "Adres — linia 2", key: "addressLine2" as const, placeholder: "07028 Santa Teresa Gallura" },
+                { label: "Godziny (np. 10:00 – 01:00)", key: "hours" as const, placeholder: "10:00 – 01:00" },
+                { label: "Telefon", key: "phone" as const, placeholder: "+39 0789 123 456" },
+                { label: "Email", key: "email" as const, placeholder: "info@renabiancabeachbar.com" },
+              ].map(({ label, key, placeholder }) => (
+                <div key={key}>
+                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/40">{label}</label>
+                  <input
+                    value={locDraft[key]}
+                    onChange={(e) => setLocDraft((p) => ({ ...p, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 font-body text-sm text-sand placeholder-sand/30 outline-none focus:border-ocean/50 focus:ring-1 focus:ring-ocean/30 transition-all"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setLocEditOpen(false)}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-body text-sm text-sand/60 hover:text-sand transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                type="button"
+                onClick={applyLocEdit}
+                className="rounded-xl bg-ocean/80 px-5 py-2.5 font-body text-sm font-medium text-white hover:bg-ocean transition-colors"
+              >
+                Gotowe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
