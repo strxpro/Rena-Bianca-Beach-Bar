@@ -73,6 +73,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   const now = Date.now();
-  const activeCount = [...activeSessions.values()].filter((t) => now - t < SESSION_TTL).size;
+  const activeCount = [...activeSessions.values()].filter((t) => now - t < SESSION_TTL).length;
   return NextResponse.json({ activeNow: activeCount });
 }
