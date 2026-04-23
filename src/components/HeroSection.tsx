@@ -149,7 +149,7 @@ export default function HeroSection() {
     const playVideo = () => {
       if (introFinishedRef.current) return;
       vid.play().catch(() => {});
-      if (!isMobileDevice && peek?.src) {
+      if (peek?.src) {
         peek.play().catch(() => {});
       }
     };
