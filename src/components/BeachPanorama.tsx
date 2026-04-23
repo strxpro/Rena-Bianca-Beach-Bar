@@ -162,11 +162,11 @@ export default function BeachPanorama() {
           pinSpacing: true,
           pinType: "fixed",
           /* scrub: 1 matches the gallery — a single-frame lag so
-             Lenis smooth-scroll inertia doesn't race the DOM
-             writes. No `snap`: snap + Lenis fights with user
-             momentum and causes the "skipping" the user saw.
-             The pin itself already gives the magnetic feel. */
-          scrub: window.innerWidth < 768 ? 2 : 1,
+            Lenis smooth-scroll inertia doesn't race the DOM
+            writes. No `snap`: snap + Lenis fights with user
+            momentum and causes the "skipping" the user saw.
+            The pin itself already gives the magnetic feel. */
+          scrub: 1.5,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           /* `fastScrollEnd: true` + `preventOverlaps` together

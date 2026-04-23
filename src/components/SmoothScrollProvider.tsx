@@ -85,6 +85,16 @@ export default function SmoothScrollProvider({
       window.addEventListener("video-ended", releaseLock, { once: true });
       const safetyUnlock = window.setTimeout(releaseLock, 12000);
 
+      let lastUpdate = 0;
+      const onNativeScroll = () => {
+        const now = Date.now();
+        if (now - lastUpdate > 16) {
+          lastUpdate = now;
+          ScrollTrigger.update();
+        }
+      };
+      window.addEventListener("scroll", onNativeScroll, { passive: true });
+
       let rafId = 0;
       let resizeTimer = 0;
       const onResize = () => {
@@ -109,6 +119,7 @@ export default function SmoothScrollProvider({
         window.removeEventListener("wheel", onWheelDir);
         window.removeEventListener("touchstart", onTouchStartDir);
         window.removeEventListener("touchmove", onTouchMoveDir);
+        window.removeEventListener("scroll", onNativeScroll);
         window.removeEventListener("resize", onResize);
         window.removeEventListener("orientationchange", onResize);
         window.removeEventListener("video-ended", releaseLock);

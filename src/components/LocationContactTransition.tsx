@@ -353,7 +353,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
           start: "top top",
           end: isMobileDevice ? "+=500%" : "+=900%",
           pin: true,
-          scrub: 0.5,
+          scrub: isMobileDevice ? 1.5 : 0.5,
           anticipatePin: 1,
           /* Share the `"pinned"` group so this pin can never
              overlap with the menu-transition, panorama or gallery

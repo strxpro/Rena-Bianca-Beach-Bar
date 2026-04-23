@@ -316,7 +316,7 @@ export default function PhotoGallery() {
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       ScrollTrigger.create({
         trigger: section,
-        start: isMob ? "top 8%" : "top 80px",
+        start: isMob ? "top top" : "top 80px",
         end: () => `+=${Math.max(
           window.innerWidth < 768 ? 380 : 260,
           Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT
