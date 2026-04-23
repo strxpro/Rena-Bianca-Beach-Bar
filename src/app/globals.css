@@ -460,3 +460,11 @@ body {
     z-index: auto !important;
   }
 }
+
+[data-hero-video] {
+  visibility: hidden;
+}
+
+[data-hero-video].video-ready {
+  visibility: visible;
+}

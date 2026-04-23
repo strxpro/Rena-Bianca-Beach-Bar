@@ -245,10 +245,58 @@ export default function BeachPanorama() {
           FLIP_END * 0.4
         );
 
+      let touchSection: HTMLElement | null = null;
+      let onTouchStart: ((e: TouchEvent) => void) | null = null;
+      let onTouchMove: ((e: TouchEvent) => void) | null = null;
+      let onTouchEnd: ((e: TouchEvent) => void) | null = null;
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
+        touchSection = sectionRef.current;
+        if (touchSection) {
+          let touchStartX = 0;
+          let touchStartY = 0;
+          let isSwiping = false;
+
+          onTouchStart = (e: TouchEvent) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isSwiping = false;
+          };
+
+          onTouchEnd = (e: TouchEvent) => {
+            if (isSwiping) return;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+              if (dx < 0) {
+                navigate(Math.min(currentRef.current + 1, SLIDES.length - 1));
+              } else {
+                navigate(Math.max(currentRef.current - 1, 0));
+              }
+            }
+          };
+
+          onTouchMove = (e: TouchEvent) => {
+            const dx = Math.abs(e.touches[0].clientX - touchStartX);
+            const dy = Math.abs(e.touches[0].clientY - touchStartY);
+            if (dy > dx && dy > 10) isSwiping = true;
+          };
+
+          touchSection.addEventListener("touchstart", onTouchStart, { passive: true });
+          touchSection.addEventListener("touchmove", onTouchMove, { passive: true });
+          touchSection.addEventListener("touchend", onTouchEnd, { passive: true });
+        }
+      }
+
       /* PHASES 2 + 3 live in onUpdate above (navigate()). They
          stay off the timeline so the parallax wipe plays at its
          own pace without being scrubbed backwards frame-by-frame
          by the user's scroll. */
+      return () => {
+        if (!touchSection || !onTouchStart || !onTouchMove || !onTouchEnd) return;
+        touchSection.removeEventListener("touchstart", onTouchStart);
+        touchSection.removeEventListener("touchmove", onTouchMove);
+        touchSection.removeEventListener("touchend", onTouchEnd);
+      };
     },
     { scope: sectionRef }
   );

@@ -139,7 +139,7 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
             trigger: card,
             start: `top ${CARD_TOP}`,
             end: `bottom ${CARD_TOP}`,
-            scrub: 1,
+            scrub: isMobileViewport ? 1.5 : 1,
             invalidateOnRefresh: true,
           },
         });
@@ -205,6 +205,7 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
                 height: CARD_HEIGHT,
                 paddingTop: `${i * CARD_TOP_OFFSET}px`,
                 perspective: isMobileViewport ? "none" : "1200px",
+                zIndex: i + 1,
               }}
             >
               <div
@@ -212,7 +213,8 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
                 className="relative h-full w-full"
                 style={{
                   transformOrigin: "50% 0%",
-                  willChange: isMobileViewport ? "auto" : "transform",
+                  willChange: "transform",
+                  transform: isMobileViewport ? "translateZ(0)" : undefined,
                   transformStyle: isMobileViewport ? "flat" : "preserve-3d",
                 }}
               >

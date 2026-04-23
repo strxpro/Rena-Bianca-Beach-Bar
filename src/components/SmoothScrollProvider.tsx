@@ -26,6 +26,8 @@ if (typeof window !== "undefined") {
   ScrollTrigger.config({
     ignoreMobileResize: true,
     limitCallbacks: true,
+    syncInterval: 40,
+    autoRefreshEvents: "visibilitychange,DOMContentLoaded,load",
   });
 
 }
@@ -88,15 +90,31 @@ export default function SmoothScrollProvider({
       window.addEventListener("video-ended", releaseLock, { once: true });
       const safetyUnlock = window.setTimeout(releaseLock, 12000);
 
-      let ticking = false;
+      let lastScrollY = window.scrollY;
+      let lastScrollTime = Date.now();
+      let velocity = 0;
+      let loopRafId = 0;
+      let lastUpdate = 0;
       const onNativeScroll = () => {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(() => {
-          ScrollTrigger.update();
-          ticking = false;
-        });
+        const now = Date.now();
+        const currentY = window.scrollY;
+        const dt = now - lastScrollTime;
+        if (dt > 0) {
+          velocity = Math.abs(currentY - lastScrollY) / dt;
+        }
+        lastScrollY = currentY;
+        lastScrollTime = now;
+        ScrollTrigger.update();
       };
+      const updateLoop = () => {
+        const now = Date.now();
+        if (now - lastUpdate > 16) {
+          lastUpdate = now;
+          ScrollTrigger.update();
+        }
+        loopRafId = requestAnimationFrame(updateLoop);
+      };
+      loopRafId = requestAnimationFrame(updateLoop);
       window.addEventListener("scroll", onNativeScroll, { passive: true });
 
       // Mobile debug hooks (enable in console: localStorage.setItem('rena_debug_scroll','1'))
@@ -163,6 +181,7 @@ export default function SmoothScrollProvider({
         window.removeEventListener("orientationchange", onResize);
         window.removeEventListener("video-ended", releaseLock);
         window.clearTimeout(safetyUnlock);
+        cancelAnimationFrame(loopRafId);
         if (debugDetach) debugDetach();
         cancelAnimationFrame(rafId);
         clearTimeout(resizeTimer);

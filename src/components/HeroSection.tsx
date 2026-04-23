@@ -85,6 +85,7 @@ export default function HeroSection() {
     if (options?.hideVideo) {
       videoDismissedRef.current = true;
       gsap.killTweensOf(vid);
+      vid.classList.remove("video-ready");
       vid.style.visibility = "hidden";
       vid.pause();
       vid.style.display = "none";
@@ -120,6 +121,7 @@ export default function HeroSection() {
     const revealVideo = () => {
       if (videoDismissedRef.current) return;
       gsap.killTweensOf(vid);
+      vid.classList.add("video-ready");
       vid.style.visibility = "visible";
       gsap.to(vid, { opacity: 1, duration: 0.2, ease: "power1.out", overwrite: true });
     };
@@ -350,6 +352,7 @@ export default function HeroSection() {
     <div ref={rootRef}>
       <video
         ref={fullVideoRef}
+        data-hero-video
         autoPlay
         className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
         style={{ opacity: 0, backgroundColor: COLOR_NAVY, visibility: "hidden" }}

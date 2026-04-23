@@ -175,8 +175,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
     const startStreaming = () => {
       if (started || cancelled) return;
       started = true;
-      const { isLowEndMobile } = getMobilePerformanceProfile();
-      const BATCH = window.innerWidth < 768 ? (isLowEndMobile ? 2 : 4) : 8;
+      const BATCH = window.innerWidth < 768 ? 3 : 8;
       let next = frameStep;
       const pump = () => {
         if (cancelled) return;
@@ -207,6 +206,21 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       return () => { cancelled = true; };
     }
 
+    if (window.innerWidth < 768) {
+      // On mobile, delay frame loading until needed.
+      const delayLoad = () => {
+        if (window.scrollY > document.body.scrollHeight * 0.3) {
+          startStreaming();
+          window.removeEventListener("scroll", delayLoad);
+        }
+      };
+      window.addEventListener("scroll", delayLoad, { passive: true });
+      return () => {
+        cancelled = true;
+        window.removeEventListener("scroll", delayLoad);
+      };
+    }
+
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -217,7 +231,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
           }
         }
       },
-      { rootMargin: window.innerWidth < 768 ? "50% 0px 50% 0px" : "200% 0px 200% 0px" }
+      { rootMargin: window.innerWidth < 768 ? "30% 0px 30% 0px" : "200% 0px 200% 0px" }
     );
     io.observe(section);
     return () => {
@@ -261,7 +275,6 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       if (!section) return;
       const mqMobile = window.matchMedia("(max-width: 767px)");
       const isMobileDevice = mqMobile.matches;
-      const { isLowEndMobile } = getMobilePerformanceProfile();
 
       const waveBack = section.querySelector("[data-wave-back]") as HTMLElement;
       const waveFront = section.querySelector("[data-wave-front]") as HTMLElement;
@@ -326,12 +339,15 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         gsap.set(contactWrapper, { x: 0, xPercent: 0, transformOrigin: "50% 50%" });
       }
       // Phone reveal section starts hidden
-      const phoneSection = section.querySelector("[data-phone-section]");
       const phoneLetters = section.querySelectorAll("[data-phone-letter]");
       const phoneBox = section.querySelector("[data-phone-box]");
-      if (phoneSection) gsap.set(phoneSection, { autoAlpha: 1 });
-      gsap.set(phoneLetters, { opacity: 0, y: 8 });
-      if (phoneBox) gsap.set(phoneBox, { opacity: 0, y: 30 });
+      if (!isMobileDevice) {
+        gsap.set(phoneLetters, { opacity: 0, y: 8 });
+        if (phoneBox) gsap.set(phoneBox, { opacity: 0, y: 30 });
+      } else {
+        gsap.set(phoneLetters, { opacity: 1, y: 0 });
+        if (phoneBox) gsap.set(phoneBox, { opacity: 1, y: 0 });
+      }
       gsap.set(headingLetters, { yPercent: 120 });
       /* All sentence blocks start DIM, slightly pushed down, and
          softly blurred — they'll snap into sharp, fully-bright
@@ -347,17 +363,19 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       gsap.set(formEls, { opacity: 0, y: 30 });
 
       /* Phone elements — GSAP owns the transform, not JSX inline style */
-      gsap.set(section.querySelectorAll("[data-phone-letter]"), { opacity: 0, y: 8 });
-      const _phoneBoxEl = section.querySelector("[data-phone-box]");
-      if (_phoneBoxEl) gsap.set(_phoneBoxEl, { opacity: 0, y: 24 });
+      if (!isMobileDevice) {
+        gsap.set(section.querySelectorAll("[data-phone-letter]"), { opacity: 0, y: 8 });
+        const _phoneBoxEl = section.querySelector("[data-phone-box]");
+        if (_phoneBoxEl) gsap.set(_phoneBoxEl, { opacity: 0, y: 24 });
+      }
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMobileDevice ? "+=500%" : "+=900%",
+          end: isMobileDevice ? "+=700%" : "+=900%",
           pin: true,
-          scrub: isMobileDevice ? (isLowEndMobile ? 1.45 : 1.2) : 0.5,
+          scrub: isMobileDevice ? 0.8 : 0.5,
           anticipatePin: 1,
           /* Share the `"pinned"` group so this pin can never
              overlap with the menu-transition, panorama or gallery
@@ -366,9 +384,14 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
              a single hard swipe on mobile could fling the user
              past 6 × viewport of pinned scroll, skipping the
              entire "Znajdź nas" sequence. */
-          fastScrollEnd: true,
-          preventOverlaps: "pinned",
+          fastScrollEnd: isMobileDevice ? false : true,
+          preventOverlaps: isMobileDevice ? false : "pinned",
           invalidateOnRefresh: true,
+          onLeave: () => {
+            if (isMobileDevice) {
+              ScrollTrigger.refresh();
+            }
+          },
           onRefresh: () => {
             if (!window.matchMedia("(max-width: 767px)").matches) return;
             gsap.set(contactPanel, { x: 0, xPercent: 0, yPercent: 0, rotation: 0, scale: 1 });
@@ -410,8 +433,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         },
       }, 0);
 
-      const ORBIT_START = 0.40;
-      const ORBIT_DUR = isMobileDevice ? (isLowEndMobile ? 0.2 : 0.24) : 0.30;
+      const ORBIT_START = isMobileDevice ? 0.35 : 0.40;
+      const ORBIT_DUR = isMobileDevice ? 0.15 : 0.30;
 
       /* ── Background gradually lightens early during the film play ── */
       if (bgEl) {
@@ -435,15 +458,24 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       // LOCATION: orbit out to the LEFT. The path curves UP first
       // (−y), then sweeps down and off-screen (+y). `sine.inOut`
       // between keyframes gives the arc a genuine circular feel.
-      tl.to(locationPanel, {
-        keyframes: [
-          { xPercent: -20, yPercent: -8,  rotation: -8,  scale: 0.94, opacity: 0.92, duration: 0.22, ease: "sine.inOut" },
-          { xPercent: -60, yPercent: -14, rotation: -18, scale: 0.82, opacity: 0.55, duration: 0.28, ease: "sine.inOut" },
-          { xPercent: -110, yPercent: -6, rotation: -24, scale: 0.66, opacity: 0.2,  duration: 0.25, ease: "sine.inOut" },
-          { xPercent: -160, yPercent: 8,  rotation: -25, scale: 0.5,  opacity: 0,    duration: 0.25, ease: "power1.in" },
-        ],
-        duration: ORBIT_DUR,
-      }, ORBIT_START);
+      if (!isMobileDevice) {
+        tl.to(locationPanel, {
+          keyframes: [
+            { xPercent: -20, yPercent: -8,  rotation: -8,  scale: 0.94, opacity: 0.92, duration: 0.22, ease: "sine.inOut" },
+            { xPercent: -60, yPercent: -14, rotation: -18, scale: 0.82, opacity: 0.55, duration: 0.28, ease: "sine.inOut" },
+            { xPercent: -110, yPercent: -6, rotation: -24, scale: 0.66, opacity: 0.2,  duration: 0.25, ease: "sine.inOut" },
+            { xPercent: -160, yPercent: 8,  rotation: -25, scale: 0.5,  opacity: 0,    duration: 0.25, ease: "power1.in" },
+          ],
+          duration: ORBIT_DUR,
+        }, ORBIT_START);
+      } else {
+        tl.to(locationPanel, {
+          xPercent: -100,
+          opacity: 0,
+          duration: ORBIT_DUR,
+          ease: "power2.inOut",
+        }, ORBIT_START);
+      }
 
       /* CONTACT: one continuous flight from off-right → across the
          viewport → small overshoot past centre toward the LEFT →
@@ -536,8 +568,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
              = 0.588 + 0.010 * 5         + 0.025
              = 0.663  ≈ FILM_END (0.66)  ✓ ═══ */
       const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR * 0.45;
-      const LINE_REVEAL_DUR = isMobileDevice ? (isLowEndMobile ? 0.02 : 0.03) : 0.025;
-      const LINE_STAGGER = isMobileDevice ? (isLowEndMobile ? 0.009 : 0.012) : 0.010;
+      const LINE_REVEAL_DUR = isMobileDevice ? 0.015 : 0.025;
+      const LINE_STAGGER = isMobileDevice ? 0.006 : 0.010;
 
       tl.to(
         formEls,
@@ -579,7 +611,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
             Scenery starts exit at 0.70 and is fully gone at 0.82.
             Centering starts as the hero beat of the end. ═══ */
       const MAGNET_START = 0.84; 
-      const MAGNET_DUR = isMobileDevice ? (isLowEndMobile ? 0.05 : 0.07) : 0.06;
+      const MAGNET_DUR = isMobileDevice ? 0.04 : 0.06;
 
       // Card background darkens + glow intensifies
       if (contactWrapper) {
@@ -614,32 +646,34 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       const phoneLettersAnim = section.querySelectorAll("[data-phone-letter]");
       const phoneBoxAnim = section.querySelector("[data-phone-box]");
 
-      if (phoneLettersAnim.length > 0) {
-        tl.to(
-          phoneLettersAnim,
-          {
-            opacity: 1,
-            y: 0,
-            stagger: 0.0008,  // very rapid letter-by-letter
-            duration: 0.005,
-            ease: "power2.out",
-          },
-          PHONE_START
-        );
-      }
+      if (!isMobileDevice) {
+        if (phoneLettersAnim.length > 0) {
+          tl.to(
+            phoneLettersAnim,
+            {
+              opacity: 1,
+              y: 0,
+              stagger: 0.0008,  // very rapid letter-by-letter
+              duration: 0.005,
+              ease: "power2.out",
+            },
+            PHONE_START
+          );
+        }
 
-      // Phone input box slides up from below
-      if (phoneBoxAnim) {
-        tl.to(
-          phoneBoxAnim,
-          {
-            opacity: 1,
-            y: 0,
-            duration: PHONE_BOX_DUR,
-            ease: "back.out(1.4)",
-          },
-          PHONE_START + PHONE_TEXT_DUR * 0.6  // overlap with tail end of text
-        );
+        // Phone input box slides up from below
+        if (phoneBoxAnim) {
+          tl.to(
+            phoneBoxAnim,
+            {
+              opacity: 1,
+              y: 0,
+              duration: PHONE_BOX_DUR,
+              ease: "back.out(1.4)",
+            },
+            PHONE_START + PHONE_TEXT_DUR * 0.6  // overlap with tail end of text
+          );
+        }
       }
 
       /* ═══ Phase 8 (remaining → 1.00): HOLD — form stays centred,
@@ -995,6 +1029,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
               />
               {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
                 <div
+                  data-turnstile-wrap
                   className="lct-turnstile-wrap"
                   style={{
                     transform: "scale(1)",
@@ -1002,6 +1037,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                     marginBottom: "6px",
                     minHeight: "72px",
                     overflow: "visible",
+                    opacity: 1,
                   }}
                 >
                   <Turnstile
