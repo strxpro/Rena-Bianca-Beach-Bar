@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/I18nProvider";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -60,6 +61,10 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
   const [formStatus, setFormStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [honeypot, setHoneypot] = useState("");
+  const turnstileAnchorRef = useRef<HTMLDivElement>(null);
+  const [turnstilePortalRoot, setTurnstilePortalRoot] = useState<HTMLDivElement | null>(null);
+  const [turnstileRect, setTurnstileRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const formOpenTimeRef = useRef<number>(Date.now());
   const [locEditOpen, setLocEditOpen] = useState(false);
   const [locDraft, setLocDraft] = useState({ addressLine1: "", addressLine2: "", hours: "", phone: "", email: "" });
@@ -83,6 +88,68 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
     setOverride("location.email", locDraft.email);
     setLocEditOpen(false);
   };
+
+  useEffect(() => {
+    const syncViewport = () => setIsMobileViewport(window.innerWidth < 768);
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileViewport) {
+      setTurnstilePortalRoot(null);
+      return;
+    }
+    const root = document.createElement("div");
+    root.style.position = "fixed";
+    root.style.left = "0";
+    root.style.top = "0";
+    root.style.width = "0";
+    root.style.height = "0";
+    root.style.zIndex = "1200";
+    document.body.appendChild(root);
+    setTurnstilePortalRoot(root);
+    return () => {
+      document.body.removeChild(root);
+      setTurnstilePortalRoot(null);
+    };
+  }, [isMobileViewport]);
+
+  useEffect(() => {
+    if (!isMobileViewport) return;
+    const updatePosition = () => {
+      const anchor = turnstileAnchorRef.current;
+      if (anchor) {
+        const rect = anchor.getBoundingClientRect();
+        const next = {
+          top: rect.top,
+          left: rect.left,
+          width: Math.max(rect.width, 280),
+        };
+        setTurnstileRect((prev) => {
+          if (
+            prev &&
+            Math.abs(prev.top - next.top) < 0.5 &&
+            Math.abs(prev.left - next.left) < 0.5 &&
+            Math.abs(prev.width - next.width) < 0.5
+          ) {
+            return prev;
+          }
+          return next;
+        });
+      }
+    };
+    const onScroll = () => requestAnimationFrame(updatePosition);
+    const onResize = () => requestAnimationFrame(updatePosition);
+    updatePosition();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [isMobileViewport]);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -373,9 +440,9 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMobileDevice ? "+=700%" : "+=900%",
+          end: isMobileDevice ? "+=850%" : "+=900%",
           pin: true,
-          scrub: isMobileDevice ? 0.8 : 0.5,
+          scrub: isMobileDevice ? 1.35 : 0.5,
           anticipatePin: 1,
           /* Share the `"pinned"` group so this pin can never
              overlap with the menu-transition, panorama or gallery
@@ -1031,6 +1098,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                 <div
                   data-turnstile-wrap
                   className="lct-turnstile-wrap"
+                  ref={turnstileAnchorRef}
                   style={{
                     transform: "scale(1)",
                     transformOrigin: "left center",
@@ -1040,13 +1108,15 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                     opacity: 1,
                   }}
                 >
-                  <Turnstile
-                    id="contact-turnstile"
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                    onSuccess={setTurnstileToken}
-                    onError={() => setTurnstileToken("")}
-                    options={{ theme: "dark", size: "normal" }}
-                  />
+                  {!isMobileViewport && (
+                    <Turnstile
+                      id="contact-turnstile"
+                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                      onSuccess={setTurnstileToken}
+                      onError={() => setTurnstileToken("")}
+                      options={{ theme: "dark", size: "normal" }}
+                    />
+                  )}
                 </div>
               )}
               <button
@@ -1242,6 +1312,28 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
           </div>
         </div>
       )}
+      {isMobileViewport && turnstilePortalRoot && turnstileRect && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              top: `${turnstileRect.top}px`,
+              left: `${turnstileRect.left}px`,
+              width: `${turnstileRect.width}px`,
+              minHeight: "72px",
+              pointerEvents: "auto",
+            }}
+          >
+            <Turnstile
+              id="contact-turnstile-mobile-portal"
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+              onSuccess={setTurnstileToken}
+              onError={() => setTurnstileToken("")}
+              options={{ theme: "dark", size: "normal" }}
+            />
+          </div>,
+          turnstilePortalRoot
+        )}
     </section>
   );
 }
