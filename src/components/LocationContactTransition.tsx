@@ -8,6 +8,7 @@ import { useGSAP } from "@gsap/react";
 import { PinContainer } from "@/components/ui/3d-pin";
 import PhoneCountrySelect, { type Country } from "@/components/PhoneCountrySelect";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { getMobilePerformanceProfile } from "@/lib/mobile-performance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -145,7 +146,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
        Znajdź-nas asset payload and reduces image-decode work.
        The frame step is resolved on the client only so SSR markup
        stays identical between server and browser. */
-    const frameStep = window.innerWidth < 768 ? 3 : 1;
+    const { isLowEndMobile } = getMobilePerformanceProfile();
+    const frameStep = window.innerWidth < 768 ? (isLowEndMobile ? 4 : 3) : 1;
     frameStepRef.current = frameStep;
     const imgs: HTMLImageElement[] = new Array(TOTAL_FRAMES);
     for (let i = 0; i < TOTAL_FRAMES; i++) {
@@ -173,7 +175,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
     const startStreaming = () => {
       if (started || cancelled) return;
       started = true;
-      const BATCH = window.innerWidth < 768 ? 4 : 8;
+      const { isLowEndMobile } = getMobilePerformanceProfile();
+      const BATCH = window.innerWidth < 768 ? (isLowEndMobile ? 2 : 4) : 8;
       let next = frameStep;
       const pump = () => {
         if (cancelled) return;
@@ -258,6 +261,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       if (!section) return;
       const mqMobile = window.matchMedia("(max-width: 767px)");
       const isMobileDevice = mqMobile.matches;
+      const { isLowEndMobile } = getMobilePerformanceProfile();
 
       const waveBack = section.querySelector("[data-wave-back]") as HTMLElement;
       const waveFront = section.querySelector("[data-wave-front]") as HTMLElement;
@@ -351,9 +355,9 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMobileDevice ? "+=600%" : "+=900%",
+          end: isMobileDevice ? "+=500%" : "+=900%",
           pin: true,
-          scrub: isMobileDevice ? 1.0 : 0.5,
+          scrub: isMobileDevice ? (isLowEndMobile ? 1.45 : 1.2) : 0.5,
           anticipatePin: 1,
           /* Share the `"pinned"` group so this pin can never
              overlap with the menu-transition, panorama or gallery
@@ -362,8 +366,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
              a single hard swipe on mobile could fling the user
              past 6 × viewport of pinned scroll, skipping the
              entire "Znajdź nas" sequence. */
-          fastScrollEnd: isMobileDevice ? false : true,
-          preventOverlaps: isMobileDevice ? false : "pinned",
+          fastScrollEnd: true,
+          preventOverlaps: "pinned",
           invalidateOnRefresh: true,
           onRefresh: () => {
             if (!window.matchMedia("(max-width: 767px)").matches) return;
@@ -407,7 +411,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       }, 0);
 
       const ORBIT_START = 0.40;
-      const ORBIT_DUR = isMobileDevice ? 0.18 : 0.30;
+      const ORBIT_DUR = isMobileDevice ? (isLowEndMobile ? 0.2 : 0.24) : 0.30;
 
       /* ── Background gradually lightens early during the film play ── */
       if (bgEl) {
@@ -532,8 +536,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
              = 0.588 + 0.010 * 5         + 0.025
              = 0.663  ≈ FILM_END (0.66)  ✓ ═══ */
       const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR * 0.45;
-      const LINE_REVEAL_DUR = isMobileDevice ? 0.02 : 0.025;
-      const LINE_STAGGER = isMobileDevice ? 0.008 : 0.010;
+      const LINE_REVEAL_DUR = isMobileDevice ? (isLowEndMobile ? 0.02 : 0.03) : 0.025;
+      const LINE_STAGGER = isMobileDevice ? (isLowEndMobile ? 0.009 : 0.012) : 0.010;
 
       tl.to(
         formEls,
@@ -575,7 +579,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
             Scenery starts exit at 0.70 and is fully gone at 0.82.
             Centering starts as the hero beat of the end. ═══ */
       const MAGNET_START = 0.84; 
-      const MAGNET_DUR = isMobileDevice ? 0.05 : 0.06;
+      const MAGNET_DUR = isMobileDevice ? (isLowEndMobile ? 0.05 : 0.07) : 0.06;
 
       // Card background darkens + glow intensifies
       if (contactWrapper) {
@@ -991,13 +995,12 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
               />
               {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
                 <div
+                  className="lct-turnstile-wrap"
                   style={{
-                    transform: typeof window !== "undefined" && window.innerWidth < 768
-                      ? "scale(0.78)"
-                      : "scale(1)",
+                    transform: "scale(1)",
                     transformOrigin: "left center",
-                    marginBottom: "4px",
-                    minHeight: "65px",
+                    marginBottom: "6px",
+                    minHeight: "72px",
                     overflow: "visible",
                   }}
                 >
@@ -1137,6 +1140,12 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         }
         .rena-phone-wrap .rena-phone-custom__input::placeholder {
           color: rgba(232,220,200,0.25);
+        }
+        @media (max-width: 767px) {
+          .lct-turnstile-wrap {
+            transform: scale(0.82);
+            transform-origin: left center;
+          }
         }
       `}</style>
 

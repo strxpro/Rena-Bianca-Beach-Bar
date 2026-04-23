@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { getMobilePerformanceProfile } from "@/lib/mobile-performance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -112,7 +113,7 @@ const DEFAULT_INSTAGRAM_URL = "https://www.instagram.com/renabiancabeachbar/";
 const INTRO_ACTIVE = 0;
 const SPEED_DRAG = -0.3;
 const INSTAGRAM_POPUP_THRESHOLD = 106;
-const GALLERY_SCROLL_PROGRESS_MAX = typeof window !== "undefined" && window.innerWidth < 768 ? 60 : 72;
+const GALLERY_SCROLL_PROGRESS_MAX = 72;
 const GALLERY_SCROLL_STEP_PERCENT = 72;
 
 const getInstagramUrl = (username?: string) => {
@@ -121,7 +122,11 @@ const getInstagramUrl = (username?: string) => {
 
 const mapGalleryScrollProgress = (scrollProgress: number) => {
   const clampedProgress = Math.max(0, Math.min(scrollProgress, 1));
-  return clampedProgress * GALLERY_SCROLL_PROGRESS_MAX;
+  const { isLowEndMobile } = getMobilePerformanceProfile();
+  const mobileMax = typeof window !== "undefined" && window.innerWidth < 768
+    ? (isLowEndMobile ? 58 : 64)
+    : GALLERY_SCROLL_PROGRESS_MAX;
+  return clampedProgress * mobileMax;
 };
 
 const getPostImage = (post: BeholdPost, variant: "large" | "full") => {
@@ -314,6 +319,7 @@ export default function PhotoGallery() {
       if (!section) return;
 
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
+      const { isLowEndMobile } = getMobilePerformanceProfile();
       const st = ScrollTrigger.create({
         trigger: section,
         start: isMob ? "top top" : "top 80px",
@@ -323,7 +329,7 @@ export default function PhotoGallery() {
         )}%`,
         pin: true,
         pinSpacing: true,
-        scrub: isMob ? 2 : 1,
+        scrub: isMob ? (isLowEndMobile ? 1.45 : 1.2) : 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         /* Clamp fast swipes + join the shared `"pinned"` group
@@ -360,15 +366,14 @@ export default function PhotoGallery() {
           }
 
           if (!isHorizontal) return;
-
-          e.preventDefault();
-          const newProgress = Math.max(0, Math.min(120, touchStartProgress - dx * 0.5));
+          const dragFactor = isLowEndMobile ? 0.42 : 0.5;
+          const newProgress = Math.max(0, Math.min(120, touchStartProgress - dx * dragFactor));
           progressRef.current = newProgress;
           cancelAnimationFrame(rafRef.current);
           rafRef.current = requestAnimationFrame(applyLayout);
         };
         section.addEventListener("touchstart", onTouchStart, { passive: true });
-        section.addEventListener("touchmove", onTouchMove, { passive: false });
+        section.addEventListener("touchmove", onTouchMove, { passive: true });
         return () => {
           section.removeEventListener("touchstart", onTouchStart);
           section.removeEventListener("touchmove", onTouchMove);

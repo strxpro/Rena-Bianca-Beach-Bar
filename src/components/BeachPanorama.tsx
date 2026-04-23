@@ -6,6 +6,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { PANORAMA_SLIDES } from "@/data/panoramaSlides";
+import { getMobilePerformanceProfile } from "@/lib/mobile-performance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -75,7 +76,8 @@ export default function BeachPanorama() {
       return;
     }
     animatingRef.current = true;
-    const wipeDuration = typeof window !== "undefined" && window.innerWidth < 768 ? 0.85 : WIPE_DUR;
+    const { isMobile, isLowEndMobile } = getMobilePerformanceProfile();
+    const wipeDuration = isMobile ? (isLowEndMobile ? 0.72 : 0.85) : WIPE_DUR;
 
     const dir = targetIndex > cur ? 1 : -1;
     const curSlide = slideEls.current[cur];
@@ -118,6 +120,7 @@ export default function BeachPanorama() {
       const cover = coverRef.current;
       const coverInner = coverInnerRef.current;
       if (!section || !cover) return;
+      const { isLowEndMobile } = getMobilePerformanceProfile();
 
       /* The cover hinges from its TOP edge — `transform-origin:
          50% 0%`. Combined with `transformPerspective: 1500` and
@@ -157,7 +160,7 @@ export default function BeachPanorama() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: () => (window.innerWidth < 768 ? "+=350%" : "+=220%"),
+          end: () => (window.innerWidth < 768 ? "+=280%" : "+=220%"),
           pin: true,
           pinSpacing: true,
           pinType: "fixed",
@@ -166,10 +169,7 @@ export default function BeachPanorama() {
             writes. No `snap`: snap + Lenis fights with user
             momentum and causes the "skipping" the user saw.
             The pin itself already gives the magnetic feel. */
-          scrub: window.innerWidth < 768 ? 3 : 1,
-          snap: window.innerWidth < 768
-            ? ({ snapTo: "labelsOrExact", duration: 0.3, ease: "power2.inOut" } as any)
-            : undefined,
+          scrub: window.innerWidth < 768 ? (isLowEndMobile ? 1.45 : 1.2) : 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           /* `fastScrollEnd: true` + `preventOverlaps` together
@@ -289,13 +289,13 @@ export default function BeachPanorama() {
     <section
       id="panorama"
       ref={sectionRef}
-      className="relative h-dvh w-full overflow-hidden pt-20 sm:pt-20"
+      className="relative h-dvh w-full overflow-hidden pt-20"
       style={{
         background:
           "linear-gradient(180deg, #0A192F 0%, #0d2240 15%, #122a45 50%, #0d2240 85%, #0A192F 100%)",
         perspective: "1500px",
         transformStyle: "preserve-3d",
-        touchAction: typeof window !== "undefined" && window.innerWidth < 768 ? "none" : "auto",
+        touchAction: "auto",
       }}
     >
       {/* ═══ SLIDESHOW LAYER (sits behind the cover, revealed

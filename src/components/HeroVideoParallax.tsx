@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { HEADER_H, LOGO_DOCKED_W, LOGO_DOCKED_H } from "./Header";
 import { useI18n } from "@/i18n/I18nProvider";
+import { getMobilePerformanceProfile } from "@/lib/mobile-performance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -70,7 +71,7 @@ function getLogoMetrics() {
   // overlaps the header on very short landscape viewports.
   // "A touch higher than before" per the brief — user must always see
   // the logo at rest, peeking from behind layer-top.
-  const startTop = Math.max(HEADER_H + startH / 2 + (isMobile ? 24 : 12), vh * 0.408);
+  const startTop = Math.max(HEADER_H + startH / 2 + (isMobile ? 18 : 12), vh * 0.408);
   return { startW, startH, dockW, dockH, dockY, startTop };
 }
 
@@ -212,6 +213,7 @@ export default function HeroVideoParallax() {
       const sceneLogo = sceneLogoRef.current;
       const container = containerRef.current;
       if (!logo || !sceneLogo || !container) return;
+      const { isLowEndMobile } = getMobilePerformanceProfile();
 
       /* Hand-off happens almost immediately — the moment the user
          starts scrolling, the dock logo takes over. */
@@ -250,66 +252,64 @@ export default function HeroVideoParallax() {
         trigger: container,
         start: "0% 0%",
         end: "60% 0%",
-        scrub: window.innerWidth < 768 ? 2.5 : 0.4,
+        scrub: window.innerWidth < 768 ? (isLowEndMobile ? 1.5 : 1.2) : 0.4,
         invalidateOnRefresh: true,
         onRefresh: applyIdleSizes,
         onUpdate: (self) => {
-          requestAnimationFrame(() => {
-            const p = self.progress;
-            const m = getLogoMetrics();
-            const handedOff = p >= HANDOFF_P;
+          const p = self.progress;
+          const m = getLogoMetrics();
+          const handedOff = p >= HANDOFF_P;
 
-            if (handedOff !== wasHandedOff) {
-              wasHandedOff = handedOff;
-              if (handedOff) {
-                // Snap the dock logo to the scene logo's live rect.
-                const r = sceneLogo.getBoundingClientRect();
-                snapshot = {
-                  top: r.top + r.height / 2,
-                  width: r.width,
-                  height: r.height,
-                };
-                gsap.set(logo, {
-                  top: snapshot.top,
-                  width: snapshot.width,
-                  height: snapshot.height,
-                  opacity: 1,
-                  zIndex: 220,
-                });
-                gsap.set(sceneLogo, { opacity: 0 });
-                sceneLogo.style.zIndex = "50";
-              } else {
-                gsap.set(logo, { opacity: 0 });
-                gsap.set(sceneLogo, { opacity: 1 });
-                sceneLogo.style.zIndex = "2";
-                snapshot = null;
-              }
+          if (handedOff !== wasHandedOff) {
+            wasHandedOff = handedOff;
+            if (handedOff) {
+              // Snap the dock logo to the scene logo's live rect.
+              const r = sceneLogo.getBoundingClientRect();
+              snapshot = {
+                top: r.top + r.height / 2,
+                width: r.width,
+                height: r.height,
+              };
+              gsap.set(logo, {
+                top: snapshot.top,
+                width: snapshot.width,
+                height: snapshot.height,
+                opacity: 1,
+                zIndex: 220,
+              });
+              gsap.set(sceneLogo, { opacity: 0 });
+              sceneLogo.style.zIndex = "50";
+            } else {
+              gsap.set(logo, { opacity: 0 });
+              gsap.set(sceneLogo, { opacity: 1 });
+              sceneLogo.style.zIndex = "2";
+              snapshot = null;
             }
+          }
 
-            if (handedOff && snapshot) {
-              // Normalize glide progress over the HANDOFF_P → DOCK_P
-              // window, clamped so after DOCK_P the logo sits rock-
-              // steady in the header while the rest of the hero keeps
-              // scrolling underneath.
-              const t = Math.min(
-                1,
-                Math.max(0, (p - HANDOFF_P) / (DOCK_P - HANDOFF_P))
-              );
-              const eased = gsap.parseEase("power2.out")(t);
-              const top    = snapshot.top    + (m.dockY  - snapshot.top)    * eased;
-              const width  = snapshot.width  + (m.dockW  - snapshot.width)  * eased;
-              const height = snapshot.height + (m.dockH  - snapshot.height) * eased;
-              gsap.set(logo, { top, width, height });
-            }
+          if (handedOff && snapshot) {
+            // Normalize glide progress over the HANDOFF_P → DOCK_P
+            // window, clamped so after DOCK_P the logo sits rock-
+            // steady in the header while the rest of the hero keeps
+            // scrolling underneath.
+            const t = Math.min(
+              1,
+              Math.max(0, (p - HANDOFF_P) / (DOCK_P - HANDOFF_P))
+            );
+            const eased = gsap.parseEase("power2.out")(t);
+            const top    = snapshot.top    + (m.dockY  - snapshot.top)    * eased;
+            const width  = snapshot.width  + (m.dockW  - snapshot.width)  * eased;
+            const height = snapshot.height + (m.dockH  - snapshot.height) * eased;
+            gsap.set(logo, { top, width, height });
+          }
 
-            const docked = p >= DOCK_P;
-            if (docked !== wasDocked) {
-              wasDocked = docked;
-              window.dispatchEvent(
-                new CustomEvent("logo-docked", { detail: { docked } })
-              );
-            }
-          });
+          const docked = p >= DOCK_P;
+          if (docked !== wasDocked) {
+            wasDocked = docked;
+            window.dispatchEvent(
+              new CustomEvent("logo-docked", { detail: { docked } })
+            );
+          }
         },
       });
     },

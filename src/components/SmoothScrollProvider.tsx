@@ -26,7 +26,6 @@ if (typeof window !== "undefined") {
   ScrollTrigger.config({
     ignoreMobileResize: true,
     limitCallbacks: true,
-    syncInterval: 40,
   });
 
 }
@@ -89,15 +88,51 @@ export default function SmoothScrollProvider({
       window.addEventListener("video-ended", releaseLock, { once: true });
       const safetyUnlock = window.setTimeout(releaseLock, 12000);
 
-      let lastUpdate = 0;
+      let ticking = false;
       const onNativeScroll = () => {
-        const now = Date.now();
-        if (now - lastUpdate > 16) {
-          lastUpdate = now;
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
           ScrollTrigger.update();
-        }
+          ticking = false;
+        });
       };
       window.addEventListener("scroll", onNativeScroll, { passive: true });
+
+      // Mobile debug hooks (enable in console: localStorage.setItem('rena_debug_scroll','1'))
+      const debugEnabled = typeof window !== "undefined" && localStorage.getItem("rena_debug_scroll") === "1";
+      let debugDetach: (() => void) | null = null;
+      if (debugEnabled) {
+        const onRefresh = () => {
+          const triggers = ScrollTrigger.getAll().map((t) => ({
+            id: t.vars.id || "(no-id)",
+            start: t.start,
+            end: t.end,
+            progress: Number(t.progress.toFixed(3)),
+            pinned: !!t.pin,
+            trigger: (t.trigger as HTMLElement | null)?.id || (t.trigger as HTMLElement | null)?.className || "unknown",
+          }));
+          console.table(triggers);
+        };
+        ScrollTrigger.addEventListener("refresh", onRefresh);
+        (window as unknown as { __renaScrollDebug?: unknown }).__renaScrollDebug = {
+          dump() {
+            onRefresh();
+          },
+          velocity() {
+            const active = ScrollTrigger.getAll().map((t) => ({
+              trigger: (t.trigger as HTMLElement | null)?.id || "unknown",
+              velocity: Math.round(t.getVelocity?.() ?? 0),
+              progress: Number(t.progress.toFixed(3)),
+            }));
+            console.table(active);
+          },
+        };
+        debugDetach = () => {
+          ScrollTrigger.removeEventListener("refresh", onRefresh);
+          delete (window as unknown as { __renaScrollDebug?: unknown }).__renaScrollDebug;
+        };
+      }
 
       let rafId = 0;
       let resizeTimer = 0;
@@ -128,6 +163,7 @@ export default function SmoothScrollProvider({
         window.removeEventListener("orientationchange", onResize);
         window.removeEventListener("video-ended", releaseLock);
         window.clearTimeout(safetyUnlock);
+        if (debugDetach) debugDetach();
         cancelAnimationFrame(rafId);
         clearTimeout(resizeTimer);
         document.documentElement.classList.remove("intro-locked");

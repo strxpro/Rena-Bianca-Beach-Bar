@@ -18,6 +18,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import type { PanInfo } from "framer-motion";
+import { getMobilePerformanceProfile } from "@/lib/mobile-performance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -857,15 +858,16 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
 
       const mm = gsap.matchMedia();
       mm.add("(min-width: 0px)", () => {
-        const near = isMobileViewport ? 40 : 100;
-        const far = isMobileViewport ? 80 : 160;
+        const { isLowEndMobile } = getMobilePerformanceProfile();
+        const near = isMobileViewport ? (isLowEndMobile ? 24 : 40) : 100;
+        const far = isMobileViewport ? (isLowEndMobile ? 48 : 80) : 160;
 
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: container,
             start: isMobileViewport ? "top 88%" : "top 85%",
             end: isMobileViewport ? "bottom top" : "bottom 15%",
-            scrub: 1,
+            scrub: isMobileViewport ? (isLowEndMobile ? 1.35 : 1) : 1,
             invalidateOnRefresh: true,
           },
         });
@@ -1269,7 +1271,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         date: new Date().toISOString().split("T")[0],
         text: formText.trim(),
         rating: formRating,
-        photo: finalAvatar,
+        photo: photos.length > 0 ? photos[0].preview : finalAvatar,
         photos: photos.length > 0 ? photos.map(p => p.preview) : undefined,
         isLocal: true,
         countryCode: typeof data?.countryCode === "string" ? data.countryCode : undefined,
@@ -1937,14 +1939,23 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                           style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
                         />
                         {shouldRenderTurnstile && (
-                          <Turnstile
-                            id="review-turnstile"
-                            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
-                            onSuccess={setTurnstileToken}
-                            onError={() => setTurnstileToken("")}
-                            options={{ theme: "dark", size: "normal" }}
-                            className="mt-1"
-                          />
+                          <div
+                            style={{
+                              transform: isMobileViewport ? "scale(0.82)" : "scale(1)",
+                              transformOrigin: "left center",
+                              minHeight: isMobileViewport ? "72px" : "65px",
+                              overflow: "visible",
+                            }}
+                          >
+                            <Turnstile
+                              id="review-turnstile"
+                              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
+                              onSuccess={setTurnstileToken}
+                              onError={() => setTurnstileToken("")}
+                              options={{ theme: "dark", size: "normal" }}
+                              className="mt-1"
+                            />
+                          </div>
                         )}
                         <button
                           type="submit"
