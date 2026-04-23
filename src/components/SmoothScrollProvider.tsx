@@ -26,6 +26,7 @@ if (typeof window !== "undefined") {
   ScrollTrigger.config({
     ignoreMobileResize: true,
     limitCallbacks: true,
+    syncInterval: 40,
   });
 
 }
@@ -80,7 +81,10 @@ export default function SmoothScrollProvider({
       const releaseLock = () => {
         document.documentElement.classList.remove("intro-locked");
         document.body.classList.remove("intro-locked");
-        requestAnimationFrame(() => ScrollTrigger.refresh());
+        // Delay refresh so all sections measure correctly after unlock
+        setTimeout(() => {
+          requestAnimationFrame(() => ScrollTrigger.refresh());
+        }, 100);
       };
       window.addEventListener("video-ended", releaseLock, { once: true });
       const safetyUnlock = window.setTimeout(releaseLock, 12000);
@@ -171,7 +175,10 @@ export default function SmoothScrollProvider({
       document.documentElement.classList.remove("intro-locked");
       document.body.classList.remove("intro-locked");
       lenis.start();
-      requestAnimationFrame(() => ScrollTrigger.refresh());
+      // Delay refresh so all sections measure correctly after unlock
+      setTimeout(() => {
+        requestAnimationFrame(() => ScrollTrigger.refresh());
+      }, 100);
     };
     window.addEventListener("video-ended", releaseLock, { once: true });
     const safetyUnlock = window.setTimeout(releaseLock, 12000);

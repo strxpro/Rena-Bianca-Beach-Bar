@@ -85,6 +85,7 @@ export default function HeroSection() {
     if (options?.hideVideo) {
       videoDismissedRef.current = true;
       gsap.killTweensOf(vid);
+      vid.style.visibility = "hidden";
       vid.pause();
       vid.style.display = "none";
       return;
@@ -119,6 +120,7 @@ export default function HeroSection() {
     const revealVideo = () => {
       if (videoDismissedRef.current) return;
       gsap.killTweensOf(vid);
+      vid.style.visibility = "visible";
       gsap.to(vid, { opacity: 1, duration: 0.2, ease: "power1.out", overwrite: true });
     };
 
@@ -350,7 +352,7 @@ export default function HeroSection() {
         ref={fullVideoRef}
         autoPlay
         className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
-        style={{ opacity: 0, backgroundColor: COLOR_NAVY }}
+        style={{ opacity: 0, backgroundColor: COLOR_NAVY, visibility: "hidden" }}
         muted playsInline preload="metadata"
         src={VIDEO_SRC}
         onEnded={handleVideoEnded}

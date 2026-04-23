@@ -454,3 +454,9 @@ body {
   background-color: #0A192F;
   min-height: 100dvh;
 }
+
+@media (max-width: 767px) {
+  .pin-spacer {
+    z-index: auto !important;
+  }
+}

@@ -112,7 +112,7 @@ const DEFAULT_INSTAGRAM_URL = "https://www.instagram.com/renabiancabeachbar/";
 const INTRO_ACTIVE = 0;
 const SPEED_DRAG = -0.3;
 const INSTAGRAM_POPUP_THRESHOLD = 106;
-const GALLERY_SCROLL_PROGRESS_MAX = 72;
+const GALLERY_SCROLL_PROGRESS_MAX = typeof window !== "undefined" && window.innerWidth < 768 ? 60 : 72;
 const GALLERY_SCROLL_STEP_PERCENT = 72;
 
 const getInstagramUrl = (username?: string) => {
@@ -323,7 +323,7 @@ export default function PhotoGallery() {
         )}%`,
         pin: true,
         pinSpacing: true,
-        scrub: 1,
+        scrub: isMob ? 2 : 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         /* Clamp fast swipes + join the shared `"pinned"` group
@@ -342,19 +342,33 @@ export default function PhotoGallery() {
 
       if (isMob) {
         let touchStartX = 0;
+        let touchStartY = 0;
         let touchStartProgress = 0;
+        let isHorizontal: boolean | null = null;
         const onTouchStart = (e: TouchEvent) => {
           touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
           touchStartProgress = progressRef.current;
+          isHorizontal = null;
         };
         const onTouchMove = (e: TouchEvent) => {
-          const delta = touchStartX - e.touches[0].clientX;
-          progressRef.current = Math.max(0, Math.min(120, touchStartProgress + delta * 0.4));
+          const dx = e.touches[0].clientX - touchStartX;
+          const dy = e.touches[0].clientY - touchStartY;
+
+          if (isHorizontal === null) {
+            isHorizontal = Math.abs(dx) > Math.abs(dy);
+          }
+
+          if (!isHorizontal) return;
+
+          e.preventDefault();
+          const newProgress = Math.max(0, Math.min(120, touchStartProgress - dx * 0.5));
+          progressRef.current = newProgress;
           cancelAnimationFrame(rafRef.current);
           rafRef.current = requestAnimationFrame(applyLayout);
         };
         section.addEventListener("touchstart", onTouchStart, { passive: true });
-        section.addEventListener("touchmove", onTouchMove, { passive: true });
+        section.addEventListener("touchmove", onTouchMove, { passive: false });
         return () => {
           section.removeEventListener("touchstart", onTouchStart);
           section.removeEventListener("touchmove", onTouchMove);

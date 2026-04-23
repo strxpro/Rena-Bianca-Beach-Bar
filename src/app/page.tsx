@@ -93,11 +93,15 @@ export default async function Home({ searchParams }: PageProps) {
       {/* ── Photo Gallery carousel ── */}
       <PhotoGallery />
 
-      {/* ── Gradient bridge: Gallery → Location ── */}
-      <div className="relative w-full" style={{ height: "clamp(40px, 6vh, 80px)", background: "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)" }} />
-
-      {/* ── Mobile pin-stability spacer ── */}
-      <div className="relative w-full" style={{ height: "clamp(8px, 1.5vh, 16px)", background: "#0A192F" }} />
+      {/* ── Bridge - increased height to prevent pin overlap ── */}
+      <div
+        className="relative w-full"
+        style={{
+          height: "clamp(60px, 10vh, 120px)",
+          background: "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)",
+          zIndex: 5,
+        }}
+      />
 
       {/* ── Location → Contact (orbital scroll transition) ── */}
       <LocationContactTransition isEditMode={isEditMode} />

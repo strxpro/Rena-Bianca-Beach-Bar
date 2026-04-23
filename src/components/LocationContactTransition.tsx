@@ -173,7 +173,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
     const startStreaming = () => {
       if (started || cancelled) return;
       started = true;
-      const BATCH = 8;
+      const BATCH = window.innerWidth < 768 ? 4 : 8;
       let next = frameStep;
       const pump = () => {
         if (cancelled) return;
@@ -214,7 +214,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
           }
         }
       },
-      { rootMargin: "200% 0px 200% 0px" }
+      { rootMargin: window.innerWidth < 768 ? "50% 0px 50% 0px" : "200% 0px 200% 0px" }
     );
     io.observe(section);
     return () => {
@@ -351,9 +351,9 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMobileDevice ? "+=500%" : "+=900%",
+          end: isMobileDevice ? "+=600%" : "+=900%",
           pin: true,
-          scrub: isMobileDevice ? 1.5 : 0.5,
+          scrub: isMobileDevice ? 1.0 : 0.5,
           anticipatePin: 1,
           /* Share the `"pinned"` group so this pin can never
              overlap with the menu-transition, panorama or gallery
@@ -362,8 +362,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
              a single hard swipe on mobile could fling the user
              past 6 × viewport of pinned scroll, skipping the
              entire "Znajdź nas" sequence. */
-          fastScrollEnd: true,
-          preventOverlaps: "pinned",
+          fastScrollEnd: isMobileDevice ? false : true,
+          preventOverlaps: isMobileDevice ? false : "pinned",
           invalidateOnRefresh: true,
           onRefresh: () => {
             if (!window.matchMedia("(max-width: 767px)").matches) return;
@@ -407,7 +407,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       }, 0);
 
       const ORBIT_START = 0.40;
-      const ORBIT_DUR = isMobileDevice ? 0.26 : 0.30;
+      const ORBIT_DUR = isMobileDevice ? 0.18 : 0.30;
 
       /* ── Background gradually lightens early during the film play ── */
       if (bgEl) {
@@ -532,8 +532,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
              = 0.588 + 0.010 * 5         + 0.025
              = 0.663  ≈ FILM_END (0.66)  ✓ ═══ */
       const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR * 0.45;
-      const LINE_REVEAL_DUR = isMobileDevice ? 0.04 : 0.025;
-      const LINE_STAGGER = isMobileDevice ? 0.016 : 0.010;
+      const LINE_REVEAL_DUR = isMobileDevice ? 0.02 : 0.025;
+      const LINE_STAGGER = isMobileDevice ? 0.008 : 0.010;
 
       tl.to(
         formEls,
@@ -575,7 +575,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
             Scenery starts exit at 0.70 and is fully gone at 0.82.
             Centering starts as the hero beat of the end. ═══ */
       const MAGNET_START = 0.84; 
-      const MAGNET_DUR = isMobileDevice ? 0.09 : 0.06;
+      const MAGNET_DUR = isMobileDevice ? 0.05 : 0.06;
 
       // Card background darkens + glow intensifies
       if (contactWrapper) {
@@ -990,14 +990,23 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                 style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
               />
               {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-                <div style={{ transform: "scale(0.85)", transformOrigin: "left center", marginBottom: "8px" }}>
+                <div
+                  style={{
+                    transform: typeof window !== "undefined" && window.innerWidth < 768
+                      ? "scale(0.78)"
+                      : "scale(1)",
+                    transformOrigin: "left center",
+                    marginBottom: "4px",
+                    minHeight: "65px",
+                    overflow: "visible",
+                  }}
+                >
                   <Turnstile
                     id="contact-turnstile"
                     siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
                     onSuccess={setTurnstileToken}
                     onError={() => setTurnstileToken("")}
                     options={{ theme: "dark", size: "normal" }}
-                    style={{ marginBottom: "8px" }}
                   />
                 </div>
               )}

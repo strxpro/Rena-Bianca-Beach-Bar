@@ -157,7 +157,7 @@ export default function BeachPanorama() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: () => (window.innerWidth < 768 ? "+=280%" : "+=220%"),
+          end: () => (window.innerWidth < 768 ? "+=350%" : "+=220%"),
           pin: true,
           pinSpacing: true,
           pinType: "fixed",
@@ -166,7 +166,10 @@ export default function BeachPanorama() {
             writes. No `snap`: snap + Lenis fights with user
             momentum and causes the "skipping" the user saw.
             The pin itself already gives the magnetic feel. */
-          scrub: 1.5,
+          scrub: window.innerWidth < 768 ? 3 : 1,
+          snap: window.innerWidth < 768
+            ? ({ snapTo: "labelsOrExact", duration: 0.3, ease: "power2.inOut" } as any)
+            : undefined,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           /* `fastScrollEnd: true` + `preventOverlaps` together
@@ -286,12 +289,13 @@ export default function BeachPanorama() {
     <section
       id="panorama"
       ref={sectionRef}
-      className="relative h-dvh w-full overflow-hidden pt-20"
+      className="relative h-dvh w-full overflow-hidden pt-20 sm:pt-20"
       style={{
         background:
           "linear-gradient(180deg, #0A192F 0%, #0d2240 15%, #122a45 50%, #0d2240 85%, #0A192F 100%)",
         perspective: "1500px",
         transformStyle: "preserve-3d",
+        touchAction: typeof window !== "undefined" && window.innerWidth < 768 ? "none" : "auto",
       }}
     >
       {/* ═══ SLIDESHOW LAYER (sits behind the cover, revealed
