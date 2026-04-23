@@ -157,8 +157,6 @@ export default function HeroVideoParallax() {
       const layerBg   = trigger.querySelector('[data-parallax-layer="1"]');
       const layerTop  = trigger.querySelector('[data-parallax-layer="3"]');
       const textLayer = textLayerRef.current;
-      const isMobile = window.innerWidth < 768;
-
       if (!layerBg || !layerTop || !textLayer) return;
 
       const tl = gsap.timeline({
@@ -166,7 +164,7 @@ export default function HeroVideoParallax() {
           trigger,
           start: "0% 0%",
           end: "100% 0%",
-          scrub: isMobile ? 0.45 : 1,
+          scrub: 1,
           invalidateOnRefresh: true,
         },
       });
@@ -252,7 +250,7 @@ export default function HeroVideoParallax() {
         trigger: container,
         start: "0% 0%",
         end: "60% 0%",
-        scrub: window.innerWidth < 768 ? 0 : 0.4,
+        scrub: 0.4,
         invalidateOnRefresh: true,
         onRefresh: applyIdleSizes,
         onUpdate: (self) => {
@@ -333,9 +331,9 @@ export default function HeroVideoParallax() {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: el,
-          start: window.innerWidth < 768 ? "top 98%" : "top 80%",
+          start: window.innerWidth < 768 ? "top 95%" : "top 80%",
           end: "top 20%",
-          scrub: window.innerWidth < 768 ? 0.3 : 0.8,
+          scrub: 0.8,
           invalidateOnRefresh: true,
         },
       });

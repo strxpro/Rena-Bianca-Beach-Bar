@@ -46,21 +46,20 @@ export default function SmoothScrollProvider({
   }, []);
 
   useEffect(() => {
-    /* ── Mobile-tuned Lenis. The previous config (`duration: 1.2`,
-          `touchMultiplier: 2`) was the main culprit behind the
-          "fast scroll skips a section" bug on phones: a 1.2 s
-          easing window combined with a 2× touch boost meant that
-          a single fast swipe could scroll through 1500 + px before
-          ScrollTrigger had a chance to pin the next section.
-          A shorter `duration` + `lerp`-based smoothing + touch
-          multiplier of 1.4 keeps the silky feel while ensuring
-          every pinned section gets a chance to engage. ── */
+    /* ── Unified Lenis for ALL devices ────────────────────────────
+          `syncTouch: true` makes Lenis intercept touch events on
+          mobile and apply the same smooth-scroll normalisation as
+          it does for wheel on desktop. This is the KEY setting
+          that gives the identical "magnetic" pinning feel on
+          phones — scroll velocity is controlled, so fast flicks
+          can never skip a pinned section.
+
+          Mobile uses a shorter `duration` (snappier) and a lower
+          `touchMultiplier` so the scroll still feels natural to
+          the finger, but the physics are the same as desktop. ── */
     const isMobile =
       typeof window !== "undefined" && window.innerWidth < 768;
-    const prefersReducedMotion = typeof window !== "undefined"
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const hardwareThreads = typeof navigator !== "undefined" ? navigator.hardwareConcurrency : undefined;
-    const lowPowerDevice = prefersReducedMotion || (typeof hardwareThreads === "number" && hardwareThreads <= 4);
+
     /* Track scroll direction so the prevent callback can decide
        whether to pass through at scroll-container bounds.
        -1 = scrolling UP, +1 = scrolling DOWN, 0 = unknown */
@@ -77,15 +76,13 @@ export default function SmoothScrollProvider({
     window.addEventListener("touchstart", onTouchStartDir, { passive: true });
     window.addEventListener("touchmove", onTouchMoveDir, { passive: true });
 
-    // FIX: force3D globally so every GSAP tween uses GPU compositing
     gsap.defaults({ force3D: true });
 
     const lenis = new Lenis({
-      duration: isMobile ? 0.95 : 1.05,
+      duration: isMobile ? 0.85 : 1.05,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothTouch: false,
-      syncTouch: false,
-      touchMultiplier: isMobile || lowPowerDevice ? 1.15 : 1.7,
+      syncTouch: true,
+      touchMultiplier: isMobile ? 1.0 : 1.7,
       wheelMultiplier: 1,
       infinite: false,
       prevent: (node) => {
@@ -107,7 +104,7 @@ export default function SmoothScrollProvider({
           element.closest(
             "[data-lenis-prevent], [data-mobile-menu-toc], [data-menu-popup-scroll]"
           )
-        ) || (isMobile && Boolean(element.closest("[data-native-snap]")));
+        );
       },
     });
 
@@ -156,12 +153,6 @@ export default function SmoothScrollProvider({
     };
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
-    if (isMobile) {
-      const onLoadRefresh = () => {
-        window.setTimeout(() => ScrollTrigger.refresh(), 300);
-      };
-      window.addEventListener("load", onLoadRefresh, { once: true });
-    }
 
     // FIX: refresh ScrollTrigger after fonts finish loading so measurements are accurate
     if (typeof document !== "undefined" && document.fonts?.ready) {

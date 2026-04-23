@@ -163,7 +163,7 @@ export default function MenuBackgroundFloats() {
               trigger: wrap,
               start: "top bottom",
               end: "bottom top",
-              scrub: (typeof window !== "undefined" && window.innerWidth < 768) ? 0.35 : 1.2,
+              scrub: 1.2,
               invalidateOnRefresh: true,
             },
           }

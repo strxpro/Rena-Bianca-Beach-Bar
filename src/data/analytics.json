@@ -926,5 +926,21 @@
     "device": "desktop",
     "sessionId": "1776889974350-hskqes",
     "referrer": ""
+  },
+  {
+    "ts": 1776920051053,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": ""
+  },
+  {
+    "ts": 1776920112970,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1776843428681-zegj7z",
+    "referrer": ""
   }
 ]

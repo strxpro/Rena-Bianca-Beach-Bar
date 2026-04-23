@@ -179,7 +179,7 @@ export default function BeachPanorama() {
              writes. No `snap`: snap + Lenis fights with user
              momentum and causes the "skipping" the user saw.
              The pin itself already gives the magnetic feel. */
-          scrub: isMobileViewport ? 0.45 : 1,
+          scrub: 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           /* `fastScrollEnd: true` + `preventOverlaps` together
@@ -190,8 +190,8 @@ export default function BeachPanorama() {
              sections on the page share the group name `"pinned"`,
              so at most one pin is ever engaged at a time and
              they take turns as the user scrolls. */
-          fastScrollEnd: !isMobileViewport,
-          preventOverlaps: isMobileViewport ? false : "pinned",
+          fastScrollEnd: true,
+          preventOverlaps: "pinned",
           /* Threshold-crossing trigger for the three scripted
              slide advances. Each one fires exactly once per
              direction so the cover-flip and the auto-cycle never

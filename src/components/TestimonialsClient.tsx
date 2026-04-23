@@ -865,7 +865,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
             trigger: container,
             start: isMobileViewport ? "top 88%" : "top 85%",
             end: isMobileViewport ? "bottom top" : "bottom 15%",
-            scrub: isMobileViewport ? 0.42 : 1,
+            scrub: 1,
             invalidateOnRefresh: true,
           },
         });
@@ -1294,7 +1294,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
 
   useEffect(() => {
     const host = window.location.hostname.toLowerCase();
-    const isLocalHost = host === "localhost" || host === "127.0.0.1";
+    const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0";
     setShouldRenderTurnstile(Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) && !isLocalHost);
   }, []);
 
@@ -1523,7 +1523,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                       <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                   </button>
-                  <div className="relative z-10 -mt-8 flex-1 overflow-y-auto overscroll-contain px-6 pb-8">
+                  <div data-lenis-prevent className="relative z-10 -mt-8 flex-1 overflow-y-auto overscroll-contain px-6 pb-8">
                     <div className="flex items-end gap-4">
                       <SafeReviewImage review={selectedReview} alt={selectedReview.name} className="h-16 w-16 rounded-full border-2 border-[#0d2240] object-cover shadow-lg" />
                       <div className="min-w-0">
@@ -1601,6 +1601,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
 
                     <div
                       ref={showAllScrollRef}
+                      data-lenis-prevent
                       className="flex-1 overflow-y-auto overscroll-contain px-4 py-16 md:px-8"
                       onScroll={(e) => maybeLoadMoreInPopup(e.currentTarget)}
                     >
@@ -1936,15 +1937,14 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                           style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
                         />
                         {shouldRenderTurnstile && (
-                          <div className="mt-1 overflow-visible">
-                            <Turnstile
-                              id="review-turnstile"
-                              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
-                              onSuccess={setTurnstileToken}
-                              onError={() => setTurnstileToken("")}
-                              options={{ theme: "dark", size: "normal" }}
-                            />
-                          </div>
+                          <Turnstile
+                            id="review-turnstile"
+                            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
+                            onSuccess={setTurnstileToken}
+                            onError={() => setTurnstileToken("")}
+                            options={{ theme: "dark", size: "normal" }}
+                            className="mt-1"
+                          />
                         )}
                         <button
                           type="submit"
