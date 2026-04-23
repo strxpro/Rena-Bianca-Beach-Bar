@@ -436,3 +436,21 @@ a, button {
     -webkit-backdrop-filter: none !important;
   }
 }
+
+/* Mobile scroll stability */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* Prevent iOS rubber-band scroll from breaking pin positions */
+@supports (-webkit-overflow-scrolling: touch) {
+  html {
+    -webkit-overflow-scrolling: auto;
+  }
+}
+
+/* Prevent white flash when browser chrome appears/disappears */
+body {
+  background-color: #0A192F;
+  min-height: 100dvh;
+}

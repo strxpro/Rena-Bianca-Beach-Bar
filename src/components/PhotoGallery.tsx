@@ -314,7 +314,7 @@ export default function PhotoGallery() {
       if (!section) return;
 
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
-      ScrollTrigger.create({
+      const st = ScrollTrigger.create({
         trigger: section,
         start: isMob ? "top top" : "top 80px",
         end: () => `+=${Math.max(
@@ -339,6 +339,32 @@ export default function PhotoGallery() {
           rafRef.current = requestAnimationFrame(applyLayout);
         },
       });
+
+      if (isMob) {
+        let touchStartX = 0;
+        let touchStartProgress = 0;
+        const onTouchStart = (e: TouchEvent) => {
+          touchStartX = e.touches[0].clientX;
+          touchStartProgress = progressRef.current;
+        };
+        const onTouchMove = (e: TouchEvent) => {
+          const delta = touchStartX - e.touches[0].clientX;
+          progressRef.current = Math.max(0, Math.min(120, touchStartProgress + delta * 0.4));
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = requestAnimationFrame(applyLayout);
+        };
+        section.addEventListener("touchstart", onTouchStart, { passive: true });
+        section.addEventListener("touchmove", onTouchMove, { passive: true });
+        return () => {
+          section.removeEventListener("touchstart", onTouchStart);
+          section.removeEventListener("touchmove", onTouchMove);
+          st.kill();
+        };
+      }
+
+      return () => {
+        st.kill();
+      };
     },
     { scope: sectionRef }
   );

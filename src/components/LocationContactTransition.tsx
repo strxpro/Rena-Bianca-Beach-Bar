@@ -990,14 +990,16 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                 style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
               />
               {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-                <Turnstile
-                  id="contact-turnstile"
-                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                  onSuccess={setTurnstileToken}
-                  onError={() => setTurnstileToken("")}
-                  options={{ theme: "dark", size: "normal" }}
-                  style={{ marginBottom: "8px" }}
-                />
+                <div style={{ transform: "scale(0.85)", transformOrigin: "left center", marginBottom: "8px" }}>
+                  <Turnstile
+                    id="contact-turnstile"
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                    onSuccess={setTurnstileToken}
+                    onError={() => setTurnstileToken("")}
+                    options={{ theme: "dark", size: "normal" }}
+                    style={{ marginBottom: "8px" }}
+                  />
+                </div>
               )}
               <button
                 data-contact-line
