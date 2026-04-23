@@ -330,7 +330,7 @@ export default function PhotoGallery() {
         end: () => `+=${Math.max(260, Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT)}%`,
         pin: true,
         pinSpacing: true,
-        scrub: isMob ? 0.45 : 1,
+        scrub: isMob ? 0.3 : 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         /* Clamp fast swipes + join the shared `"pinned"` group

@@ -46,7 +46,7 @@ export default async function Home({ searchParams }: PageProps) {
       <AboutGallery isEditMode={isEditMode} />
 
       {/* ── Spatial Push: About → Menu ── */}
-      <div className="relative z-20 -mt-24 sm:-mt-32 md:mt-0 md:z-auto">
+      <div data-native-snap className="relative z-20 -mt-24 sm:-mt-32 md:mt-0 md:z-auto">
         <SpatialScrollTransition
           topSection={
             <div className="pointer-events-none relative h-full w-full overflow-hidden" style={{ background: "linear-gradient(180deg, #2a6a9e 0%, #1a3a5c 25%, #0d2240 60%, #0A192F 100%)" }}>
@@ -69,7 +69,7 @@ export default async function Home({ searchParams }: PageProps) {
       </div>
 
       {/* ── Testimonials (above panorama) ── */}
-      <div className="relative z-30 -mt-10 sm:-mt-14 md:-mt-8">
+      <div data-native-snap className="relative z-30 -mt-10 sm:-mt-14 md:-mt-8">
         <Testimonials />
       </div>
 
@@ -85,19 +85,25 @@ export default async function Home({ searchParams }: PageProps) {
 
       {/* ── Panorama full-screen title + slideshow — pinned with
             GSAP ScrollTrigger and a magnetic scroll-lock release. ── */}
-      <BeachPanorama />
+      <div data-native-snap>
+        <BeachPanorama />
+      </div>
 
       {/* ── Sunset divider: Panorama → Gallery ── */}
       <SunsetDivider />
 
       {/* ── Photo Gallery carousel ── */}
-      <PhotoGallery />
+      <div data-native-snap>
+        <PhotoGallery />
+      </div>
 
       {/* ── Gradient bridge: Gallery → Location ── */}
       <div className="relative w-full" style={{ height: "clamp(40px, 6vh, 80px)", background: "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)" }} />
 
       {/* ── Location → Contact (orbital scroll transition) ── */}
-      <LocationContactTransition isEditMode={isEditMode} />
+      <div data-native-snap>
+        <LocationContactTransition isEditMode={isEditMode} />
+      </div>
 
       {/* ── Footer ── */}
       <footer className="px-4 py-8 text-center sm:px-8 sm:py-12" style={{ background: "linear-gradient(180deg, #0A192F 0%, #060f1e 100%)" }}>

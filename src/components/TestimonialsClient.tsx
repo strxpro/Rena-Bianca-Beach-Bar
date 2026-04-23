@@ -1294,7 +1294,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
 
   useEffect(() => {
     const host = window.location.hostname.toLowerCase();
-    const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0";
+    const isLocalHost = host === "localhost" || host === "127.0.0.1";
     setShouldRenderTurnstile(Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) && !isLocalHost);
   }, []);
 
@@ -1936,14 +1936,15 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                           style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
                         />
                         {shouldRenderTurnstile && (
-                          <Turnstile
-                            id="review-turnstile"
-                            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
-                            onSuccess={setTurnstileToken}
-                            onError={() => setTurnstileToken("")}
-                            options={{ theme: "dark", size: "normal" }}
-                            className="mt-1"
-                          />
+                          <div className="mt-1 overflow-visible">
+                            <Turnstile
+                              id="review-turnstile"
+                              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
+                              onSuccess={setTurnstileToken}
+                              onError={() => setTurnstileToken("")}
+                              options={{ theme: "dark", size: "normal" }}
+                            />
+                          </div>
                         )}
                         <button
                           type="submit"

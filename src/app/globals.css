@@ -85,14 +85,7 @@ body {
   max-width: 100vw;
 }
 
-/* ── Intro film: fully lock the page until the hero video has ended.
-      The HeroSection toggles this class on <html> + <body> on mount
-      and removes it the moment the video ends (or the safety
-      fallback fires). With `overflow: hidden` on both elements AND
-      `touch-action: none` on the body we cover wheel, keyboard,
-      Lenis-driven smooth scroll, mobile native touch and trackpad
-      gestures — no chance for the page to scroll past the hero
-      while the video is still playing. ── */
+/* ── Intro film: lock page until hero video has ended. ── */
 html.intro-locked,
 html.intro-locked body {
   overflow: hidden !important;
@@ -100,6 +93,18 @@ html.intro-locked body {
 }
 html.intro-locked body {
   touch-action: auto;
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    scroll-snap-type: y proximity;
+  }
+
+  main [data-native-snap] {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
 }
 
 ::selection {
@@ -141,8 +146,7 @@ main, header, #side-dots-nav {
   transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* FIX: removed position:fixed — it breaks iOS scroll state and causes sections
-   to jump after intro. overflow:hidden + touch-action:none is sufficient. */
+/* FIX: removed position:fixed — it breaks iOS scroll state and causes sections to jump after intro. */
 .intro-locked {
   overflow: hidden !important;
   height: 100dvh !important;

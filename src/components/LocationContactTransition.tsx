@@ -58,6 +58,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
   const [selectedPhoneCountry, setSelectedPhoneCountry] = useState<Country | null>(null);
   const [formStatus, setFormStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [shouldRenderTurnstile, setShouldRenderTurnstile] = useState(false);
   const [honeypot, setHoneypot] = useState("");
   const formOpenTimeRef = useRef<number>(Date.now());
   const [locEditOpen, setLocEditOpen] = useState(false);
@@ -124,6 +125,12 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       setFormStatus("error");
     }
   };
+
+  useEffect(() => {
+    const host = window.location.hostname.toLowerCase();
+    const isLocalHost = host === "localhost" || host === "127.0.0.1";
+    setShouldRenderTurnstile(Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) && !isLocalHost);
+  }, []);
 
   /* ── Lazy, staggered frame preloader ─────────────────────────
         The section uses 150 WYSPA PNGs (~100 MB total). Loading
@@ -989,15 +996,17 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                 aria-hidden="true"
                 style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
               />
-              {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-                <Turnstile
-                  id="contact-turnstile"
-                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                  onSuccess={setTurnstileToken}
-                  onError={() => setTurnstileToken("")}
-                  options={{ theme: "dark", size: "normal" }}
-                  style={{ marginBottom: "8px" }}
-                />
+              {shouldRenderTurnstile && (
+                <div className="overflow-visible">
+                  <Turnstile
+                    id="contact-turnstile"
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
+                    onSuccess={setTurnstileToken}
+                    onError={() => setTurnstileToken("")}
+                    options={{ theme: "dark", size: "normal" }}
+                    style={{ marginBottom: "8px" }}
+                  />
+                </div>
               )}
               <button
                 data-contact-line

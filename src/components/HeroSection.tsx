@@ -106,7 +106,7 @@ export default function HeroSection() {
   }, []);
 
   const handleVideoEnded = useCallback(() => {
-    completeIntro({ fadeVideo: true });
+    completeIntro({ fadeVideo: true, revealHeader: true });
   }, [completeIntro]);
 
   const skippedRef = useRef(false);

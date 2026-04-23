@@ -252,7 +252,7 @@ export default function HeroVideoParallax() {
         trigger: container,
         start: "0% 0%",
         end: "60% 0%",
-        scrub: window.innerWidth < 768 ? 0.3 : 0.4,
+        scrub: window.innerWidth < 768 ? 0 : 0.4,
         invalidateOnRefresh: true,
         onRefresh: applyIdleSizes,
         onUpdate: (self) => {
@@ -333,9 +333,9 @@ export default function HeroVideoParallax() {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: el,
-          start: window.innerWidth < 768 ? "top 95%" : "top 80%",
+          start: window.innerWidth < 768 ? "top 98%" : "top 80%",
           end: "top 20%",
-          scrub: window.innerWidth < 768 ? 0.35 : 0.8,
+          scrub: window.innerWidth < 768 ? 0.3 : 0.8,
           invalidateOnRefresh: true,
         },
       });

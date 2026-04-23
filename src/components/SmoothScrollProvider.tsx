@@ -77,57 +77,15 @@ export default function SmoothScrollProvider({
     window.addEventListener("touchstart", onTouchStartDir, { passive: true });
     window.addEventListener("touchmove", onTouchMoveDir, { passive: true });
 
-    if (isMobile || lowPowerDevice) {
-      delete (window as unknown as { __lenis?: Lenis }).__lenis;
-      document.documentElement.classList.remove("lenis", "lenis-smooth", "lenis-stopped");
-      document.body.classList.remove("lenis", "lenis-smooth", "lenis-stopped");
-      document.documentElement.classList.add("intro-locked");
-      document.body.classList.add("intro-locked");
-      const releaseLock = () => {
-        document.documentElement.classList.remove("intro-locked");
-        document.body.classList.remove("intro-locked");
-        requestAnimationFrame(() => ScrollTrigger.refresh());
-      };
-      window.addEventListener("video-ended", releaseLock, { once: true });
-      const safetyUnlock = window.setTimeout(releaseLock, 12000);
-
-      let rafId = 0;
-      const onResize = () => {
-        cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => {
-          ScrollTrigger.refresh();
-        });
-      };
-      const onNativeScroll = () => ScrollTrigger.update();
-      window.addEventListener("scroll", onNativeScroll, { passive: true });
-      window.addEventListener("resize", onResize);
-      window.addEventListener("orientationchange", onResize);
-
-      return () => {
-        window.removeEventListener("wheel", onWheelDir);
-        window.removeEventListener("touchstart", onTouchStartDir);
-        window.removeEventListener("touchmove", onTouchMoveDir);
-        window.removeEventListener("scroll", onNativeScroll);
-        window.removeEventListener("resize", onResize);
-        window.removeEventListener("orientationchange", onResize);
-        window.removeEventListener("video-ended", releaseLock);
-        window.clearTimeout(safetyUnlock);
-        cancelAnimationFrame(rafId);
-        document.documentElement.classList.remove("intro-locked");
-        document.body.classList.remove("intro-locked");
-      };
-    }
-
     // FIX: force3D globally so every GSAP tween uses GPU compositing
     gsap.defaults({ force3D: true });
 
     const lenis = new Lenis({
-      duration: 1.05,
+      duration: isMobile ? 0.95 : 1.05,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothTouch: false,
       syncTouch: false,
-      // FIX note: Lenis is already fully disabled on mobile (isMobile branch returns early above)
-      // so no smoothTouch config is needed — native touch scroll is always used on phones.
-      touchMultiplier: 1.7,
+      touchMultiplier: isMobile || lowPowerDevice ? 1.15 : 1.7,
       wheelMultiplier: 1,
       infinite: false,
       prevent: (node) => {
@@ -149,7 +107,7 @@ export default function SmoothScrollProvider({
           element.closest(
             "[data-lenis-prevent], [data-mobile-menu-toc], [data-menu-popup-scroll]"
           )
-        );
+        ) || (isMobile && Boolean(element.closest("[data-native-snap]")));
       },
     });
 
@@ -198,6 +156,12 @@ export default function SmoothScrollProvider({
     };
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
+    if (isMobile) {
+      const onLoadRefresh = () => {
+        window.setTimeout(() => ScrollTrigger.refresh(), 300);
+      };
+      window.addEventListener("load", onLoadRefresh, { once: true });
+    }
 
     // FIX: refresh ScrollTrigger after fonts finish loading so measurements are accurate
     if (typeof document !== "undefined" && document.fonts?.ready) {
