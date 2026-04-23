@@ -225,6 +225,7 @@ export default function HeroVideoParallax() {
 
       let wasDocked = false;
       let wasHandedOff = false;
+      let lastMobileUpdate = 0;
       // Pixel snapshot of the scene logo at the moment of hand-off.
       // Used as the START values for the dock-logo glide, so the
       // swap is visually invisible (the dock logo materialises at
@@ -256,6 +257,11 @@ export default function HeroVideoParallax() {
         invalidateOnRefresh: true,
         onRefresh: applyIdleSizes,
         onUpdate: (self) => {
+          if (window.innerWidth < 768) {
+            const now = performance.now();
+            if (now - lastMobileUpdate < 24) return;
+            lastMobileUpdate = now;
+          }
           const p = self.progress;
           const m = getLogoMetrics();
           const handedOff = p >= HANDOFF_P;

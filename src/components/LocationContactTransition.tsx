@@ -122,6 +122,10 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       const anchor = turnstileAnchorRef.current;
       if (anchor) {
         const rect = anchor.getBoundingClientRect();
+        if (rect.bottom < -40 || rect.top > window.innerHeight + 40) {
+          setTurnstileRect((prev) => (prev ? null : prev));
+          return;
+        }
         const next = {
           top: rect.top,
           left: rect.left,

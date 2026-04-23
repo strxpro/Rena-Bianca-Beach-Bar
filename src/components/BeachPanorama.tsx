@@ -121,6 +121,7 @@ export default function BeachPanorama() {
       const coverInner = coverInnerRef.current;
       if (!section || !cover) return;
       const { isLowEndMobile } = getMobilePerformanceProfile();
+      const isMobilePin = window.innerWidth < 768;
 
       /* The cover hinges from its TOP edge — `transform-origin:
          50% 0%`. Combined with `transformPerspective: 1500` and
@@ -160,7 +161,7 @@ export default function BeachPanorama() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: () => (window.innerWidth < 768 ? "+=330%" : "+=220%"),
+          end: () => (window.innerWidth < 768 ? "+=170%" : "+=220%"),
           pin: true,
           pinSpacing: true,
           pinType: "fixed",
@@ -169,7 +170,7 @@ export default function BeachPanorama() {
             writes. No `snap`: snap + Lenis fights with user
             momentum and causes the "skipping" the user saw.
             The pin itself already gives the magnetic feel. */
-          scrub: window.innerWidth < 768 ? (isLowEndMobile ? 1.7 : 1.45) : 1,
+          scrub: window.innerWidth < 768 ? (isLowEndMobile ? 1.25 : 1.1) : 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           /* `fastScrollEnd: true` + `preventOverlaps` together
@@ -187,6 +188,7 @@ export default function BeachPanorama() {
              direction so the cover-flip and the auto-cycle never
              compete. Reverse-scroll resets flags in reverse. */
           onUpdate: (self) => {
+            if (isMobilePin) return;
             const p = self.progress;
             if (p > ADV1 && !fired.adv1) {
               fired.adv1 = true;

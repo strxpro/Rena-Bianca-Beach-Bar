@@ -743,6 +743,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
     3: createIdleRowDragState(),
   });
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [writeModalSession, setWriteModalSession] = useState(0);
   const [honeypot, setHoneypot] = useState("");
   const [photos, setPhotos] = useState<{ base64: string; preview: string }[]>([]);
   const [formAvatarSeed, setFormAvatarSeed] = useState(() => createRandomAvatarSeed());
@@ -1176,11 +1177,13 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
     formOpenTimeRef.current = Date.now();
     setFormStatus("idle");
     setTurnstileToken("");
+    setWriteModalSession((v) => v + 1);
     setShowWrite(true);
   }, []);
 
   const closeWrite = useCallback(() => {
     setTurnstileToken("");
+    setWriteModalSession((v) => v + 1);
     setShowWrite(false);
   }, []);
 
@@ -1706,13 +1709,13 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                   animate={{ scale: 1, y: 0, opacity: 1 }}
                   exit={{ scale: 0.9, y: 30, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0d2240] p-6 shadow-2xl"
+                  className="relative w-full max-w-[92vw] sm:max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0d2240] p-4 sm:p-6 shadow-2xl"
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
                   <button
                     type="button"
                     onClick={closeWrite}
-                    className="absolute right-4 top-4 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/60"
+                    className="absolute right-3 top-3 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/70"
                     aria-label={uiCopy.close}
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -1921,10 +1924,10 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                           </label>
                           <textarea
                             required
-                            rows={5}
+                            rows={isMobileViewport ? 4 : 5}
                             value={formText}
                             onChange={(e) => setFormText(e.target.value)}
-                            className="min-h-[120px] w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 font-body text-sm text-sand placeholder:text-sand/30 focus:border-ocean/60 focus:bg-white/10 focus:outline-none"
+                            className={`w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 font-body text-sm text-sand placeholder:text-sand/30 focus:border-ocean/60 focus:bg-white/10 focus:outline-none ${isMobileViewport ? "min-h-[96px]" : "min-h-[120px]"}`}
                             placeholder={t("contact.messagePlaceholder")}
                           />
                         </div>
@@ -1938,8 +1941,9 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                           aria-hidden="true"
                           style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
                         />
-                        {shouldRenderTurnstile && (
+                        {shouldRenderTurnstile && showWrite && activeTab === "local" && (
                           <div
+                            key={`review-turnstile-wrap-${writeModalSession}`}
                             style={{
                               transform: isMobileViewport ? "scale(0.82)" : "scale(1)",
                               transformOrigin: "left center",
@@ -1948,7 +1952,8 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                             }}
                           >
                             <Turnstile
-                              id="review-turnstile"
+                              key={`review-turnstile-${writeModalSession}`}
+                              id={`review-turnstile-${writeModalSession}`}
                               siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
                               onSuccess={setTurnstileToken}
                               onError={() => setTurnstileToken("")}

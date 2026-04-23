@@ -139,14 +139,14 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
             trigger: card,
             start: `top ${CARD_TOP}`,
             end: `bottom ${CARD_TOP}`,
-            scrub: isMobileViewport ? 1.5 : 1,
+            scrub: isMobileViewport ? 1.05 : 1,
             invalidateOnRefresh: true,
           },
         });
 
         tl.to(wrapper, {
-          scale: isMobileViewport ? 0.9 : 0.85,
-          y: isMobileViewport ? "-5dvh" : "-8dvh",
+          scale: isMobileViewport ? 0.94 : 0.85,
+          y: isMobileViewport ? "-3dvh" : "-8dvh",
           rotateX: isMobileViewport ? -4 : -12,
           ease: "none",
           force3D: !isMobileViewport,
