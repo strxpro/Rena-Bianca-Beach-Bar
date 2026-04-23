@@ -78,6 +78,9 @@ export default function SmoothScrollProvider({
     window.addEventListener("touchmove", onTouchMoveDir, { passive: true });
 
     if (isMobile || lowPowerDevice) {
+      delete (window as unknown as { __lenis?: Lenis }).__lenis;
+      document.documentElement.classList.remove("lenis", "lenis-smooth", "lenis-stopped");
+      document.body.classList.remove("lenis", "lenis-smooth", "lenis-stopped");
       document.documentElement.classList.add("intro-locked");
       document.body.classList.add("intro-locked");
       const releaseLock = () => {
@@ -120,6 +123,7 @@ export default function SmoothScrollProvider({
     const lenis = new Lenis({
       duration: 1.05,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      syncTouch: false,
       // FIX note: Lenis is already fully disabled on mobile (isMobile branch returns early above)
       // so no smoothTouch config is needed — native touch scroll is always used on phones.
       touchMultiplier: 1.7,

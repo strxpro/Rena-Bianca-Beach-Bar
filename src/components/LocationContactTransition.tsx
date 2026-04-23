@@ -351,9 +351,9 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMobileDevice ? "+=280%" : "+=900%",
+          end: isMobileDevice ? "+=320%" : "+=900%",
           pin: true,
-          scrub: isMobileDevice ? 0.3 : 0.5,
+          scrub: isMobileDevice ? 0 : 0.5,
           anticipatePin: 1,
           /* Share the `"pinned"` group so this pin can never
              overlap with the menu-transition, panorama or gallery
@@ -407,7 +407,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       }, 0);
 
       const ORBIT_START = 0.40;
-      const ORBIT_DUR = isMobileDevice ? 0.18 : 0.30; // Mobile: faster transition
+      const ORBIT_DUR = isMobileDevice ? 0.26 : 0.30;
 
       /* ── Background gradually lightens early during the film play ── */
       if (bgEl) {
@@ -531,9 +531,9 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                start  + stagger * (n-1) + dur
              = 0.588 + 0.010 * 5         + 0.025
              = 0.663  ≈ FILM_END (0.66)  ✓ ═══ */
-      const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR * 0.50; // Starts midway through orbit
-      const LINE_REVEAL_DUR = 0.025;
-      const LINE_STAGGER = 0.010;
+      const LINE_REVEAL_START = ORBIT_START + ORBIT_DUR * 0.45;
+      const LINE_REVEAL_DUR = isMobileDevice ? 0.04 : 0.025;
+      const LINE_STAGGER = isMobileDevice ? 0.016 : 0.010;
 
       tl.to(
         formEls,
@@ -563,8 +563,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         headingLetters,
         {
           yPercent: 0,
-          stagger: 0.003,
-          duration: 0.04,
+          stagger: isMobileDevice ? 0.006 : 0.003,
+          duration: isMobileDevice ? 0.06 : 0.04,
           ease: "expo.out",
         },
         LINE_REVEAL_START + LINE_STAGGER
@@ -575,7 +575,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
             Scenery starts exit at 0.70 and is fully gone at 0.82.
             Centering starts as the hero beat of the end. ═══ */
       const MAGNET_START = 0.84; 
-      const MAGNET_DUR = 0.06;
+      const MAGNET_DUR = isMobileDevice ? 0.09 : 0.06;
 
       // Card background darkens + glow intensifies
       if (contactWrapper) {
@@ -660,7 +660,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       {/* Background layer for color animation */}
       <div data-bg className="absolute inset-0" style={{ background: "#0A192F" }} />
 
-      <div data-location-scene className="absolute inset-0 will-change-transform">
+      <div data-location-scene className="absolute inset-0 md:will-change-transform">
       {/* ═══ BACK WAVE (taller, behind) ═══ */}
       <div
         data-wave-back
@@ -729,7 +729,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
            so the orbital exit curves around the panel's middle. ═══ */}
       <div
         data-location
-        className="absolute inset-0 z-10 flex items-center justify-center will-change-transform"
+        className="absolute inset-0 z-10 flex items-center justify-center md:will-change-transform"
       >
         <div className="mx-auto w-full max-w-5xl px-6 sm:px-10">
           <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">
@@ -837,12 +837,12 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       {/* ═══ CONTACT PANEL (enters from right) ═══ */}
       <div
         data-contact
-        className="absolute inset-0 z-20 flex items-center will-change-transform"
+        className="absolute inset-0 z-20 flex items-center md:will-change-transform"
       >
         <div data-contact-inner className="mx-auto flex w-full max-w-5xl justify-center px-4 sm:px-8 md:px-14">
           <div
             data-contact-wrap
-            className="mx-auto w-full max-w-lg overflow-visible rounded-2xl border border-white/8 bg-white/3 p-5 sm:p-7 md:p-9 backdrop-blur-md will-change-transform max-[767px]:mx-auto"
+            className="mx-auto w-full max-w-lg overflow-visible rounded-2xl border border-white/8 bg-white/3 p-5 max-[767px]:mx-auto sm:p-7 md:will-change-transform md:p-9 md:backdrop-blur-md"
             style={{
               boxShadow: "0 0 40px rgba(59,130,196,0.06), inset 0 1px 0 rgba(255,255,255,0.05)",
             }}
@@ -850,14 +850,13 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
             <span
               data-contact-line
               className="mb-3 block font-body text-[10px] uppercase tracking-[0.3em] text-ocean/60 sm:text-xs"
-              style={{ willChange: "filter, transform, opacity" }}
             >
               {t("contact.label")}
             </span>
             <h2
               data-contact-line
               className="font-heading text-2xl text-sand sm:text-3xl md:text-4xl lg:text-5xl"
-              style={{ fontWeight: 400, lineHeight: 1.1, willChange: "filter, transform, opacity" }}
+              style={{ fontWeight: 400, lineHeight: 1.1 }}
             >
               {t("contact.heading").split("").map((ch: string, i: number) => (
                 <span key={i} className="inline-block overflow-hidden">
@@ -872,7 +871,6 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
               data-contact-line
               data-form-el
               className="mt-4 max-w-sm font-body text-sm leading-relaxed text-sand/50 md:mt-6 md:text-base"
-              style={{ willChange: "filter, transform, opacity" }}
             >
               {t("contact.description")}
             </p>
@@ -880,7 +878,6 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
             {formStatus === "sent" ? (
               <div 
                 className="mt-8 flex flex-col items-center justify-center gap-4 rounded-2xl border border-ocean/30 bg-ocean/10 py-12 px-6 text-center shadow-lg backdrop-blur-md md:mt-10"
-                style={{ willChange: "filter, transform, opacity" }}
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ocean/20 text-ocean shadow-[inset_0_0_12px_rgba(59,130,196,0.3)]">
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -901,7 +898,6 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                 data-contact-line
                 data-form-el
                 className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-                style={{ willChange: "filter, transform, opacity" }}
               >
                 <div className="flex flex-col gap-1.5">
                   <label className="font-body text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">
@@ -934,7 +930,6 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                 data-contact-line
                 data-form-el
                 className="flex flex-col gap-1.5"
-                style={{ willChange: "filter, transform, opacity" }}
               >
                 <label className="font-body text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">
                   {t("contact.message")}
@@ -1010,7 +1005,6 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                 type="submit"
                 disabled={formStatus === "loading"}
                 className="mt-2 w-fit rounded-full border border-ocean/30 bg-ocean/10 px-8 py-3 font-body text-xs font-medium uppercase tracking-wider text-sand/80 transition-all duration-300 hover:border-ocean/50 hover:bg-ocean/20 hover:text-sand sm:text-sm disabled:opacity-50"
-                style={{ willChange: "filter, transform, opacity" }}
               >
                 {formStatus === "loading" ? t("contact.sending") : t("contact.submit")}
               </button>
@@ -1138,7 +1132,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       {/* ── Location edit modal ── */}
       {locEditOpen && (
         <div
-          className="fixed inset-0 z-[350] flex items-center justify-center p-4"
+          className="fixed inset-0 z-350 flex items-center justify-center p-4"
           style={{ background: "rgba(5, 15, 35, 0.85)", backdropFilter: "blur(8px)" }}
         >
           <div className="w-full max-w-sm overflow-y-auto rounded-[28px] border border-white/12 bg-[#0d2240] p-6 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.95)]" style={{ maxHeight: "90dvh" }}>
@@ -1167,7 +1161,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                     value={locDraft[key]}
                     onChange={(e) => setLocDraft((p) => ({ ...p, [key]: e.target.value }))}
                     placeholder={placeholder}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 font-body text-sm text-sand placeholder-sand/30 outline-none focus:border-ocean/50 focus:ring-1 focus:ring-ocean/30 transition-all"
+                    className="w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 font-body text-sm text-sand placeholder-sand/30 outline-none focus:border-ocean/50 focus:ring-1 focus:ring-ocean/30 transition-all"
                   />
                 </div>
               ))}

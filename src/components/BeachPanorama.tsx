@@ -50,6 +50,7 @@ export default function BeachPanorama() {
   const coverRef = useRef<HTMLDivElement>(null);
   const coverInnerRef = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(0);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   /* `currentRef` mirrors `current` so the scroll-driven onUpdate
      callback (which closes over its initial value) can read the
      latest slide index without re-creating the timeline. */
@@ -63,12 +64,15 @@ export default function BeachPanorama() {
     currentRef.current = current;
   }, [current]);
 
-  // FIX: reduce perspective on mobile after mount to cut GPU repaint cost
   useEffect(() => {
-    const section = sectionRef.current;
-    if (section && window.innerWidth < 768) {
-      section.style.perspective = "800px";
-    }
+    const syncViewport = () => setIsMobileViewport(window.innerWidth < 768);
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    window.addEventListener("orientationchange", syncViewport);
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      window.removeEventListener("orientationchange", syncViewport);
+    };
   }, []);
 
   /* ── Slideshow navigation (parallax wipe) ─────────────────── */
@@ -132,14 +136,12 @@ export default function BeachPanorama() {
          `transformStyle: "preserve-3d"` on the section, the
          scrub'd `rotationX` produces the calendar-flip feel the
          brief asks for. */
-      // FIX: reduced transformPerspective on mobile
-      const isMobPano = typeof window !== "undefined" && window.innerWidth < 768;
       gsap.set(cover, {
         rotationX: 0,
         opacity: 1,
         transformOrigin: "50% 0%",
-        transformPerspective: isMobPano ? 800 : 1500, // FIX: less aggressive on mobile
-        force3D: true, // FIX: GPU compositing
+        transformPerspective: isMobileViewport ? 650 : 1500,
+        force3D: !isMobileViewport,
       });
       if (coverInner) gsap.set(coverInner, { y: 0, opacity: 1 });
 
@@ -168,7 +170,7 @@ export default function BeachPanorama() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: () => (window.innerWidth < 768 ? "+=180%" : "+=220%"),
+          end: () => (isMobileViewport ? "+=160%" : "+=220%"),
           pin: true,
           pinSpacing: true,
           pinType: "fixed",
@@ -177,7 +179,7 @@ export default function BeachPanorama() {
              writes. No `snap`: snap + Lenis fights with user
              momentum and causes the "skipping" the user saw.
              The pin itself already gives the magnetic feel. */
-          scrub: (typeof window !== "undefined" && window.innerWidth < 768) ? 0.3 : 1, // FIX: reduced scrub lag on mobile
+          scrub: isMobileViewport ? 0 : 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           /* `fastScrollEnd: true` + `preventOverlaps` together
@@ -258,7 +260,7 @@ export default function BeachPanorama() {
          own pace without being scrubbed backwards frame-by-frame
          by the user's scroll. */
     },
-    { scope: sectionRef }
+    { scope: sectionRef, dependencies: [isMobileViewport] }
   );
 
   const onThumbMove = useCallback((index: number, e: MouseEvent<HTMLButtonElement>) => {
@@ -301,11 +303,8 @@ export default function BeachPanorama() {
       style={{
         background:
           "linear-gradient(180deg, #0A192F 0%, #0d2240 15%, #122a45 50%, #0d2240 85%, #0A192F 100%)",
-        /* Perspective + preserve-3d on the section so the cover's
-           `rotateX` reads as a real 3D hinge instead of a flat
-           y-scale. */
-        perspective: "1500px",
-        transformStyle: "preserve-3d",
+        perspective: isMobileViewport ? "700px" : "1500px",
+        transformStyle: isMobileViewport ? "flat" : "preserve-3d",
       }}
     >
       {/* ═══ SLIDESHOW LAYER (sits behind the cover, revealed
@@ -321,7 +320,7 @@ export default function BeachPanorama() {
               ref={(el) => {
                 slideEls.current[i] = el;
               }}
-              className="relative grid place-items-center overflow-hidden will-change-transform"
+              className={`relative grid place-items-center overflow-hidden ${isMobileViewport ? "" : "will-change-transform"}`}
               style={{
                 gridArea: "1 / 1 / -1 / -1",
                 opacity: i === 0 ? 1 : 0,
@@ -336,7 +335,7 @@ export default function BeachPanorama() {
                 alt={t(slide.titleKey)}
                 loading={i < 2 ? "eager" : "lazy"}
                 draggable={false}
-                className="absolute h-full w-full object-cover will-change-transform"
+                className={`absolute h-full w-full object-cover ${isMobileViewport ? "" : "will-change-transform"}`}
               />
             </div>
           ))}
@@ -388,7 +387,7 @@ export default function BeachPanorama() {
            by the ScrollTrigger above. ═══ */}
       <div
         ref={coverRef}
-        className="absolute inset-0 z-30 will-change-transform"
+        className={`absolute inset-0 z-30 ${isMobileViewport ? "" : "will-change-transform"}`}
         style={{
           background:
             "linear-gradient(180deg, #0A192F 0%, #0d2240 35%, #122a45 65%, #0d2240 100%)",
@@ -433,7 +432,7 @@ export default function BeachPanorama() {
               onMouseMove={(e) => onThumbMove(i, e)}
               onMouseLeave={() => onThumbLeave(i)}
               onClick={() => navigate(i)}
-              className="relative overflow-hidden rounded transition-all will-change-transform"
+              className={`relative overflow-hidden rounded transition-all ${isMobileViewport ? "" : "will-change-transform"}`}
               style={{
                 width: "clamp(40px, 5vw, 56px)",
                 height: "clamp(40px, 5vw, 56px)",
@@ -447,7 +446,7 @@ export default function BeachPanorama() {
                 ref={(el) => {
                   thumbInnerEls.current[i] = el;
                 }}
-                className="absolute inset-0 block will-change-transform"
+                className={`absolute inset-0 block ${isMobileViewport ? "" : "will-change-transform"}`}
               >
                 <img
                   src={slide.src}

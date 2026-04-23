@@ -323,15 +323,14 @@ export default function PhotoGallery() {
       const section = sectionRef.current;
       if (!section) return;
 
-      // FIX: lower scrub on mobile for instant scroll response
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       ScrollTrigger.create({
         trigger: section,
-        start: "top 80px",
+        start: isMob ? "top top" : "top 80px",
         end: () => `+=${Math.max(260, Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT)}%`,
         pin: true,
         pinSpacing: true,
-        scrub: isMob ? 0.3 : 1, // FIX: reduced scrub lag on mobile
+        scrub: isMob ? 0 : 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         /* Clamp fast swipes + join the shared `"pinned"` group
@@ -352,6 +351,7 @@ export default function PhotoGallery() {
 
   /* ── Pointer handlers (desktop drag) ── */
   const onPointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
     isDownRef.current = true;
     draggedRef.current = false;
     startXRef.current = e.clientX;
@@ -361,6 +361,7 @@ export default function PhotoGallery() {
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
+      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
       if (!isDownRef.current) return;
       e.preventDefault();
       const x = e.clientX;
@@ -373,30 +374,12 @@ export default function PhotoGallery() {
     [scheduleUpdate]
   );
 
-  const onPointerUp = useCallback(() => {
+  const onPointerUp = useCallback((e?: React.PointerEvent) => {
+    if (e && e.pointerType !== "mouse" && e.pointerType !== "pen") return;
     isDownRef.current = false;
     const el = carouselRef.current;
     if (el) el.style.cursor = "grab";
   }, []);
-
-  /* ── Touch handlers (mobile swipe) ── */
-  const touchXRef = useRef(0);
-
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    touchXRef.current = e.touches[0].clientX;
-  }, []);
-
-  const onTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      const x = e.touches[0].clientX;
-      progressRef.current += (x - touchXRef.current) * SPEED_DRAG;
-      touchXRef.current = x;
-      // #region agent log
-      // #endregion
-      scheduleUpdate();
-    },
-    [scheduleUpdate]
-  );
 
   /* ── Lightbox state ── */
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -462,14 +445,12 @@ export default function PhotoGallery() {
       <div
         ref={carouselRef}
         className="relative h-full w-full"
-        style={{ cursor: "grab", touchAction: "pan-y" }}
+        style={{ cursor: "grab", touchAction: "manipulation" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onPointerLeave={onPointerUp}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
+        onPointerUp={(e) => onPointerUp(e)}
+        onPointerCancel={(e) => onPointerUp(e)}
+        onPointerLeave={(e) => onPointerUp(e)}
       >
         {galleryItems.map((item, i) => {
           const isTeaserCard = i === galleryItems.length - 1;
@@ -478,7 +459,7 @@ export default function PhotoGallery() {
             <div
               key={item.id}
               ref={(el) => { cardRefs.current[i] = el; }}
-              className="absolute left-1/2 top-1/2 overflow-hidden rounded-xl will-change-transform"
+              className="absolute left-1/2 top-1/2 overflow-hidden rounded-xl md:will-change-transform"
               style={{
                 width: "clamp(200px, 45vw, 300px)",
                 height: "clamp(280px, 60vw, 400px)",

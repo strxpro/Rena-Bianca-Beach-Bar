@@ -87,6 +87,7 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
   const cardsRef = useRef<(HTMLLIElement | null)[]>([]);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [draft, setDraft] = useState<DraftState>({ badge: "", title: "", text: "", note: "", image: "" });
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   const openEdit = (i: number) => {
     const card = ABOUT_CARD_STYLES[i];
@@ -111,10 +112,16 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
     setEditIdx(null);
   };
 
-  // #region agent log
   useEffect(() => {
+    const syncViewport = () => setIsMobileViewport(window.innerWidth < 768);
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    window.addEventListener("orientationchange", syncViewport);
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      window.removeEventListener("orientationchange", syncViewport);
+    };
   }, []);
-  // #endregion
 
   useGSAP(
     () => {
@@ -127,23 +134,22 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
         const dimOverlay = card.querySelector("[data-card-dim]") as HTMLElement;
         if (!wrapper) return;
 
-        // FIX: lower scrub on mobile; simplify 3D rotation
-        const isMobAbout = typeof window !== "undefined" && window.innerWidth < 768;
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: card,
             start: `top ${CARD_TOP}`,
             end: `bottom ${CARD_TOP}`,
-            scrub: isMobAbout ? 0.3 : 1, // FIX: reduced scrub lag on mobile
+            scrub: isMobileViewport ? 0 : 1,
+            invalidateOnRefresh: true,
           },
         });
 
         tl.to(wrapper, {
-          scale: 0.85,
-          y: "-8dvh",
-          rotateX: isMobAbout ? -6 : -12, // FIX: less 3D rotation on mobile to reduce repaints
+          scale: isMobileViewport ? 0.9 : 0.85,
+          y: isMobileViewport ? "-5dvh" : "-8dvh",
+          rotateX: isMobileViewport ? -4 : -12,
           ease: "none",
-          force3D: true, // FIX: GPU compositing
+          force3D: !isMobileViewport,
         });
 
         if (dimOverlay) {
@@ -154,7 +160,7 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
         }
       });
     },
-    { scope: sectionRef }
+    { scope: sectionRef, dependencies: [isMobileViewport] }
   );
 
   const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 font-body text-sm text-sand placeholder-sand/30 outline-none focus:border-ocean/50 focus:ring-1 focus:ring-ocean/30 transition-all";
@@ -198,7 +204,7 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
                 top: CARD_TOP,
                 height: CARD_HEIGHT,
                 paddingTop: `${i * CARD_TOP_OFFSET}px`,
-                perspective: "1200px",
+                perspective: isMobileViewport ? "none" : "1200px",
               }}
             >
               <div
@@ -206,8 +212,8 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
                 className="relative h-full w-full"
                 style={{
                   transformOrigin: "50% 0%",
-                  willChange: "transform",
-                  transformStyle: "preserve-3d",
+                  willChange: isMobileViewport ? "auto" : "transform",
+                  transformStyle: isMobileViewport ? "flat" : "preserve-3d",
                 }}
               >
                 {card.showCrown && (
@@ -260,7 +266,7 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); openEdit(i); }}
-                      className="absolute right-4 top-4 z-[25] flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white backdrop-blur-sm transition-all hover:bg-black/80 hover:scale-105"
+                      className="absolute right-4 top-4 z-25 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white backdrop-blur-sm transition-all hover:bg-black/80 hover:scale-105"
                       title="Edytuj kartę"
                     >
                       <Pencil className="h-4 w-4" />
@@ -328,7 +334,7 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
       {/* ── Card edit modal ── */}
       {editIdx !== null && (
         <div
-          className="fixed inset-0 z-[350] flex items-center justify-center p-4"
+          className="fixed inset-0 z-350 flex items-center justify-center p-4"
           style={{ background: "rgba(5, 15, 35, 0.8)", backdropFilter: "blur(8px)" }}
         >
           <div className="w-full max-w-md overflow-y-auto rounded-[28px] border border-white/12 bg-[#0d2240] p-6 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.95)]" style={{ maxHeight: "90dvh" }}>

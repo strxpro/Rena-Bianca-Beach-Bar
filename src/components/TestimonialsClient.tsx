@@ -636,7 +636,7 @@ function ReviewCard({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerRelease}
       onPointerLeave={handlePointerRelease}
-      style={{ x: dragX, y: dragY, rotate: dragRotate, contain: "layout style", touchAction: touchDragMode ? "none" : "pan-x" }}
+      style={{ x: dragX, y: dragY, rotate: dragRotate, contain: "layout style", touchAction: touchDragMode ? "none" : "manipulation" }}
       whileHover={lightMode ? undefined : { y: -10, rotate: 0, scale: 1.02 }}
       whileTap={lightMode ? undefined : { scale: 1.01 }}
       transition={{ type: "spring", stiffness: lightMode ? 800 : 260, damping: lightMode ? 48 : 22 }}
@@ -865,7 +865,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
             trigger: container,
             start: isMobileViewport ? "top 95%" : "top 85%", // FIX: trigger earlier on mobile
             end: "bottom 15%",
-            scrub: isMobileViewport ? 0.2 : 1, // FIX: much lower scrub on mobile for instant response
+            scrub: isMobileViewport ? 0 : 1,
             invalidateOnRefresh: true,
           },
         });
@@ -1335,7 +1335,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
             <p className="mb-2 font-body text-[10px] uppercase tracking-[0.22em] text-sand/55 sm:text-xs">{uiCopy.rowLatest}</p>
           </div>
           <div className="relative mb-2 w-full sm:mb-3">
-            <div ref={row1WrapRef} className="w-full will-change-transform" style={rowMaskStyle}>
+            <div ref={row1WrapRef} className="w-full md:will-change-transform" style={rowMaskStyle}>
               <div
                 ref={row1Ref}
                 data-testimonial-row="1"
@@ -1350,7 +1350,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
               >
                 <div
                   className="flex w-max min-h-0 flex-nowrap gap-6 overflow-visible snap-x snap-proximity sm:gap-12"
-                  style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+                  style={{ WebkitOverflowScrolling: "touch" }}
                 >
                   {row1LoopItems.map(({ review, copyIndex, baseIndex }) => (
                     <div
@@ -1377,7 +1377,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
             <p className="mb-2 font-body text-[10px] uppercase tracking-[0.22em] text-sand/55 sm:text-xs">{uiCopy.rowTopRated}</p>
           </div>
           <div className="relative mb-2 w-full sm:mb-3">
-            <div ref={row2WrapRef} className="w-full will-change-transform" style={rowMaskStyle}>
+            <div ref={row2WrapRef} className="w-full md:will-change-transform" style={rowMaskStyle}>
               <div
                 ref={row2Ref}
                 data-testimonial-row="2"
@@ -1392,7 +1392,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
               >
                 <div
                   className="flex w-max min-h-0 flex-nowrap gap-6 overflow-visible snap-x snap-proximity sm:gap-12"
-                  style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+                  style={{ WebkitOverflowScrolling: "touch" }}
                 >
                   {row2LoopItems.map(({ review, copyIndex, baseIndex }) => (
                     <div
@@ -1419,7 +1419,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
             <p className="mb-2 font-body text-[10px] uppercase tracking-[0.22em] text-sand/55 sm:text-xs">{uiCopy.rowPopular}</p>
           </div>
           <div className="relative w-full">
-            <div ref={row3WrapRef} className="w-full will-change-transform" style={rowMaskStyle}>
+            <div ref={row3WrapRef} className="w-full md:will-change-transform" style={rowMaskStyle}>
               <div
                 ref={row3Ref}
                 data-testimonial-row="3"
@@ -1434,7 +1434,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
               >
                 <div
                   className="flex w-max min-h-0 flex-nowrap gap-6 overflow-visible snap-x snap-proximity sm:gap-12"
-                  style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+                  style={{ WebkitOverflowScrolling: "touch" }}
                 >
                   {row3LoopItems.map(({ review, copyIndex, baseIndex }) => (
                     <div

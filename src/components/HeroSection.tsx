@@ -52,21 +52,62 @@ function firePreloaderComplete() {
 export default function HeroSection() {
   const rootRef = useRef<HTMLDivElement>(null);
   const fullVideoRef = useRef<HTMLVideoElement>(null);
+  const introFinishedRef = useRef(false);
+  const videoDismissedRef = useRef(false);
+
+  const completeIntro = useCallback((options?: {
+    fadeVideo?: boolean;
+    hideVideo?: boolean;
+    hideOverlay?: boolean;
+    revealHeader?: boolean;
+  }) => {
+    const vid = fullVideoRef.current;
+    const root = rootRef.current;
+    const overlay = root?.querySelector("[data-overlay]") as HTMLElement | null;
+
+    if (!introFinishedRef.current) {
+      introFinishedRef.current = true;
+
+      if (options?.revealHeader) {
+        window.dispatchEvent(new CustomEvent("header-show"));
+      }
+
+      window.dispatchEvent(new CustomEvent("video-ended"));
+      firePreloaderComplete();
+    }
+
+    if (options?.hideOverlay && overlay) {
+      overlay.style.display = "none";
+    }
+
+    if (!vid || videoDismissedRef.current) return;
+
+    if (options?.hideVideo) {
+      videoDismissedRef.current = true;
+      gsap.killTweensOf(vid);
+      vid.pause();
+      vid.style.display = "none";
+      return;
+    }
+
+    if (options?.fadeVideo) {
+      videoDismissedRef.current = true;
+      gsap.killTweensOf(vid);
+      gsap.to(vid, {
+        opacity: 0,
+        duration: VIDEO_FADE_DUR,
+        ease: "power2.inOut",
+        onComplete: () => {
+          vid.pause();
+          vid.style.display = "none";
+        },
+      });
+    }
+  }, []);
 
   const handleVideoEnded = useCallback(() => {
-    const vid = fullVideoRef.current;
-    if (!vid) return;
-    window.dispatchEvent(new CustomEvent("video-ended"));
-    firePreloaderComplete();
-    gsap.to(vid, {
-      opacity: 0,
-      duration: VIDEO_FADE_DUR,
-      ease: "power2.inOut",
-      onComplete: () => {
-        vid.style.display = "none";
-      },
-    });
-  }, []);
+    completeIntro({ fadeVideo: true });
+  }, [completeIntro]);
 
   const skippedRef = useRef(false);
 
@@ -77,14 +118,9 @@ export default function HeroSection() {
 
     if (window.scrollY > 100) {
       skippedRef.current = true;
-      vid.style.display = "none";
       document.documentElement.classList.remove("intro-locked");
       document.body.classList.remove("intro-locked");
-      const overlay = root?.querySelector("[data-overlay]") as HTMLElement | null;
-      if (overlay) overlay.style.display = "none";
-      window.dispatchEvent(new CustomEvent("header-show"));
-      window.dispatchEvent(new CustomEvent("video-ended"));
-      firePreloaderComplete();
+      completeIntro({ hideVideo: true, hideOverlay: true, revealHeader: true });
       return;
     }
 
@@ -93,32 +129,40 @@ export default function HeroSection() {
     document.body.classList.add("intro-locked");
 
     const peek = root?.querySelector("[data-peek-video]") as HTMLVideoElement | null;
-    // FIX: on mobile, hide peek video entirely to avoid double-buffering (two videos = GPU stutter)
     const isMobileDevice = window.innerWidth < 768;
-    if (isMobileDevice && peek) {
-      peek.style.display = "none";
+    if (peek) {
+      if (isMobileDevice) {
+        peek.pause();
+        peek.removeAttribute("src");
+        peek.load();
+        peek.style.display = "none";
+      } else {
+        peek.src = VIDEO_SRC;
+        peek.load();
+        peek.style.display = "";
+      }
     }
-    const playBoth = () => {
+
+    const playVideo = () => {
+      if (introFinishedRef.current) return;
       vid.play().catch(() => {});
-      if (!isMobileDevice) peek?.play().catch(() => {});
+      if (!isMobileDevice && peek?.src) {
+        peek.play().catch(() => {});
+      }
     };
-    playBoth();
-    const retry = setTimeout(playBoth, 800);
+
+    playVideo();
+    const retry = setTimeout(playVideo, 800);
     const fallback = setTimeout(() => {
-      if (vid.style.display !== "none") {
-        vid.style.display = "none";
-        window.dispatchEvent(new CustomEvent("video-ended"));
-        firePreloaderComplete();
+      if (!introFinishedRef.current) {
+        completeIntro({ hideVideo: true, hideOverlay: true, revealHeader: true });
       }
     }, 8000);
 
     const safetyUnlock = setTimeout(() => {
       const overlay = root?.querySelector("[data-overlay]") as HTMLElement | null;
-      if (overlay && overlay.style.display !== "none") {
-        overlay.style.display = "none";
-        window.dispatchEvent(new CustomEvent("header-show"));
-        window.dispatchEvent(new CustomEvent("video-ended"));
-        firePreloaderComplete();
+      if (!introFinishedRef.current && overlay && overlay.style.display !== "none") {
+        completeIntro({ hideOverlay: true, revealHeader: true });
       }
     }, 6000);
     return () => {
@@ -126,7 +170,7 @@ export default function HeroSection() {
       clearTimeout(fallback);
       clearTimeout(safetyUnlock);
     };
-  }, []);
+  }, [completeIntro]);
 
   useGSAP(
     () => {
@@ -283,25 +327,21 @@ export default function HeroSection() {
 
   return (
     <div ref={rootRef}>
-      {/* FIX: preload='metadata' instead of 'auto' to reduce main-thread blocking on mobile */}
       <video
         ref={fullVideoRef}
         autoPlay
         className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
-        muted playsInline preload="metadata"
+        muted playsInline preload="auto"
         src={VIDEO_SRC}
         onEnded={handleVideoEnded}
       />
 
       <div data-overlay className="pointer-events-none fixed inset-0 z-50 overflow-hidden" style={{ backfaceVisibility: "hidden", transform: "translateZ(0)" }}>
-        {/* FIX: preload='metadata' to avoid blocking main thread on mobile */}
         <video
           data-peek-video
-          autoPlay
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ zIndex: 0 }}
-          muted playsInline preload="metadata"
-          src={VIDEO_SRC}
+          muted playsInline preload="auto"
         />
 
         <div 
@@ -353,7 +393,7 @@ export default function HeroSection() {
                   <span key={`l-${i}`} className="inline-block overflow-hidden">
                     <span 
                       data-letter 
-                      className="inline-block will-change-transform"
+                      className="inline-block"
                       style={{ transform: "translateY(110%)" }}
                     >
                       {l}
@@ -394,7 +434,7 @@ export default function HeroSection() {
                   <span key={`r-${i}`} className="inline-block overflow-hidden">
                     <span 
                       data-letter 
-                      className="inline-block will-change-transform"
+                      className="inline-block"
                       style={{ transform: "translateY(110%)" }}
                     >
                       {l}

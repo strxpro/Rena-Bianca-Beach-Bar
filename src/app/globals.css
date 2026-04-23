@@ -99,8 +99,7 @@ html.intro-locked body {
   height: 100% !important;
 }
 html.intro-locked body {
-  touch-action: none;
-  overscroll-behavior: contain;
+  touch-action: auto;
 }
 
 ::selection {

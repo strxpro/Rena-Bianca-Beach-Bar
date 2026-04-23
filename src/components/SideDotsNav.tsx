@@ -295,6 +295,7 @@ export default function SideDotsNav() {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
+    if (window.innerWidth < 768) return;
 
     let localHoverIdx: number | null = null;
     let localIsScrubbing = false;
@@ -454,7 +455,7 @@ export default function SideDotsNav() {
         ref={wrapRef}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
-        className="pointer-events-auto relative bg-navy/45 backdrop-blur-md touch-none"
+        className="pointer-events-auto relative bg-navy/45 backdrop-blur-md"
         style={{
           /* Plain CSS border-radius — the browser clamps
              `9999px` to `min(w/2, h/2)` automatically, giving a

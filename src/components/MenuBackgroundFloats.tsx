@@ -163,7 +163,8 @@ export default function MenuBackgroundFloats() {
               trigger: wrap,
               start: "top bottom",
               end: "bottom top",
-              scrub: (typeof window !== "undefined" && window.innerWidth < 768) ? 0.4 : 1.2, // FIX: reduced scrub on mobile
+              scrub: (typeof window !== "undefined" && window.innerWidth < 768) ? 0 : 1.2,
+              invalidateOnRefresh: true,
             },
           }
         );
@@ -220,22 +221,11 @@ export default function MenuBackgroundFloats() {
         applyTilt(nx, ny);
       };
 
-      const onDeviceOrientation = (event: DeviceOrientationEvent) => {
-        if (window.innerWidth >= 768) return;
-        if (event.gamma == null && event.beta == null) return;
-
-        const nx = Math.max(-1, Math.min(1, (event.gamma ?? 0) / 18));
-        const ny = Math.max(-1, Math.min(1, ((event.beta ?? 0) - 45) / 30));
-        applyTilt(nx, ny);
-      };
-
       window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("deviceorientation", onDeviceOrientation);
       window.addEventListener("orientationchange", resetTilt);
 
       return () => {
         window.removeEventListener("pointermove", onPointerMove);
-        window.removeEventListener("deviceorientation", onDeviceOrientation);
         window.removeEventListener("orientationchange", resetTilt);
       };
     }, wrap);
@@ -246,7 +236,7 @@ export default function MenuBackgroundFloats() {
   return (
     <div
       ref={wrapRef}
-      className="pointer-events-none absolute inset-0 overflow-hidden perspective-[1600px] transform-3d"
+      className="pointer-events-none absolute inset-0 overflow-hidden md:perspective-[1600px] md:transform-3d"
       aria-hidden="true"
     >
       <style>{`
@@ -257,7 +247,7 @@ export default function MenuBackgroundFloats() {
         <div
           key={item.id}
           data-float-id={item.id}
-          className="absolute will-change-transform"
+          className="absolute md:will-change-transform"
           style={{
             ...item.position,
             width: item.width,
@@ -267,7 +257,7 @@ export default function MenuBackgroundFloats() {
         >
           <div
             data-float-tilt={item.id}
-            className="h-full w-full transform-3d" /* FIX: removed will-change-transform — parent already promotes to GPU layer */
+            className="h-full w-full md:transform-3d" /* FIX: removed will-change-transform — parent already promotes to GPU layer */
           >
             <div
               className="h-full w-full" /* FIX: removed will-change-transform — GSAP force3D handles compositing */
