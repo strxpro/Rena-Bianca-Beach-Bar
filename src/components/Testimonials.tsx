@@ -219,6 +219,24 @@ function getReviewAvatar(row: Record<string, string>) {
   return pickImageField(row, AVATAR_FIELDS, AVATAR_FIELD_ALIASES);
 }
 
+function pickImageFields(row: Record<string, string>, fields: string[], aliases: Set<string>) {
+  const values = new Set<string>();
+  for (const field of fields) {
+    const value = normalizeImageValue(row[field] || "");
+    if (value) values.add(value);
+  }
+  for (const [field, rawValue] of Object.entries(row)) {
+    if (!aliases.has(normalizeFieldName(field))) continue;
+    const value = normalizeImageValue(rawValue || "");
+    if (value) values.add(value);
+  }
+  return Array.from(values);
+}
+
+function getReviewPhotos(row: Record<string, string>) {
+  return pickImageFields(row, REVIEW_PHOTO_FIELDS, REVIEW_PHOTO_FIELD_ALIASES);
+}
+
 function getLocalReviewPhoto(row: Record<string, string>) {
   return pickImageField(row, REVIEW_PHOTO_FIELDS, REVIEW_PHOTO_FIELD_ALIASES);
 }
@@ -249,6 +267,7 @@ export default async function Testimonials() {
         .map((row) => {
           const country = getCountryData(row);
           const avatar = getReviewAvatar(row);
+          const photos = getReviewPhotos(row);
           return {
             name: row["Nome"] || "Gość",
             role: "Gość",
@@ -256,6 +275,7 @@ export default async function Testimonials() {
             text: row["Commento"] || "",
             rating: getRatingValue(row["Voto"]),
             photo: avatar || "",
+            photos: photos.length > 0 ? photos : undefined,
             isLocal: false,
             countryCode: country.countryCode,
             countryName: country.countryName,
@@ -272,6 +292,7 @@ export default async function Testimonials() {
         .map((row) => {
           const country = getCountryData(row);
           const avatar = getReviewAvatar(row);
+          const photos = getReviewPhotos(row);
           return {
             name: row["Nome"] || "Gość",
             role: "Gość",
@@ -279,6 +300,7 @@ export default async function Testimonials() {
             text: row["Commento"] || "",
             rating: getRatingValue(row["Voto"]),
             photo: avatar || getLocalReviewPhoto(row) || "",
+            photos: photos.length > 0 ? photos : undefined,
             isLocal: true,
             countryCode: country.countryCode,
             countryName: country.countryName,

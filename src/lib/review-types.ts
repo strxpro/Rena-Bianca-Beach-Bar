@@ -5,6 +5,7 @@ export type PublicReview = {
   text: string;
   rating: number;
   photo: string;
+  photos?: string[];
   isLocal?: boolean;
   countryCode?: string;
   countryName?: string;

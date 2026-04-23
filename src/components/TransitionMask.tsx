@@ -20,14 +20,16 @@ export default function TransitionMask() {
       const path = svg.querySelector("path");
       if (!path) return;
 
+      // FIX: lower scrub on mobile; trigger earlier on small screens
+      const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       gsap.to(path, {
         attr: { d: "M 0 0 Q 50 0 100 0 L 100 100 Q 50 100 0 100 Z" },
         ease: "none",
         scrollTrigger: {
           trigger: mask,
-          start: "top 80%",
+          start: isMob ? "top 95%" : "top 80%", // FIX: trigger earlier on mobile
           end: "top 20%",
-          scrub: 1,
+          scrub: isMob ? 0.3 : 1, // FIX: reduced scrub lag on mobile
         },
       });
     },

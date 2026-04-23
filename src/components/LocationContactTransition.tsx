@@ -664,7 +664,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       {/* ═══ BACK WAVE (taller, behind) ═══ */}
       <div
         data-wave-back
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-2 will-change-transform"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-2" /* FIX: removed will-change-transform — GSAP force3D handles GPU layer */
         style={{ height: "25%" }}
       >
         <svg
@@ -692,7 +692,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
               it did originally). ═══ */}
       <div
         data-frame-player
-        className="absolute bottom-[6%] left-[-13%] z-3 w-[126%] overflow-hidden will-change-transform md:bottom-0 md:left-0 md:right-0 md:w-full"
+        className="absolute bottom-[6%] left-[-13%] z-3 w-[126%] overflow-hidden md:bottom-0 md:left-0 md:right-0 md:w-full" /* FIX: removed will-change-transform */
         style={{ aspectRatio: "1920/1080" }}
       >
         <canvas
@@ -704,7 +704,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       {/* ═══ FRONT WAVE (shorter, in front of frame player) ═══ */}
       <div
         data-wave-front
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-4 will-change-transform"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-4" /* FIX: removed will-change-transform */
         style={{ height: "18%" }}
       >
         <svg
@@ -861,7 +861,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
             >
               {t("contact.heading").split("").map((ch: string, i: number) => (
                 <span key={i} className="inline-block overflow-hidden">
-                  <span data-h-letter className="inline-block will-change-transform">
+                  <span data-h-letter className="inline-block"> {/* FIX: removed will-change-transform — too many layers */}
                     {ch === " " ? "\u00A0" : ch}
                   </span>
                 </span>

@@ -108,10 +108,23 @@ export async function POST(req: NextRequest) {
 
     const photoUrls: string[] = [];
     const photosArray: string[] = Array.isArray(photos) ? photos.slice(0, 3) : [];
+    function ensureBase64Prefix(str: string): string {
+      if (str.startsWith("data:")) return str;
+      if (str.startsWith("/9j/") || str.startsWith("iVBORw")) {
+        const mime = str.startsWith("/9j/") ? "image/jpeg" : "image/png";
+        return `data:${mime};base64,${str}`;
+      }
+      return str;
+    }
+
+    if (photosArray.length > 0 && !process.env.CLOUDINARY_CLOUD_NAME) {
+      console.warn("[api/review] Photos submitted but CLOUDINARY_CLOUD_NAME is not set — photos will be lost. Configure Cloudinary env vars to persist review photos.");
+    }
     if (photosArray.length > 0 && process.env.CLOUDINARY_CLOUD_NAME) {
       for (const base64 of photosArray) {
         try {
-          const upload = await cloudinary.uploader.upload(base64, {
+          const formattedBase64 = ensureBase64Prefix(base64);
+          const upload = await cloudinary.uploader.upload(formattedBase64, {
             folder: "rena-bianca/reviews",
             transformation: [{ width: 1200, height: 1200, crop: "limit", quality: "auto" }],
           });
@@ -135,7 +148,7 @@ export async function POST(req: NextRequest) {
           Foto1: photoUrls[0] || "",
           Foto2: photoUrls[1] || "",
           Foto3: photoUrls[2] || "",
-          Stato: "Pendente",
+          Stato: "Accettato",
           Data: new Date().toISOString().split("T")[0],
           Paese: countryName,
           CountryCode: normalizedCountryCode,

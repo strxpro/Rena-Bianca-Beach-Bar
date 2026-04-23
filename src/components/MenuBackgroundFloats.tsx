@@ -163,7 +163,7 @@ export default function MenuBackgroundFloats() {
               trigger: wrap,
               start: "top bottom",
               end: "bottom top",
-              scrub: 1.2,
+              scrub: (typeof window !== "undefined" && window.innerWidth < 768) ? 0.4 : 1.2, // FIX: reduced scrub on mobile
             },
           }
         );
@@ -267,10 +267,10 @@ export default function MenuBackgroundFloats() {
         >
           <div
             data-float-tilt={item.id}
-            className="h-full w-full transform-3d will-change-transform"
+            className="h-full w-full transform-3d" /* FIX: removed will-change-transform — parent already promotes to GPU layer */
           >
             <div
-              className="h-full w-full will-change-transform"
+              className="h-full w-full" /* FIX: removed will-change-transform — GSAP force3D handles compositing */
               style={
                 {
                   animation: `menuFloatIdle_x ${item.idle.duration}s ease-in-out ${item.idle.delay}s infinite`,

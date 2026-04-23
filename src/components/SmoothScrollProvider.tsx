@@ -114,9 +114,14 @@ export default function SmoothScrollProvider({
       };
     }
 
+    // FIX: force3D globally so every GSAP tween uses GPU compositing
+    gsap.defaults({ force3D: true });
+
     const lenis = new Lenis({
       duration: 1.05,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      // FIX note: Lenis is already fully disabled on mobile (isMobile branch returns early above)
+      // so no smoothTouch config is needed — native touch scroll is always used on phones.
       touchMultiplier: 1.7,
       wheelMultiplier: 1,
       infinite: false,
@@ -187,6 +192,13 @@ export default function SmoothScrollProvider({
     };
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
+
+    // FIX: refresh ScrollTrigger after fonts finish loading so measurements are accurate
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        requestAnimationFrame(() => ScrollTrigger.refresh());
+      });
+    }
 
     return () => {
       window.removeEventListener("wheel", onWheelDir);

@@ -63,6 +63,14 @@ export default function BeachPanorama() {
     currentRef.current = current;
   }, [current]);
 
+  // FIX: reduce perspective on mobile after mount to cut GPU repaint cost
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (section && window.innerWidth < 768) {
+      section.style.perspective = "800px";
+    }
+  }, []);
+
   /* ── Slideshow navigation (parallax wipe) ─────────────────── */
   const navigate = useCallback((targetIndex: number) => {
     const cur = currentRef.current;
@@ -124,11 +132,14 @@ export default function BeachPanorama() {
          `transformStyle: "preserve-3d"` on the section, the
          scrub'd `rotationX` produces the calendar-flip feel the
          brief asks for. */
+      // FIX: reduced transformPerspective on mobile
+      const isMobPano = typeof window !== "undefined" && window.innerWidth < 768;
       gsap.set(cover, {
         rotationX: 0,
         opacity: 1,
         transformOrigin: "50% 0%",
-        transformPerspective: 1500,
+        transformPerspective: isMobPano ? 800 : 1500, // FIX: less aggressive on mobile
+        force3D: true, // FIX: GPU compositing
       });
       if (coverInner) gsap.set(coverInner, { y: 0, opacity: 1 });
 
@@ -166,7 +177,7 @@ export default function BeachPanorama() {
              writes. No `snap`: snap + Lenis fights with user
              momentum and causes the "skipping" the user saw.
              The pin itself already gives the magnetic feel. */
-          scrub: 1,
+          scrub: (typeof window !== "undefined" && window.innerWidth < 768) ? 0.3 : 1, // FIX: reduced scrub lag on mobile
           anticipatePin: 1,
           invalidateOnRefresh: true,
           /* `fastScrollEnd: true` + `preventOverlaps` together

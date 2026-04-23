@@ -724,7 +724,7 @@ export default function InteractiveBookMenu() {
                 more of the menu surface shows in the viewport. ── */}
           <div
             ref={mobileTocContainerRef}
-            className="pointer-events-auto relative z-[100] mb-2 flex w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden px-1 pb-2 scrollbar-none [scrollbar-width:none] xl:hidden [&::-webkit-scrollbar]:hidden"
+            className="pointer-events-auto relative z-[100] mb-2 flex w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden px-1 pb-2 scrollbar-none [scrollbar-width:none] xl:hidden [&::-webkit-scrollbar]:hidden snap-x snap-mandatory scroll-px-4"
             data-mobile-menu-toc
             data-lenis-prevent
             onPointerDownCapture={(e) => e.stopPropagation()}
@@ -741,7 +741,7 @@ export default function InteractiveBookMenu() {
                     ref={(el) => {
                       mobileTocItemRefs.current[page.id] = el;
                     }}
-                    className={`shrink-0 rounded-full border transition-all duration-300 ${isActive
+                    className={`shrink-0 rounded-full border transition-all duration-300 snap-center ${isActive
                       ? "border-ocean/45 bg-ocean/22 shadow-[0_10px_30px_-20px_rgba(59,130,196,0.9)]"
                       : "border-white/10 bg-white/5"}`}
                   >

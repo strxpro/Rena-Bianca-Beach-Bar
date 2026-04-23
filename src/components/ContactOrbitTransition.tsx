@@ -63,14 +63,17 @@ export default function ContactOrbitTransition() {
       gsap.set(headingLetters, { yPercent: 120 });
       gsap.set(formEls, { opacity: 0, y: 30 });
 
+      // FIX: lower scrub on mobile for snappier touch response
+      const isMobContact = typeof window !== "undefined" && window.innerWidth < 768;
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "top top",
           end: "+=500%",
           pin: true,
-          scrub: 0.5,
+          scrub: isMobContact ? 0.2 : 0.5, // FIX: reduced scrub lag on mobile
           anticipatePin: 1,
+          invalidateOnRefresh: true, // FIX: recalculate on resize
         },
       });
 

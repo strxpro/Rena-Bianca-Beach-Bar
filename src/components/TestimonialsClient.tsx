@@ -39,6 +39,7 @@ export type Review = {
   text: string;
   rating: number;
   photo: string;
+  photos?: string[];
   isLocal?: boolean;
   countryCode?: string;
   countryName?: string;
@@ -862,9 +863,9 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: container,
-            start: "top 85%",
+            start: isMobileViewport ? "top 95%" : "top 85%", // FIX: trigger earlier on mobile
             end: "bottom 15%",
-            scrub: isMobileViewport ? 0.6 : 1,
+            scrub: isMobileViewport ? 0.2 : 1, // FIX: much lower scrub on mobile for instant response
             invalidateOnRefresh: true,
           },
         });
@@ -878,19 +879,19 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         tl.fromTo(
           row1,
           { x: -near },
-          { x: far, ease: "none" },
+          { x: far, ease: "none", force3D: true }, // FIX: GPU compositing
           0
         );
         tl.fromTo(
           row2,
           { x: near },
-          { x: -far, ease: "none" },
+          { x: -far, ease: "none", force3D: true }, // FIX: GPU compositing
           0
         );
         tl.fromTo(
           row3,
           { x: -near * 0.8 },
-          { x: far * 0.9, ease: "none" },
+          { x: far * 0.9, ease: "none", force3D: true }, // FIX: GPU compositing
           0
         );
 
@@ -1269,6 +1270,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         text: formText.trim(),
         rating: formRating,
         photo: finalAvatar,
+        photos: photos.length > 0 ? photos.map(p => p.preview) : undefined,
         isLocal: true,
         countryCode: typeof data?.countryCode === "string" ? data.countryCode : undefined,
         countryName: typeof data?.countryName === "string" ? data.countryName : undefined,
@@ -1301,7 +1303,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
       <div
         id="testimonials"
         ref={ref}
-        className={`relative z-30 isolate flex scroll-mt-24 flex-col justify-start overflow-visible pt-16 pb-20 antialiased sm:scroll-mt-32 sm:pt-20 sm:pb-24 md:pt-24 md:pb-28 ${reducedMotion ? "" : "perspective-[1000px] transform-3d"}`}
+        className={`relative z-30 isolate flex scroll-mt-24 flex-col justify-start overflow-visible pt-16 pb-20 antialiased sm:scroll-mt-32 sm:pt-20 sm:pb-24 md:pt-24 md:pb-28 ${reducedMotion ? "" : "sm:perspective-[1000px] sm:transform-3d"}`} /* FIX: disable 3D perspective on mobile to avoid expensive repaints */
         style={{
           background: "linear-gradient(180deg, #0A192F 0%, #0d2240 20%, #1a4a6e 55%, #5ba3d9 80%, #8ec5e8 100%)",
         }}
@@ -1327,7 +1329,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         {/* ── 3D Grid ── */}
         <div
           ref={stageRef}
-          className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1800px] flex-col items-center gap-4 overflow-visible pointer-events-none will-change-transform sm:gap-8 lg:gap-10"
+          className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1800px] flex-col items-center gap-4 overflow-visible pointer-events-none sm:gap-8 lg:gap-10" /* FIX: removed will-change-transform — GSAP manages compositing via force3D */
         >
           <div className="pointer-events-none w-full px-[5vw] sm:px-[10vw]">
             <p className="mb-2 font-body text-[10px] uppercase tracking-[0.22em] text-sand/55 sm:text-xs">{uiCopy.rowLatest}</p>
@@ -1549,6 +1551,24 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                     <p className="mt-4 font-body text-base leading-relaxed text-sand/80">
                       &ldquo;{activeReviewText}&rdquo;
                     </p>
+                    {selectedReview.photos && selectedReview.photos.length > 0 && (
+                      <div className="mt-6 flex flex-wrap gap-2.5">
+                        {selectedReview.photos.map((url, idx) => (
+                          <div
+                            key={`${activeReviewId}-p-${idx}`}
+                            className="group relative h-20 w-20 flex-shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-white/10 bg-white/5 transition-all hover:scale-[1.04] hover:shadow-xl sm:h-24 sm:w-24"
+                            onClick={() => window.open(url, "_blank")}
+                          >
+                            <img
+                              src={url}
+                              alt=""
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </motion.div>

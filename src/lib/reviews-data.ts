@@ -517,6 +517,7 @@ export async function loadPublicReviews(): Promise<PublicReview[]> {
         text: getReviewComment(row),
         rating: getRatingValue(pickField(row, RATING_FIELDS, RATING_FIELD_ALIASES)),
         photo: source === "local" ? avatar || photos[0] || "" : avatar || "",
+        photos: photos.length > 0 ? photos : undefined,
         isLocal: source === "local",
         countryCode: country.countryCode,
         countryName: country.countryName,

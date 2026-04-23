@@ -127,17 +127,31 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
         const dimOverlay = card.querySelector("[data-card-dim]") as HTMLElement;
         if (!wrapper) return;
 
-        ScrollTrigger.create({
-          trigger: card,
-          start: `top ${CARD_TOP}`,
-          end: `bottom ${CARD_TOP}`,
-          scrub: 1,
-          onUpdate: (self) => {
-            const p = self.progress;
-            wrapper.style.transform = `scale(${1 - p * 0.15}) translateY(${-p * 8}dvh) rotateX(${-12 * p}deg)`;
-            if (dimOverlay) dimOverlay.style.opacity = `${p * 0.4}`;
+        // FIX: lower scrub on mobile; simplify 3D rotation
+        const isMobAbout = typeof window !== "undefined" && window.innerWidth < 768;
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start: `top ${CARD_TOP}`,
+            end: `bottom ${CARD_TOP}`,
+            scrub: isMobAbout ? 0.3 : 1, // FIX: reduced scrub lag on mobile
           },
         });
+
+        tl.to(wrapper, {
+          scale: 0.85,
+          y: "-8dvh",
+          rotateX: isMobAbout ? -6 : -12, // FIX: less 3D rotation on mobile to reduce repaints
+          ease: "none",
+          force3D: true, // FIX: GPU compositing
+        });
+
+        if (dimOverlay) {
+          tl.to(dimOverlay, {
+            opacity: 0.4,
+            ease: "none",
+          }, 0);
+        }
       });
     },
     { scope: sectionRef }

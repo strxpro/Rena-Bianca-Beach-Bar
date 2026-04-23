@@ -141,10 +141,10 @@ export default function HeroVideoParallax() {
     const textLayer = textLayerRef.current;
     // Scene logo (absolute, sandwiched between parallax layers) fades in first
     if (sceneLogo) {
-      gsap.to(sceneLogo, { opacity: 1, duration: 0.8, ease: "power2.out" });
+      gsap.to(sceneLogo, { opacity: 1, duration: 1.2, ease: "power2.out" });
     }
     if (textLayer) {
-      gsap.to(textLayer, { opacity: 1, duration: 0.8, ease: "power2.out", delay: 0.1 });
+      gsap.to(textLayer, { opacity: 1, duration: 1.2, ease: "power2.out", delay: 0.2 });
     }
   }, [videoEnded]);
 

@@ -142,11 +142,12 @@ main, header, #side-dots-nav {
   transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* FIX: removed position:fixed — it breaks iOS scroll state and causes sections
+   to jump after intro. overflow:hidden + touch-action:none is sufficient. */
 .intro-locked {
   overflow: hidden !important;
-  height: 100vh !important;
+  height: 100dvh !important;
   width: 100vw !important;
-  position: fixed !important;
 }
 
 /* ── Utility classes ── */

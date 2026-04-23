@@ -23,7 +23,7 @@ const WAVE_STAGGER = 0.12;
 const ZOOM_DUR = 1.2;
 const ZOOM_SCALE_DESKTOP = 200;
 const ZOOM_SCALE_MOBILE = 120;
-const VIDEO_FADE_DUR = 1.8;
+const VIDEO_FADE_DUR = 2.5;
 const VIDEO_SRC = "/film2.mp4";
 
 const COLOR_NAVY = "#0A192F";
@@ -64,9 +64,6 @@ export default function HeroSection() {
       ease: "power2.inOut",
       onComplete: () => {
         vid.style.display = "none";
-        // Signal that the video and its associated lock can be released
-        window.dispatchEvent(new CustomEvent("video-ended"));
-        firePreloaderComplete();
       },
     });
   }, []);
@@ -96,9 +93,14 @@ export default function HeroSection() {
     document.body.classList.add("intro-locked");
 
     const peek = root?.querySelector("[data-peek-video]") as HTMLVideoElement | null;
+    // FIX: on mobile, hide peek video entirely to avoid double-buffering (two videos = GPU stutter)
+    const isMobileDevice = window.innerWidth < 768;
+    if (isMobileDevice && peek) {
+      peek.style.display = "none";
+    }
     const playBoth = () => {
       vid.play().catch(() => {});
-      peek?.play().catch(() => {});
+      if (!isMobileDevice) peek?.play().catch(() => {});
     };
     playBoth();
     const retry = setTimeout(playBoth, 800);
@@ -191,7 +193,8 @@ export default function HeroSection() {
           y: "0%",
           stagger: LETTER_STAGGER,
           duration: LETTER_DUR,
-          ease: "power3.out", // More organic, fluid deceleration
+          ease: "power3.out",
+          force3D: true, // FIX: ensure GPU compositing for letter animations
         }, 
         0
       );
@@ -217,7 +220,7 @@ export default function HeroSection() {
       }, transitionStart + WAVE_TRANSITION_DUR * 0.5);
 
       tl.to(subLetters,
-        { y: "0%", opacity: 1, stagger: 0.02, duration: 0.8, ease: "expo.out" },
+        { y: "0%", opacity: 1, stagger: 0.02, duration: 0.8, ease: "expo.out", force3D: true }, // FIX: GPU compositing
         transitionStart + 0.5
       );
 
@@ -247,10 +250,10 @@ export default function HeroSection() {
         onUpdate: () => applyMasks(hole.r, yellowHole.r),
       }, "<+0.1");
 
-      const HOLE_BOOST = 1.1;
+      const HOLE_BOOST = isMobile ? 1.25 : 1.1;
       tl.to(zoomTarget, {
         scale: zoomScale,
-        duration: ZOOM_DUR,
+        duration: isMobile ? ZOOM_DUR * 0.8 : ZOOM_DUR,
         onUpdate: () => {
           const s = gsap.getProperty(zoomTarget, "scaleX") as number;
           applyMasks(baseHoleRadius * s * HOLE_BOOST, yellowRadius * s * HOLE_BOOST);
@@ -279,21 +282,25 @@ export default function HeroSection() {
   const rightLetters = ["B", "I", "A", "N", "C", "A"];
 
   return (
-    <div ref={rootRef} style={{ touchAction: "none" }}>
+    <div ref={rootRef}>
+      {/* FIX: preload='metadata' instead of 'auto' to reduce main-thread blocking on mobile */}
       <video
         ref={fullVideoRef}
-        className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover opacity-100 transition-opacity duration-700"
-        muted playsInline preload="auto"
+        autoPlay
+        className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
+        muted playsInline preload="metadata"
         src={VIDEO_SRC}
         onEnded={handleVideoEnded}
       />
 
       <div data-overlay className="pointer-events-none fixed inset-0 z-50 overflow-hidden" style={{ backfaceVisibility: "hidden", transform: "translateZ(0)" }}>
+        {/* FIX: preload='metadata' to avoid blocking main thread on mobile */}
         <video
           data-peek-video
+          autoPlay
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ zIndex: 0 }}
-          muted playsInline preload="auto"
+          muted playsInline preload="metadata"
           src={VIDEO_SRC}
         />
 

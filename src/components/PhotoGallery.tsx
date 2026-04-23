@@ -113,7 +113,7 @@ const INTRO_ACTIVE = 0;
 const SPEED_DRAG = -0.3;
 const INSTAGRAM_POPUP_THRESHOLD = 106;
 const GALLERY_SCROLL_PROGRESS_MAX = 112;
-const GALLERY_SCROLL_STEP_PERCENT = 96;
+const GALLERY_SCROLL_STEP_PERCENT = 70;
 const FAST_SCROLL_PHASE = 0.65;
 
 const getInstagramUrl = (username?: string) => {
@@ -323,13 +323,15 @@ export default function PhotoGallery() {
       const section = sectionRef.current;
       if (!section) return;
 
+      // FIX: lower scrub on mobile for instant scroll response
+      const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       ScrollTrigger.create({
         trigger: section,
         start: "top 80px",
         end: () => `+=${Math.max(260, Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT)}%`,
         pin: true,
         pinSpacing: true,
-        scrub: 1,
+        scrub: isMob ? 0.3 : 1, // FIX: reduced scrub lag on mobile
         anticipatePin: 1,
         invalidateOnRefresh: true,
         /* Clamp fast swipes + join the shared `"pinned"` group
@@ -483,7 +485,7 @@ export default function PhotoGallery() {
                 marginTop: "calc(clamp(280px, 60vw, 400px) * -0.5)",
                 marginLeft: "calc(clamp(200px, 45vw, 300px) * -0.5)",
                 transformOrigin: "0% 100%",
-                transition: "transform 0.8s cubic-bezier(0, 0.02, 0, 1)",
+                transition: "transform 0.4s cubic-bezier(0, 0.02, 0, 1)",
                 boxShadow: "0 10px 50px 10px rgba(0,0,0,0.5)",
                 background: "#0A192F",
                 pointerEvents: "all",
@@ -504,7 +506,7 @@ export default function PhotoGallery() {
               <div
                 ref={(el) => { overlayRefs.current[i] = el; }}
                 className="pointer-events-none absolute inset-0 z-10"
-                style={{ transition: "opacity 0.8s cubic-bezier(0, 0.02, 0, 1)" }}
+                style={{ transition: "opacity 0.4s cubic-bezier(0, 0.02, 0, 1)" }}
               >
                 <div
                   className="absolute inset-0 z-10"
