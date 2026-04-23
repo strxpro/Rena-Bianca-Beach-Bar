@@ -113,25 +113,15 @@ const INTRO_ACTIVE = 0;
 const SPEED_DRAG = -0.3;
 const INSTAGRAM_POPUP_THRESHOLD = 106;
 const GALLERY_SCROLL_PROGRESS_MAX = 112;
-const GALLERY_SCROLL_STEP_PERCENT = 70;
-const FAST_SCROLL_PHASE = 0.65;
+const GALLERY_SCROLL_STEP_PERCENT = 72;
 
 const getInstagramUrl = (username?: string) => {
   return username ? `https://www.instagram.com/${username}/` : DEFAULT_INSTAGRAM_URL;
 };
 
-const mapGalleryScrollProgress = (scrollProgress: number, itemCount: number) => {
+const mapGalleryScrollProgress = (scrollProgress: number) => {
   const clampedProgress = Math.max(0, Math.min(scrollProgress, 1));
-  if (itemCount <= 1) return clampedProgress * GALLERY_SCROLL_PROGRESS_MAX;
-
-  const fastSlidesTarget = ((Math.min(3, itemCount) - 1) / (itemCount - 1)) * 100;
-
-  if (clampedProgress <= FAST_SCROLL_PHASE) {
-    return (clampedProgress / FAST_SCROLL_PHASE) * fastSlidesTarget;
-  }
-
-  const remainingPhaseProgress = (clampedProgress - FAST_SCROLL_PHASE) / (1 - FAST_SCROLL_PHASE);
-  return fastSlidesTarget + remainingPhaseProgress * (GALLERY_SCROLL_PROGRESS_MAX - fastSlidesTarget);
+  return clampedProgress * GALLERY_SCROLL_PROGRESS_MAX;
 };
 
 const getPostImage = (post: BeholdPost, variant: "large" | "full") => {
@@ -326,7 +316,7 @@ export default function PhotoGallery() {
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       ScrollTrigger.create({
         trigger: section,
-        start: isMob ? "top top" : "top 80px",
+        start: isMob ? "top 8%" : "top 80px",
         end: () => `+=${Math.max(260, Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT)}%`,
         pin: true,
         pinSpacing: true,
@@ -336,13 +326,14 @@ export default function PhotoGallery() {
         /* Clamp fast swipes + join the shared `"pinned"` group
            so the gallery carousel can't be skipped in a single
            fling gesture on mobile. */
-        fastScrollEnd: true,
-        preventOverlaps: "pinned",
+        fastScrollEnd: !isMob,
+        preventOverlaps: isMob ? false : "pinned",
         onUpdate: (self) => {
-          progressRef.current = mapGalleryScrollProgress(self.progress, galleryItemsRef.current.length);
+          progressRef.current = mapGalleryScrollProgress(self.progress);
           // #region agent log
           // #endregion
-          applyLayout();
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = requestAnimationFrame(applyLayout);
         },
       });
     },
@@ -466,7 +457,6 @@ export default function PhotoGallery() {
                 marginTop: "calc(clamp(280px, 60vw, 400px) * -0.5)",
                 marginLeft: "calc(clamp(200px, 45vw, 300px) * -0.5)",
                 transformOrigin: "0% 100%",
-                transition: "transform 0.4s cubic-bezier(0, 0.02, 0, 1)",
                 boxShadow: "0 10px 50px 10px rgba(0,0,0,0.5)",
                 background: "#0A192F",
                 pointerEvents: "all",

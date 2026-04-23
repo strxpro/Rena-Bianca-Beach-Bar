@@ -116,6 +116,12 @@ export default function HeroSection() {
     const root = rootRef.current;
     if (!vid) return;
 
+    const revealVideo = () => {
+      if (videoDismissedRef.current) return;
+      gsap.killTweensOf(vid);
+      gsap.to(vid, { opacity: 1, duration: 0.2, ease: "power1.out", overwrite: true });
+    };
+
     if (window.scrollY > 100) {
       skippedRef.current = true;
       document.documentElement.classList.remove("intro-locked");
@@ -151,7 +157,14 @@ export default function HeroSection() {
       }
     };
 
+    vid.addEventListener("loadeddata", revealVideo);
+    vid.addEventListener("canplay", revealVideo);
+    vid.addEventListener("playing", revealVideo);
+
     playVideo();
+    if (vid.readyState >= 2) {
+      requestAnimationFrame(revealVideo);
+    }
     const retry = setTimeout(playVideo, 800);
     const fallback = setTimeout(() => {
       if (!introFinishedRef.current) {
@@ -169,6 +182,9 @@ export default function HeroSection() {
       clearTimeout(retry);
       clearTimeout(fallback);
       clearTimeout(safetyUnlock);
+      vid.removeEventListener("loadeddata", revealVideo);
+      vid.removeEventListener("canplay", revealVideo);
+      vid.removeEventListener("playing", revealVideo);
     };
   }, [completeIntro]);
 
@@ -331,6 +347,7 @@ export default function HeroSection() {
         ref={fullVideoRef}
         autoPlay
         className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
+        style={{ opacity: 0, backgroundColor: COLOR_NAVY }}
         muted playsInline preload="auto"
         src={VIDEO_SRC}
         onEnded={handleVideoEnded}

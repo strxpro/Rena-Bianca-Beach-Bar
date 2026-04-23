@@ -140,7 +140,7 @@ export default function BeachPanorama() {
         rotationX: 0,
         opacity: 1,
         transformOrigin: "50% 0%",
-        transformPerspective: isMobileViewport ? 650 : 1500,
+        transformPerspective: isMobileViewport ? 1100 : 1500,
         force3D: !isMobileViewport,
       });
       if (coverInner) gsap.set(coverInner, { y: 0, opacity: 1 });
@@ -170,7 +170,7 @@ export default function BeachPanorama() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: () => (isMobileViewport ? "+=160%" : "+=220%"),
+          end: () => (isMobileViewport ? "+=180%" : "+=220%"),
           pin: true,
           pinSpacing: true,
           pinType: "fixed",
@@ -190,8 +190,8 @@ export default function BeachPanorama() {
              sections on the page share the group name `"pinned"`,
              so at most one pin is ever engaged at a time and
              they take turns as the user scrolls. */
-          fastScrollEnd: true,
-          preventOverlaps: "pinned",
+          fastScrollEnd: !isMobileViewport,
+          preventOverlaps: isMobileViewport ? false : "pinned",
           /* Threshold-crossing trigger for the three scripted
              slide advances. Each one fires exactly once per
              direction so the cover-flip and the auto-cycle never
@@ -303,8 +303,8 @@ export default function BeachPanorama() {
       style={{
         background:
           "linear-gradient(180deg, #0A192F 0%, #0d2240 15%, #122a45 50%, #0d2240 85%, #0A192F 100%)",
-        perspective: isMobileViewport ? "700px" : "1500px",
-        transformStyle: isMobileViewport ? "flat" : "preserve-3d",
+        perspective: isMobileViewport ? "1100px" : "1500px",
+        transformStyle: "preserve-3d",
       }}
     >
       {/* ═══ SLIDESHOW LAYER (sits behind the cover, revealed

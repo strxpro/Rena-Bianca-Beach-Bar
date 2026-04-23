@@ -59,6 +59,11 @@ export default function SmoothScrollProvider({
           the finger, but the physics are the same as desktop. ── */
     const isMobile =
       typeof window !== "undefined" && window.innerWidth < 768;
+    const prefersReducedMotion = typeof window !== "undefined"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const hardwareThreads = typeof navigator !== "undefined" ? navigator.hardwareConcurrency : undefined;
+    const lowPowerDevice = prefersReducedMotion || (typeof hardwareThreads === "number" && hardwareThreads <= 4);
+    const enableSyncTouch = isMobile && !lowPowerDevice;
 
     /* Track scroll direction so the prevent callback can decide
        whether to pass through at scroll-container bounds.
@@ -76,15 +81,16 @@ export default function SmoothScrollProvider({
     window.addEventListener("touchstart", onTouchStartDir, { passive: true });
     window.addEventListener("touchmove", onTouchMoveDir, { passive: true });
 
-    gsap.defaults({ force3D: true });
-
     const lenis = new Lenis({
-      duration: isMobile ? 0.85 : 1.05,
+      duration: enableSyncTouch ? 0.72 : isMobile ? 0.85 : 1.05,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      syncTouch: true,
-      touchMultiplier: isMobile ? 1.0 : 1.7,
+      syncTouch: enableSyncTouch,
+      syncTouchLerp: enableSyncTouch ? 0.06 : 0.075,
+      touchInertiaExponent: enableSyncTouch ? 1.25 : 1.7,
+      touchMultiplier: enableSyncTouch ? 0.85 : 1,
       wheelMultiplier: 1,
       infinite: false,
+      overscroll: false,
       prevent: (node) => {
         const element = node instanceof Element
           ? node

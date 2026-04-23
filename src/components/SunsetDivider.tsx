@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 /* ═══════════════════════════════════════════════════════════════
    SUNSET DIVIDER — "Only CSS: Sunset Bird" by Yusuke Nakaya
    Faithful React port of the CodePen.
@@ -24,6 +26,22 @@ const BIRDS = Array.from({ length: BIRD_COUNT }, (_, i) => ({
 const WAVE_COUNT = 6;
 
 export default function SunsetDivider() {
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  useEffect(() => {
+    const syncViewport = () => setIsMobileViewport(window.innerWidth < 768);
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    window.addEventListener("orientationchange", syncViewport);
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      window.removeEventListener("orientationchange", syncViewport);
+    };
+  }, []);
+
+  const renderedBirds = isMobileViewport ? BIRDS.slice(0, 8) : BIRDS;
+  const renderedWaveCount = isMobileViewport ? 4 : WAVE_COUNT;
+
   return (
     <div
       className="relative w-full overflow-hidden"
@@ -109,7 +127,7 @@ export default function SunsetDivider() {
           />
 
           {/* Animated waves on the sea */}
-          {Array.from({ length: WAVE_COUNT }, (_, i) => (
+          {Array.from({ length: renderedWaveCount }, (_, i) => (
             <div
               key={`w-${i}`}
               className={i > 0 ? "sd-wave" : ""}
@@ -131,7 +149,7 @@ export default function SunsetDivider() {
         </div>
 
         {/* ── 3D Birds flying toward viewer ── */}
-        {BIRDS.map((b, i) => (
+        {renderedBirds.map((b, i) => (
           <div
             key={i}
             className="sd-birdpos pointer-events-none absolute"
