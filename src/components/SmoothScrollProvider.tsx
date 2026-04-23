@@ -86,11 +86,15 @@ export default function SmoothScrollProvider({
       const safetyUnlock = window.setTimeout(releaseLock, 12000);
 
       let rafId = 0;
+      let resizeTimer = 0;
       const onResize = () => {
         cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => {
-          ScrollTrigger.refresh();
-        });
+        clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => {
+          rafId = requestAnimationFrame(() => {
+            ScrollTrigger.refresh();
+          });
+        }, 250);
       };
       window.addEventListener("resize", onResize);
       window.addEventListener("orientationchange", onResize);
@@ -110,6 +114,7 @@ export default function SmoothScrollProvider({
         window.removeEventListener("video-ended", releaseLock);
         window.clearTimeout(safetyUnlock);
         cancelAnimationFrame(rafId);
+        clearTimeout(resizeTimer);
         document.documentElement.classList.remove("intro-locked");
         document.body.classList.remove("intro-locked");
       };
@@ -169,11 +174,15 @@ export default function SmoothScrollProvider({
     gsap.ticker.lagSmoothing(0);
 
     let rafId = 0;
+    let resizeTimer = 0;
     const onResize = () => {
       cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        ScrollTrigger.refresh();
-      });
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        rafId = requestAnimationFrame(() => {
+          ScrollTrigger.refresh();
+        });
+      }, 250);
     };
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
@@ -193,6 +202,7 @@ export default function SmoothScrollProvider({
       window.removeEventListener("video-ended", releaseLock);
       window.clearTimeout(safetyUnlock);
       cancelAnimationFrame(rafId);
+      clearTimeout(resizeTimer);
       gsap.ticker.remove(onTick);
       lenis.destroy();
       lenisRef.current = null;

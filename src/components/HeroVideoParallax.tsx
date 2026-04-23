@@ -250,7 +250,7 @@ export default function HeroVideoParallax() {
         trigger: container,
         start: "0% 0%",
         end: "60% 0%",
-        scrub: 0.4,
+        scrub: typeof window !== "undefined" && window.innerWidth < 768 ? 1.2 : 0.4,
         invalidateOnRefresh: true,
         onRefresh: applyIdleSizes,
         onUpdate: (self) => {

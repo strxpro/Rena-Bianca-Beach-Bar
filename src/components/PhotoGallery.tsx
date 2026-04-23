@@ -112,7 +112,7 @@ const DEFAULT_INSTAGRAM_URL = "https://www.instagram.com/renabiancabeachbar/";
 const INTRO_ACTIVE = 0;
 const SPEED_DRAG = -0.3;
 const INSTAGRAM_POPUP_THRESHOLD = 106;
-const GALLERY_SCROLL_PROGRESS_MAX = 112;
+const GALLERY_SCROLL_PROGRESS_MAX = 72;
 const GALLERY_SCROLL_STEP_PERCENT = 72;
 
 const getInstagramUrl = (username?: string) => {

@@ -158,7 +158,6 @@ export default function HeroSection() {
     };
 
     vid.addEventListener("loadeddata", revealVideo);
-    vid.addEventListener("canplay", revealVideo);
     vid.addEventListener("playing", revealVideo);
 
     playVideo();
@@ -183,7 +182,6 @@ export default function HeroSection() {
       clearTimeout(fallback);
       clearTimeout(safetyUnlock);
       vid.removeEventListener("loadeddata", revealVideo);
-      vid.removeEventListener("canplay", revealVideo);
       vid.removeEventListener("playing", revealVideo);
     };
   }, [completeIntro]);

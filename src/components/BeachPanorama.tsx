@@ -197,16 +197,16 @@ export default function BeachPanorama() {
               fired.adv3 = true;
               navigate(3);
             }
-            if (p < ADV1 - 0.03) {
+            if (p < ADV1 - 0.08) {
               fired.adv1 = false;
               fired.adv2 = false;
               fired.adv3 = false;
               if (currentRef.current !== 0) navigate(0);
-            } else if (p < ADV2 - 0.03) {
+            } else if (p < ADV2 - 0.08) {
               fired.adv2 = false;
               fired.adv3 = false;
               if (currentRef.current > 1) navigate(1);
-            } else if (p < ADV3 - 0.03) {
+            } else if (p < ADV3 - 0.08) {
               fired.adv3 = false;
               if (currentRef.current > 2) navigate(2);
             }
@@ -341,7 +341,7 @@ export default function BeachPanorama() {
 
         {/* Slide title — absolute centre so it floats over the
             photo. Updates per `current`. */}
-        <div className="pointer-events-none absolute inset-x-0 top-[clamp(2.5rem,8dvh,7rem)] z-10 flex flex-col items-center px-6 text-center">
+        <div className="pointer-events-none absolute inset-x-0 top-[clamp(5rem,10dvh,8rem)] z-10 flex flex-col items-center px-6 text-center">
           <h2
             key={current}
             className="font-heading text-sand"
