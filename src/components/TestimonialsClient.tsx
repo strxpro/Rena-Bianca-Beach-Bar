@@ -868,7 +868,9 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
             trigger: container,
             start: isMobileViewport ? "top 88%" : "top 85%",
             end: isMobileViewport ? "bottom top" : "bottom 15%",
-            scrub: isMobileViewport ? (isLowEndMobile ? 1.35 : 1) : 1,
+            scrub: isMobileViewport ? (isLowEndMobile ? 1.65 : 1.3) : 1,
+            fastScrollEnd: isMobileViewport ? false : true,
+            preventOverlaps: isMobileViewport ? false : "pinned",
             invalidateOnRefresh: true,
           },
         });

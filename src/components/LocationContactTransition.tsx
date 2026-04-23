@@ -511,7 +511,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
       if (bgEl) {
         tl.to(bgEl, {
           background: "linear-gradient(180deg, #1a3a5c 0%, #2a7ab8 40%, #5ba3d9 75%, #8ec5e8 100%)",
-          duration: 0.28,
+          duration: isMobileDevice ? 0.18 : 0.28,
           ease: "power1.inOut",
         }, 0.18);
       }

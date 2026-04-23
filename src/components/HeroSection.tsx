@@ -141,16 +141,9 @@ export default function HeroSection() {
     const peek = root?.querySelector("[data-peek-video]") as HTMLVideoElement | null;
     const isMobileDevice = window.innerWidth < 768;
     if (peek) {
-      if (isMobileDevice) {
-        peek.pause();
-        peek.removeAttribute("src");
-        peek.load();
-        peek.style.display = "none";
-      } else {
-        peek.src = VIDEO_SRC;
-        peek.load();
-        peek.style.display = "";
-      }
+      peek.src = VIDEO_SRC;
+      peek.load();
+      peek.style.display = "";
     }
 
     const playVideo = () => {
@@ -161,9 +154,7 @@ export default function HeroSection() {
       }
     };
 
-    const revealVideoOnLoadedData = () => {
-      if (!isMobileDevice) revealVideo();
-    };
+    const revealVideoOnLoadedData = () => revealVideo();
     vid.addEventListener("loadeddata", revealVideoOnLoadedData);
     vid.addEventListener("playing", revealVideo);
 
@@ -370,6 +361,7 @@ export default function HeroSection() {
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ zIndex: 0 }}
           muted playsInline preload="auto"
+          src={VIDEO_SRC}
         />
 
         <div 
