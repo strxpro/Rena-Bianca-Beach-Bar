@@ -204,6 +204,7 @@ export default function HeroSection() {
       const heading = root.querySelector("[data-heading]") as HTMLElement;
       const overlay = root.querySelector("[data-overlay]") as HTMLElement;
       const maskGroup = root.querySelector("[data-mask-group]") as HTMLElement;
+      const wavesWrap = root.querySelector("[data-waves]") as HTMLElement | null;
       const waves = root.querySelectorAll("[data-wave]");
       const zoomTarget = root.querySelector("[data-zoom-target]") as HTMLElement;
 
@@ -236,6 +237,10 @@ export default function HeroSection() {
       let holeCX = "50%";
       let holeCY = "50%";
 
+      if (wavesWrap) {
+        gsap.set(wavesWrap, { force3D: true, willChange: "transform" });
+      }
+
       // gsps.set is no longer needed for letters as they start from 110% via inline styles
       gsap.set(zoomTarget, { color: COLOR_NAVY, scale: 1, x: 0, y: 0, force3D: true });
       gsap.set([start, end, box, flower], { x: 0, width: 0, opacity: 1, force3D: true });
@@ -243,7 +248,7 @@ export default function HeroSection() {
       gsap.set(subLetters, { y: "150%", opacity: 0 });
 
       const tl = gsap.timeline({
-        defaults: { ease: "expo.inOut", force3D: true }
+        defaults: { ease: "expo.inOut" }
       });
 
       /* ── PHASE 1: Entrance ── */

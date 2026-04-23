@@ -317,7 +317,10 @@ export default function PhotoGallery() {
       ScrollTrigger.create({
         trigger: section,
         start: isMob ? "top 8%" : "top 80px",
-        end: () => `+=${Math.max(260, Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT)}%`,
+        end: () => `+=${Math.max(
+          window.innerWidth < 768 ? 380 : 260,
+          Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT
+        )}%`,
         pin: true,
         pinSpacing: true,
         scrub: 1,
@@ -326,8 +329,8 @@ export default function PhotoGallery() {
         /* Clamp fast swipes + join the shared `"pinned"` group
            so the gallery carousel can't be skipped in a single
            fling gesture on mobile. */
-        fastScrollEnd: !isMob,
-        preventOverlaps: isMob ? false : "pinned",
+        fastScrollEnd: true,
+        preventOverlaps: "pinned",
         onUpdate: (self) => {
           progressRef.current = mapGalleryScrollProgress(self.progress);
           // #region agent log

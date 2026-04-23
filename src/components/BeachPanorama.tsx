@@ -50,7 +50,6 @@ export default function BeachPanorama() {
   const coverRef = useRef<HTMLDivElement>(null);
   const coverInnerRef = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(0);
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
   /* `currentRef` mirrors `current` so the scroll-driven onUpdate
      callback (which closes over its initial value) can read the
      latest slide index without re-creating the timeline. */
@@ -63,17 +62,6 @@ export default function BeachPanorama() {
   useEffect(() => {
     currentRef.current = current;
   }, [current]);
-
-  useEffect(() => {
-    const syncViewport = () => setIsMobileViewport(window.innerWidth < 768);
-    syncViewport();
-    window.addEventListener("resize", syncViewport);
-    window.addEventListener("orientationchange", syncViewport);
-    return () => {
-      window.removeEventListener("resize", syncViewport);
-      window.removeEventListener("orientationchange", syncViewport);
-    };
-  }, []);
 
   /* ── Slideshow navigation (parallax wipe) ─────────────────── */
   const navigate = useCallback((targetIndex: number) => {
@@ -140,8 +128,7 @@ export default function BeachPanorama() {
         rotationX: 0,
         opacity: 1,
         transformOrigin: "50% 0%",
-        transformPerspective: isMobileViewport ? 1100 : 1500,
-        force3D: !isMobileViewport,
+        transformPerspective: 1500,
       });
       if (coverInner) gsap.set(coverInner, { y: 0, opacity: 1 });
 
@@ -170,7 +157,7 @@ export default function BeachPanorama() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: () => (isMobileViewport ? "+=180%" : "+=220%"),
+          end: () => (window.innerWidth < 768 ? "+=280%" : "+=220%"),
           pin: true,
           pinSpacing: true,
           pinType: "fixed",
@@ -179,7 +166,7 @@ export default function BeachPanorama() {
              writes. No `snap`: snap + Lenis fights with user
              momentum and causes the "skipping" the user saw.
              The pin itself already gives the magnetic feel. */
-          scrub: 1,
+          scrub: window.innerWidth < 768 ? 2 : 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           /* `fastScrollEnd: true` + `preventOverlaps` together
@@ -190,8 +177,8 @@ export default function BeachPanorama() {
              sections on the page share the group name `"pinned"`,
              so at most one pin is ever engaged at a time and
              they take turns as the user scrolls. */
-          fastScrollEnd: !isMobileViewport,
-          preventOverlaps: isMobileViewport ? false : "pinned",
+          fastScrollEnd: true,
+          preventOverlaps: "pinned",
           /* Threshold-crossing trigger for the three scripted
              slide advances. Each one fires exactly once per
              direction so the cover-flip and the auto-cycle never
@@ -260,7 +247,7 @@ export default function BeachPanorama() {
          own pace without being scrubbed backwards frame-by-frame
          by the user's scroll. */
     },
-    { scope: sectionRef, dependencies: [isMobileViewport] }
+    { scope: sectionRef }
   );
 
   const onThumbMove = useCallback((index: number, e: MouseEvent<HTMLButtonElement>) => {
@@ -303,7 +290,7 @@ export default function BeachPanorama() {
       style={{
         background:
           "linear-gradient(180deg, #0A192F 0%, #0d2240 15%, #122a45 50%, #0d2240 85%, #0A192F 100%)",
-        perspective: isMobileViewport ? "1100px" : "1500px",
+        perspective: "1500px",
         transformStyle: "preserve-3d",
       }}
     >
@@ -320,7 +307,7 @@ export default function BeachPanorama() {
               ref={(el) => {
                 slideEls.current[i] = el;
               }}
-              className={`relative grid place-items-center overflow-hidden ${isMobileViewport ? "" : "will-change-transform"}`}
+              className="relative grid place-items-center overflow-hidden will-change-transform"
               style={{
                 gridArea: "1 / 1 / -1 / -1",
                 opacity: i === 0 ? 1 : 0,
@@ -335,7 +322,7 @@ export default function BeachPanorama() {
                 alt={t(slide.titleKey)}
                 loading={i < 2 ? "eager" : "lazy"}
                 draggable={false}
-                className={`absolute h-full w-full object-cover ${isMobileViewport ? "" : "will-change-transform"}`}
+                className="absolute h-full w-full object-cover will-change-transform"
               />
             </div>
           ))}
@@ -387,7 +374,7 @@ export default function BeachPanorama() {
            by the ScrollTrigger above. ═══ */}
       <div
         ref={coverRef}
-        className={`absolute inset-0 z-30 ${isMobileViewport ? "" : "will-change-transform"}`}
+        className="absolute inset-0 z-30 will-change-transform"
         style={{
           background:
             "linear-gradient(180deg, #0A192F 0%, #0d2240 35%, #122a45 65%, #0d2240 100%)",
@@ -432,7 +419,7 @@ export default function BeachPanorama() {
               onMouseMove={(e) => onThumbMove(i, e)}
               onMouseLeave={() => onThumbLeave(i)}
               onClick={() => navigate(i)}
-              className={`relative overflow-hidden rounded transition-all ${isMobileViewport ? "" : "will-change-transform"}`}
+              className="relative overflow-hidden rounded transition-all will-change-transform"
               style={{
                 width: "clamp(40px, 5vw, 56px)",
                 height: "clamp(40px, 5vw, 56px)",
@@ -446,7 +433,7 @@ export default function BeachPanorama() {
                 ref={(el) => {
                   thumbInnerEls.current[i] = el;
                 }}
-                className={`absolute inset-0 block ${isMobileViewport ? "" : "will-change-transform"}`}
+                className="absolute inset-0 block will-change-transform"
               >
                 <img
                   src={slide.src}

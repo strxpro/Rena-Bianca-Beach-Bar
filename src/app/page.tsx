@@ -56,9 +56,9 @@ export default async function Home({ searchParams }: PageProps) {
               <div className="pointer-events-none absolute left-1/2 top-[15%] hidden h-[300px] w-[300px] -translate-x-1/2 rotate-45 rounded-xl opacity-[0.08] sm:block" style={{ background: "linear-gradient(135deg, rgba(59,130,196,0.3), rgba(10,25,47,0.6))" }} />
               <div className="pointer-events-none absolute left-1/2 top-[35%] hidden h-[200px] w-[200px] -translate-x-1/2 rounded-full opacity-[0.06] sm:block" style={{ background: "linear-gradient(180deg, rgba(253,251,247,0.2), rgba(59,130,196,0.5))" }} />
               {/* Center text */}
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <T k="menu.subheading" className="font-body text-[10px] uppercase tracking-[0.3em] text-sand/30 sm:text-xs sm:tracking-[0.4em]" />
-                <h2 className="font-heading text-3xl text-sand/20 sm:text-5xl md:text-7xl" style={{ fontWeight: 400, letterSpacing: "0.3em" }}>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center sm:gap-3 sm:px-6">
+                <T k="menu.subheading" className="block max-w-[22rem] text-balance font-body text-[10px] leading-[1.45] uppercase tracking-[0.18em] text-sand/35 sm:max-w-none sm:text-xs sm:tracking-[0.4em]" />
+                <h2 className="font-heading text-3xl text-sand/20 sm:text-5xl md:text-7xl" style={{ fontWeight: 400, letterSpacing: "0.24em" }}>
                   MENU
                 </h2>
               </div>

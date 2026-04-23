@@ -351,7 +351,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMobileDevice ? "+=320%" : "+=900%",
+          end: isMobileDevice ? "+=500%" : "+=900%",
           pin: true,
           scrub: 0.5,
           anticipatePin: 1,
@@ -362,8 +362,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
              a single hard swipe on mobile could fling the user
              past 6 × viewport of pinned scroll, skipping the
              entire "Znajdź nas" sequence. */
-          fastScrollEnd: !isMobileDevice,
-          preventOverlaps: isMobileDevice ? false : "pinned",
+          fastScrollEnd: true,
+          preventOverlaps: "pinned",
           invalidateOnRefresh: true,
           onRefresh: () => {
             if (!window.matchMedia("(max-width: 767px)").matches) return;
