@@ -139,7 +139,7 @@ export default function AboutGallery({ isEditMode = false }: { isEditMode?: bool
             trigger: card,
             start: `top ${CARD_TOP}`,
             end: `bottom ${CARD_TOP}`,
-            scrub: isMobileViewport ? 0 : 1,
+            scrub: isMobileViewport ? 0.45 : 1,
             invalidateOnRefresh: true,
           },
         });

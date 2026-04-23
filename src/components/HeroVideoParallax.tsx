@@ -166,7 +166,7 @@ export default function HeroVideoParallax() {
           trigger,
           start: "0% 0%",
           end: "100% 0%",
-          scrub: isMobile ? 0 : 1,
+          scrub: isMobile ? 0.45 : 1,
           invalidateOnRefresh: true,
         },
       });
@@ -252,7 +252,7 @@ export default function HeroVideoParallax() {
         trigger: container,
         start: "0% 0%",
         end: "60% 0%",
-        scrub: window.innerWidth < 768 ? 0 : 0.4,
+        scrub: window.innerWidth < 768 ? 0.3 : 0.4,
         invalidateOnRefresh: true,
         onRefresh: applyIdleSizes,
         onUpdate: (self) => {
@@ -335,7 +335,7 @@ export default function HeroVideoParallax() {
           trigger: el,
           start: window.innerWidth < 768 ? "top 95%" : "top 80%",
           end: "top 20%",
-          scrub: window.innerWidth < 768 ? 0 : 0.8,
+          scrub: window.innerWidth < 768 ? 0.35 : 0.8,
           invalidateOnRefresh: true,
         },
       });

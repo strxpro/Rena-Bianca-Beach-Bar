@@ -353,7 +353,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
           start: "top top",
           end: isMobileDevice ? "+=320%" : "+=900%",
           pin: true,
-          scrub: isMobileDevice ? 0 : 0.5,
+          scrub: isMobileDevice ? 0.3 : 0.5,
           anticipatePin: 1,
           /* Share the `"pinned"` group so this pin can never
              overlap with the menu-transition, panorama or gallery
@@ -362,8 +362,8 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
              a single hard swipe on mobile could fling the user
              past 6 × viewport of pinned scroll, skipping the
              entire "Znajdź nas" sequence. */
-          fastScrollEnd: true,
-          preventOverlaps: "pinned",
+          fastScrollEnd: !isMobileDevice,
+          preventOverlaps: isMobileDevice ? false : "pinned",
           invalidateOnRefresh: true,
           onRefresh: () => {
             if (!window.matchMedia("(max-width: 767px)").matches) return;

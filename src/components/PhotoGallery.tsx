@@ -330,14 +330,14 @@ export default function PhotoGallery() {
         end: () => `+=${Math.max(260, Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT)}%`,
         pin: true,
         pinSpacing: true,
-        scrub: isMob ? 0 : 1,
+        scrub: isMob ? 0.45 : 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         /* Clamp fast swipes + join the shared `"pinned"` group
            so the gallery carousel can't be skipped in a single
            fling gesture on mobile. */
-        fastScrollEnd: true,
-        preventOverlaps: "pinned",
+        fastScrollEnd: !isMob,
+        preventOverlaps: isMob ? false : "pinned",
         onUpdate: (self) => {
           progressRef.current = mapGalleryScrollProgress(self.progress, galleryItemsRef.current.length);
           // #region agent log

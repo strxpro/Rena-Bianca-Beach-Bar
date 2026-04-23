@@ -863,9 +863,9 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: container,
-            start: isMobileViewport ? "top 95%" : "top 85%", // FIX: trigger earlier on mobile
-            end: "bottom 15%",
-            scrub: isMobileViewport ? 0 : 1,
+            start: isMobileViewport ? "top 88%" : "top 85%",
+            end: isMobileViewport ? "bottom top" : "bottom 15%",
+            scrub: isMobileViewport ? 0.42 : 1,
             invalidateOnRefresh: true,
           },
         });

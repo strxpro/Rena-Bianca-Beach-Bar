@@ -86,6 +86,7 @@ export default function SmoothScrollProvider({
       const releaseLock = () => {
         document.documentElement.classList.remove("intro-locked");
         document.body.classList.remove("intro-locked");
+        requestAnimationFrame(() => ScrollTrigger.refresh());
       };
       window.addEventListener("video-ended", releaseLock, { once: true });
       const safetyUnlock = window.setTimeout(releaseLock, 12000);
@@ -172,6 +173,7 @@ export default function SmoothScrollProvider({
       document.documentElement.classList.remove("intro-locked");
       document.body.classList.remove("intro-locked");
       lenis.start();
+      requestAnimationFrame(() => ScrollTrigger.refresh());
     };
     window.addEventListener("video-ended", releaseLock, { once: true });
     /* Hard safety: if the video event never fires (autoplay
