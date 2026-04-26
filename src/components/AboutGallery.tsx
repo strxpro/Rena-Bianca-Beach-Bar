@@ -26,7 +26,7 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
       // Initial state
       gsap.set(wrap, {
         width: isMob ? "90%" : "75%",
-        height: isMob ? "60dvh" : "70dvh",
+        height: isMob ? "60vh" : "70vh",
         borderRadius: isMob ? 16 : 24,
       });
 
@@ -44,26 +44,11 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
         },
       });
 
-      const text = textRef.current;
-
-      if (text) {
-        tl.to(
-          text,
-          {
-            opacity: 0,
-            y: -30,
-            duration: 0.2,
-            ease: "power2.inOut",
-          },
-          0.8 // start fading out at 80% of the scrub timeline
-        );
-      }
-
       tl.to(
         wrap,
         {
           width: "100%",
-          height: "100dvh",
+          height: "100vh",
           borderRadius: 0,
           boxShadow: "0 0 0 0 rgba(0,0,0,0), 0 0 0 0 rgba(255,255,255,0)",
           duration: 1,
@@ -79,7 +64,7 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
     <section
       ref={sectionRef}
       id="about"
-      className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#0A192F]"
+      className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-[#0A192F]"
       style={{
         background:
           "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)",
@@ -97,7 +82,7 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
         className="relative overflow-hidden z-20"
         style={{
           width: "75%",
-          height: "70dvh",
+          height: "70vh",
           borderRadius: 24,
           boxShadow:
             "0 30px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)",

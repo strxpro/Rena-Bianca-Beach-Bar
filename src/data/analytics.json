@@ -1246,5 +1246,53 @@
     "device": "desktop",
     "sessionId": "1777213564559-6drhq5",
     "referrer": ""
+  },
+  {
+    "ts": 1777215757293,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777213564559-6drhq5",
+    "referrer": "http://localhost:3002/"
+  },
+  {
+    "ts": 1777215763192,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777212388330-hupf3q",
+    "referrer": "http://localhost:3001/"
+  },
+  {
+    "ts": 1777215780474,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777215780096-gzfue2",
+    "referrer": ""
+  },
+  {
+    "ts": 1777215785806,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777215780096-gzfue2",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777215791012,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777215780096-gzfue2",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777215796800,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777215780096-gzfue2",
+    "referrer": "http://localhost:3000/"
   }
 ]
