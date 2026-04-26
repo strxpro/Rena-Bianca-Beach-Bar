@@ -8,9 +8,9 @@ import { useGSAP } from "@gsap/react";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-/* ===============================================================
-   ABOUT � Invitation + looping video
-   =============================================================== */
+/* ═══════════════════════════════════════════════════════════════
+   ABOUT — Invitation + looping video
+   ═══════════════════════════════════════════════════════════════ */
 
 export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEditMode?: boolean }) {
   const { t } = useI18n();
@@ -116,12 +116,10 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
             muted
             loop
             playsInline
-            className="block h-full w-full object-cover"
-            style={{ aspectRatio: "16/9" }}
+            className="block w-full"
           />
         </div>
       </div>
     </section>
   );
 }
-

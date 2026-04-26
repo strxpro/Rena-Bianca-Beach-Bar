@@ -107,14 +107,11 @@ export default function LocationSection() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">Godziny</span>
-                  <p>Codziennie<br />10:00 – 01:00</p>
+                  <p>Codziennie<br />7:30 – 20:30</p>
                 </div>
                 <div>
                   <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">Kontakt</span>
-                  <p>
-                    +39 0789 123 456<br />
-                    info@renabiancabeachbar.com
-                  </p>
+                  <p>info@renabiancabeachbar.com</p>
                 </div>
               </div>
             </div>

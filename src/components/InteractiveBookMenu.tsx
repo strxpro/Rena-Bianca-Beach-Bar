@@ -660,7 +660,7 @@ export default function InteractiveBookMenu() {
   return (
     <section
       id="menu"
-      className="relative z-[140] isolate flex min-h-svh flex-col pt-[28px] pb-4 pointer-events-auto sm:pb-6 md:min-h-dvh md:pt-[80px] md:pb-10"
+      className="relative z-[140] isolate flex min-h-svh flex-col pt-[28px] pb-4 pointer-events-auto sm:pb-6 md:h-dvh md:max-h-dvh md:overflow-hidden md:pt-[48px] md:pb-4"
       style={{ background: "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)" }}
     >
       {/* ── Animated beach decorations — idle float + scroll parallax.
@@ -845,8 +845,8 @@ export default function InteractiveBookMenu() {
 
           <div
             data-book-stage
-            className="relative z-[60] hidden min-h-0 w-full md:block md:max-h-[min(920px,calc(100dvh-220px))] pointer-events-auto"
-            style={{ aspectRatio: "2 / 1.22", minHeight: "min(880px, max(360px, calc(100dvh - 260px)))", maxHeight: "min(920px, calc(100dvh - 200px))" }}
+            className="relative z-[60] hidden min-h-0 w-full md:block md:max-h-[min(920px,calc(100dvh-140px))] pointer-events-auto"
+            style={{ aspectRatio: "2 / 1.22", minHeight: "min(880px, max(360px, calc(100dvh - 180px)))", maxHeight: "min(920px, calc(100dvh - 140px))" }}
           >
             {/* ── Side arrows — clickable page-turn affordance.
                   Hidden on small screens (they overlap the book
