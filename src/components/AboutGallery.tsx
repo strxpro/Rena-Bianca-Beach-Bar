@@ -21,13 +21,13 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
       const wrap = videoWrapRef.current;
       if (!section || !wrap) return;
 
-      const { isMob, isLowEndMobile } = getMobilePerformanceProfile();
+      const { isMobile, isLowEndMobile } = getMobilePerformanceProfile();
 
       // Initial state
       gsap.set(wrap, {
-        width: isMob ? "90%" : "75%",
-        height: isMob ? "60vh" : "70vh",
-        borderRadius: isMob ? 16 : 24,
+        width: isMobile ? "90%" : "75%",
+        height: isMobile ? "60vh" : "70vh",
+        borderRadius: isMobile ? 16 : 24,
       });
 
       /* Create the expanding timeline */
@@ -35,10 +35,10 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMob ? "+=80%" : "+=100%",
+          end: isMobile ? "+=80%" : "+=100%",
           pin: true,
           pinSpacing: true,
-          scrub: isMob ? (isLowEndMobile ? 1.2 : 0.8) : 0.6,
+          scrub: isMobile ? (isLowEndMobile ? 1.2 : 0.8) : 0.6,
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
