@@ -77,11 +77,8 @@ function getLogoMetrics() {
 
 export default function HeroVideoParallax() {
   const { t } = useI18n();
-  const introTitle = t("about.title");
-  const introTitleLetters = introTitle.split("");
   const containerRef = useRef<HTMLDivElement>(null);
   const layersRef = useRef<HTMLDivElement>(null);
-  const introRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLImageElement>(null);
   const sceneLogoRef = useRef<HTMLImageElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
@@ -322,49 +319,6 @@ export default function HeroVideoParallax() {
     { scope: containerRef }
   );
 
-  /* ── Animated "O nas" title ── */
-  useGSAP(
-    () => {
-      const el = introRef.current;
-      if (!el) return;
-      const letters = el.querySelectorAll("[data-intro-letter]");
-      if (!letters.length) return;
-
-      const subLetters = el.querySelectorAll("[data-intro-sub]");
-
-      gsap.set(letters, { yPercent: 120, opacity: 0 });
-      gsap.set(subLetters, { yPercent: 120, opacity: 0 });
-
-      // Scroll-driven letter-by-letter reveal
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: el,
-          start: window.innerWidth < 768 ? "top 95%" : "top 80%",
-          end: "top 20%",
-          scrub: 0.8,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      tl.to(letters, {
-        yPercent: 0,
-        opacity: 1,
-        stagger: 0.06,
-        duration: 1,
-        ease: "power3.out",
-      }, 0);
-
-      tl.to(subLetters, {
-        yPercent: 0,
-        opacity: 1,
-        stagger: 0.02,
-        duration: 0.8,
-        ease: "power3.out",
-      }, 0.3);
-    },
-    { scope: containerRef }
-  );
-
   return (
     <>
     {/* ── DOCK LOGO — position:fixed, outside containerRef so overflow/transforms can't break it.
@@ -541,51 +495,6 @@ export default function HeroVideoParallax() {
         </div>
       </section>
 
-      {/* ── "O nas" section — gradient blue → warm sunset ── */}
-      <section
-        data-intro-section
-        className="relative overflow-hidden pb-0 pt-20 sm:pt-28 md:pt-44"
-        style={{ background: "linear-gradient(to bottom, #0A192F 0%, #1a3a5c 15%, #2a6a9e 30%, #5ba3d9 45%, #d4976a 65%, #cc7744 82%, #ff8855 100%)" }}
-      >
-        <div
-          ref={introRef}
-          className="relative z-10 mx-auto max-w-5xl px-5 sm:px-8 md:px-12 pb-16 sm:pb-24 md:pb-32"
-        >
-          <div className="flex flex-col items-center text-center">
-            <h2 className="font-heading text-4xl sm:text-6xl md:text-8xl lg:text-9xl text-sand" style={{ lineHeight: 1.05 }}>
-              {introTitleLetters.map((char: string, i: number) => (
-                <span key={i} className="inline-block overflow-hidden">
-                  <span data-intro-letter className="inline-block">
-                    {char === " " ? "\u00A0" : char}
-                  </span>
-                </span>
-              ))}
-            </h2>
-
-            {/* Decorative line */}
-            <div className="mt-4 h-px w-24 sm:w-32 md:w-48" style={{ background: "linear-gradient(90deg, transparent, rgba(253,251,247,0.3), transparent)" }} />
-          </div>
-
-          <p className="mt-4 max-w-xl mx-auto text-center font-body text-base sm:text-lg md:text-xl text-sand/60 leading-relaxed tracking-wide sm:mt-6 md:mt-8">
-            {t("about.description").split(" ").map((word: string, i: number) => (
-              <span key={i} className="mr-[0.35em] inline-block overflow-hidden">
-                <span data-intro-sub className="inline-block">
-                  {word}
-                </span>
-              </span>
-            ))}
-          </p>
-
-          <p className="mt-4 max-w-2xl mx-auto text-center font-body text-sm sm:text-base md:text-lg text-sand/75 leading-relaxed tracking-[0.03em]">
-            {t("about.descriptionSecondary")}
-          </p>
-
-          <p className="mt-8 max-w-4xl mx-auto text-center font-heading text-lg uppercase tracking-[0.28em] text-sand/80 sm:text-2xl md:mt-10 md:text-4xl lg:text-5xl">
-            {t("about.quote")}
-          </p>
-        </div>
-
-      </section>
     </div>
     </>
   );

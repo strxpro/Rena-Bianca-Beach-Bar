@@ -25,8 +25,7 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
             loop
             playsInline
             preload="auto"
-            controls
-            className="block aspect-video w-full bg-black object-cover"
+            className="pointer-events-none block aspect-video w-full bg-black object-cover"
           >
             <source src="/filmrena.mp4" type="video/mp4" />
             {t("about.invite.heading")}
