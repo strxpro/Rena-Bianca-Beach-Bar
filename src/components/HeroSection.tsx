@@ -375,7 +375,7 @@ export default function HeroSection() {
             WebkitMaskImage: "radial-gradient(circle var(--hole-r) at var(--hole-cx) var(--hole-cy), transparent 0px, transparent var(--hole-r), black var(--hole-r))"
           }}
         >
-          <div data-overlay-bg className="absolute inset-0 bg-white" style={{ zIndex: 1 }} />
+          <div data-overlay-bg className="absolute inset-0 bg-sand" style={{ zIndex: 1 }} />
           <div data-waves className="absolute inset-0" style={{ zIndex: 2 }}>
             {WAVES.map((w, i) => (
               <div

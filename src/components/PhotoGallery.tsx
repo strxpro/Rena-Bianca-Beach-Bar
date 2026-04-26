@@ -113,8 +113,8 @@ const DEFAULT_INSTAGRAM_URL = "https://www.instagram.com/renabiancabeachbar/";
 const INTRO_ACTIVE = 0;
 const SPEED_DRAG = -0.3;
 const INSTAGRAM_POPUP_THRESHOLD = 106;
-const GALLERY_SCROLL_PROGRESS_MAX = 100;
-const GALLERY_SCROLL_STEP_PERCENT = 55;
+const GALLERY_SCROLL_PROGRESS_MAX = 72;
+const GALLERY_SCROLL_STEP_PERCENT = 72;
 
 const getInstagramUrl = (username?: string) => {
   return username ? `https://www.instagram.com/${username}/` : DEFAULT_INSTAGRAM_URL;
@@ -124,7 +124,7 @@ const mapGalleryScrollProgress = (scrollProgress: number) => {
   const clampedProgress = Math.max(0, Math.min(scrollProgress, 1));
   const { isLowEndMobile } = getMobilePerformanceProfile();
   const mobileMax = typeof window !== "undefined" && window.innerWidth < 768
-    ? (isLowEndMobile ? 78 : 88)
+    ? (isLowEndMobile ? 58 : 64)
     : GALLERY_SCROLL_PROGRESS_MAX;
   return clampedProgress * mobileMax;
 };
@@ -324,7 +324,7 @@ export default function PhotoGallery() {
         trigger: section,
         start: isMob ? "top top" : "top 80px",
         end: () => `+=${Math.max(
-          window.innerWidth < 768 ? 300 : 240,
+          window.innerWidth < 768 ? 380 : 260,
           Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT
         )}%`,
         pin: true,
@@ -499,6 +499,7 @@ export default function PhotoGallery() {
               key={item.id}
               ref={(el) => { cardRefs.current[i] = el; }}
               className="absolute left-1/2 top-1/2 overflow-hidden rounded-xl md:will-change-transform"
+              data-gallery-card
               style={{
                 width: "clamp(200px, 45vw, 300px)",
                 height: "clamp(280px, 60vw, 400px)",
@@ -509,6 +510,7 @@ export default function PhotoGallery() {
                 background: "#0A192F",
                 pointerEvents: "all",
                 userSelect: "none",
+                transition: "transform 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)",
               }}
               onClick={() => onCardClick(i)}
               onMouseEnter={() => {

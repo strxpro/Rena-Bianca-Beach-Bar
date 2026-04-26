@@ -42,8 +42,8 @@ export default async function Home({ searchParams }: PageProps) {
         {/* ── Scroll parallax (z-0 — revealed when video fades) ── */}
         <HeroVideoParallax />
 
-      {/* ── About / Stacking Cards ── */}
-      <AboutGallery isEditMode={isEditMode} />
+        {/* ── About / Simple Looping Video ── */}
+        <AboutGallery isEditMode={isEditMode} />
 
       {/* ── Spatial Push: About → Menu ── */}
       <div className="relative z-20 -mt-24 sm:-mt-32 md:mt-0 md:z-auto">
