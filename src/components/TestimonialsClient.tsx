@@ -1276,7 +1276,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         date: new Date().toISOString().split("T")[0],
         text: formText.trim(),
         rating: formRating,
-        photo: photos.length > 0 ? photos[0].preview : finalAvatar,
+        photo: finalAvatar,
         photos: photos.length > 0 ? photos.map(p => p.preview) : undefined,
         isLocal: true,
         countryCode: typeof data?.countryCode === "string" ? data.countryCode : undefined,
