@@ -126,12 +126,12 @@ export default function HeroSection() {
       gsap.to(vid, { opacity: 1, duration: 0.35, ease: "power2.out", overwrite: true });
     };
 
-    if ("scrollRestoration" in window.history) {
-      window.history.scrollRestoration = "manual";
-    }
-
-    if (window.scrollY > 0) {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    if (window.scrollY > 100) {
+      skippedRef.current = true;
+      document.documentElement.classList.remove("intro-locked");
+      document.body.classList.remove("intro-locked");
+      completeIntro({ hideVideo: true, hideOverlay: true, revealHeader: true });
+      return;
     }
 
     // Lock scroll on mount
@@ -348,7 +348,7 @@ export default function HeroSection() {
         ref={fullVideoRef}
         data-hero-video
         autoPlay
-        className="pointer-events-none fixed inset-0 z-10 h-full w-full object-contain"
+        className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
         style={{ opacity: 0, backgroundColor: COLOR_NAVY, visibility: "hidden" }}
         muted playsInline preload="metadata"
         src={VIDEO_SRC}
@@ -358,7 +358,7 @@ export default function HeroSection() {
       <div data-overlay className="pointer-events-none fixed inset-0 z-50 overflow-hidden" style={{ backfaceVisibility: "hidden", transform: "translateZ(0)" }}>
         <video
           data-peek-video
-          className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ zIndex: 0 }}
           muted playsInline preload="auto"
           src={VIDEO_SRC}

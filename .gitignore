@@ -41,3 +41,6 @@ next-env.d.ts
 # cursor / agent runtime artifacts
 /.cursor/
 debug-*.log
+
+# backup copies
+RENA-BIANCA*kopia*

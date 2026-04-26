@@ -67,13 +67,14 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const formOpenTimeRef = useRef<number>(Date.now());
   const [locEditOpen, setLocEditOpen] = useState(false);
-  const [locDraft, setLocDraft] = useState({ addressLine1: "", addressLine2: "", hours: "", email: "" });
+  const [locDraft, setLocDraft] = useState({ addressLine1: "", addressLine2: "", hours: "", phone: "", email: "" });
 
   const openLocEdit = () => {
     setLocDraft({
       addressLine1: overrides["location.address.line1"] ?? "Spiaggia di Rena Bianca",
       addressLine2: overrides["location.address.line2"] ?? "07028 Santa Teresa Gallura",
       hours: overrides["location.hours.times"] ?? "7:30 – 20:30",
+      phone: overrides["location.phone.value"] ?? "+39 0789 123 456",
       email: overrides["location.email"] ?? "info@renabiancabeachbar.com",
     });
     setLocEditOpen(true);
@@ -83,6 +84,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
     setOverride("location.address.line1", locDraft.addressLine1);
     setOverride("location.address.line2", locDraft.addressLine2);
     setOverride("location.hours.times", locDraft.hours);
+    setOverride("location.phone.value", locDraft.phone);
     setOverride("location.email", locDraft.email);
     setLocEditOpen(false);
   };
@@ -882,8 +884,11 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                     <p>{t("location.hours.value")}<br />{overrides["location.hours.times"] ?? "7:30 – 20:30"}</p>
                   </div>
                   <div>
-                    <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("contact.email")}</span>
-                    <p>{overrides["location.email"] ?? "info@renabiancabeachbar.com"}</p>
+                    <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("location.phone.label")}</span>
+                    <p>
+                      {overrides["location.phone.value"] ?? "+39 0789 123 456"}<br />
+                      {overrides["location.email"] ?? "info@renabiancabeachbar.com"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1277,6 +1282,7 @@ export default function LocationContactTransition({ isEditMode = false }: { isEd
                 { label: "Adres — linia 1", key: "addressLine1" as const, placeholder: "Spiaggia di Rena Bianca" },
                 { label: "Adres — linia 2", key: "addressLine2" as const, placeholder: "07028 Santa Teresa Gallura" },
                 { label: "Godziny (np. 7:30 – 20:30)", key: "hours" as const, placeholder: "7:30 – 20:30" },
+                { label: "Telefon", key: "phone" as const, placeholder: "+39 0789 123 456" },
                 { label: "Email", key: "email" as const, placeholder: "info@renabiancabeachbar.com" },
               ].map(({ label, key, placeholder }) => (
                 <div key={key}>

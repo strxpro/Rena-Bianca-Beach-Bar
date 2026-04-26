@@ -111,7 +111,10 @@ export default function LocationSection() {
                 </div>
                 <div>
                   <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">Kontakt</span>
-                  <p>info@renabiancabeachbar.com</p>
+                  <p>
+                    +39 0789 123 456<br />
+                    info@renabiancabeachbar.com
+                  </p>
                 </div>
               </div>
             </div>

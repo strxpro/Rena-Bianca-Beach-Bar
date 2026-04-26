@@ -106,6 +106,7 @@ const contentBlocks: EditorBlock[] = [
       { key: "location.address.line1", label: "Indirizzo — riga 1", fallback: "Spiaggia di Rena Bianca" },
       { key: "location.address.line2", label: "Indirizzo — riga 2", fallback: "07028 Santa Teresa Gallura" },
       { key: "location.hours.times", label: "Orari", fallback: "7:30 – 20:30" },
+      { key: "location.phone.value", label: "Telefono", fallback: "+39 0789 123 456" },
       { key: "location.email", label: "Email", fallback: "info@renabiancabeachbar.com" },
       { key: "contact.heading", label: "Titolo contatti" },
       { key: "contact.description", label: "Descrizione contatti", kind: "textarea", rows: 4 },
