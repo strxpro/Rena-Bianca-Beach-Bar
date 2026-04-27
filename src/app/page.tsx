@@ -11,16 +11,8 @@ import BeachPanorama from "@/components/BeachPanorama";
 import PhotoGallery from "@/components/PhotoGallery";
 import Testimonials from "@/components/Testimonials";
 import SunsetDivider from "@/components/SunsetDivider";
-import { EditModeBar } from "@/components/EditModeBar";
 
-type PageProps = {
-  searchParams: Promise<{ edit?: string }>;
-};
-
-export default async function Home({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const isEditMode = params?.edit === "1";
-
+export default async function Home() {
   return (
     <>
       {/* ── Header (z-100) — logo docks on scroll ── */}
@@ -41,7 +33,7 @@ export default async function Home({ searchParams }: PageProps) {
         <HeroVideoParallax />
 
         {/* ── About / Simple Looping Video ── */}
-        <AboutGallery isEditMode={isEditMode} />
+        <AboutGallery />
 
       {/* ── Menu ── */}
       <div className="relative z-20">
@@ -84,7 +76,7 @@ export default async function Home({ searchParams }: PageProps) {
       />
 
       {/* ── Location → Contact (orbital scroll transition) ── */}
-      <LocationContactTransition isEditMode={isEditMode} />
+      <LocationContactTransition />
 
       {/* ── Footer ── */}
       <footer className="px-4 py-8 text-center sm:px-8 sm:py-12" style={{ background: "linear-gradient(180deg, #0A192F 0%, #060f1e 100%)" }}>
@@ -101,9 +93,6 @@ export default async function Home({ searchParams }: PageProps) {
         </p>
       </footer>
       </main>
-
-      {/* ── Edit mode toolbar (only when ?edit=1) ── */}
-      {isEditMode && <EditModeBar />}
     </>
   );
 }

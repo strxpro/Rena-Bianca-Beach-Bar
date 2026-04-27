@@ -67,7 +67,6 @@ export function AdminSidebar({
     { key: "reviews", title: "Recensioni", href: "/admin/reviews", icon: MessageSquare, badge: reviewNeedsAttentionCount },
     { key: "messages", title: "Messaggi", href: "/admin/messages", icon: Mail, badge: unreadMessages },
     { key: "content", title: "Contenuti", href: "/admin/content", icon: PencilLine, badge: 0 },
-    { key: "edit", title: "Anteprima live", href: "/?edit=1", icon: PencilLine, badge: 0 },
   ];
 
   const renderNav = (expanded: boolean) => (
@@ -81,7 +80,8 @@ export function AdminSidebar({
             href={item.href}
             onClick={() => setIsMobileOpen(false)}
             className={cn(
-              "relative flex items-center gap-3 rounded-[18px] border px-3 py-3 font-body text-sm transition-all duration-300",
+              "relative flex items-center rounded-[18px] border p-2.5 font-body text-sm transition-all duration-300 gap-3",
+              expanded ? "justify-start" : "justify-center",
               active
                 ? "border-ocean/25 bg-ocean/12 text-sand shadow-[0_14px_36px_-18px_rgba(59,130,196,0.85)]"
                 : "border-white/8 bg-white/[0.03] text-sand/65 hover:border-white/12 hover:bg-white/[0.05] hover:text-sand",
@@ -99,11 +99,11 @@ export function AdminSidebar({
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -6 }}
-                  className="flex min-w-0 flex-1 items-center gap-2"
+                  className="flex min-w-0 flex-1 items-center justify-between"
                 >
                   <span className="truncate font-medium">{item.title}</span>
                   {item.badge > 0 && (
-                    <Badge variant="default" className="ml-auto min-w-6 justify-center px-1.5 py-0.5 text-[10px]">
+                    <Badge variant="default" className="min-w-6 justify-center px-1.5 py-0.5 text-[10px]">
                       {item.badge}
                     </Badge>
                   )}
@@ -192,10 +192,10 @@ export function AdminSidebar({
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -6 }}
-                className="min-w-0 flex-1"
+                className="min-w-0 flex-1 text-center"
               >
-                <p className="font-heading text-xl text-sand">Pannello di amministrazione</p>
-                <p className="font-body text-[10px] uppercase tracking-[0.2em] text-sand/40">Rena Bianca</p>
+                <p className="font-heading text-lg leading-tight text-sand">Pannello Admin</p>
+                <p className="font-body text-[9px] uppercase tracking-[0.2em] text-sand/40">Rena Bianca</p>
               </motion.div>
             )}
           </AnimatePresence>

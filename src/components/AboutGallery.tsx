@@ -9,7 +9,7 @@ import { getMobilePerformanceProfile } from "@/lib/mobile-performance";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEditMode?: boolean }) {
+export default function AboutGallery() {
   const { t } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
   const videoWrapRef = useRef<HTMLDivElement>(null);
@@ -57,6 +57,8 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
     { scope: sectionRef }
   );
 
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+
   return (
     <section
       ref={sectionRef}
@@ -78,7 +80,7 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
         </h2>
         <div
           ref={videoWrapRef}
-          className="relative overflow-hidden z-20"
+          className="relative overflow-hidden z-20 bg-black/40"
           style={{
             width: "75%",
             height: "70vh",
@@ -87,6 +89,12 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
               "0 30px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)",
           }}
         >
+          {/* Skeleton Loader */}
+          {!isVideoLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 bg-[#0A192F] animate-pulse">
+              <div className="w-12 h-12 border-4 border-ocean/30 border-t-ocean rounded-full animate-spin" />
+            </div>
+          )}
           <video
             autoPlay
             muted
@@ -94,7 +102,11 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
             loop
             playsInline
             preload="auto"
-            className="pointer-events-none absolute inset-0 block h-full w-full bg-black object-cover"
+            onCanPlay={() => setIsVideoLoaded(true)}
+            onLoadedData={() => setIsVideoLoaded(true)}
+            className={`pointer-events-none absolute inset-0 block h-full w-full object-cover transition-opacity duration-500 ${
+              isVideoLoaded ? "opacity-100" : "opacity-0"
+            }`}
           >
             <source src="/0426.mp4" type="video/mp4" />
           </video>

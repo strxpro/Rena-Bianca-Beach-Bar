@@ -3,7 +3,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { AdminSidebar } from "@/components/ui/AdminSidebar";
 import { Badge } from "@/components/ui/badge";
@@ -55,9 +54,9 @@ export function AdminLayout({ children, reviewNeedsAttentionCount, unreadMessage
 
         <div className="flex min-w-0 flex-1 flex-col md:pl-0">
           {/* Header */}
-          <header className="sticky top-0 z-[110] border-b border-white/8 bg-navy/55 px-5 pb-5 pt-16 backdrop-blur-2xl md:px-8 md:pt-6">
-            <div className="mx-auto flex w-full max-w-[1600px] items-end justify-between gap-4">
-              <div className="min-w-0">
+          <header className="sticky top-0 z-[110] border-b border-white/8 bg-navy/55 px-5 pb-5 pt-16 backdrop-blur-2xl md:px-8 md:pt-6 text-center">
+            <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center justify-center gap-4">
+              <div className="flex flex-col items-center">
                 <Badge variant="outline" className="mb-3 border-cyan-300/15 bg-cyan-300/8 text-cyan-100">
                   {meta.badge}
                 </Badge>
@@ -66,7 +65,7 @@ export function AdminLayout({ children, reviewNeedsAttentionCount, unreadMessage
               </div>
               <Link
                 href="/"
-                className="mb-1 flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 font-body text-sm text-sand/60 hover:text-sand transition-colors"
+                className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 font-body text-sm text-sand/60 hover:text-sand transition-colors"
               >
                 Apri sito
                 <ArrowUpRight className="h-4 w-4" />
@@ -74,7 +73,7 @@ export function AdminLayout({ children, reviewNeedsAttentionCount, unreadMessage
             </div>
             
             {/* Top Navigation Tabs */}
-            <div className="mx-auto w-full max-w-[1600px] mt-6 flex overflow-x-auto pb-2 scrollbar-hide gap-2">
+            <div className="mx-auto w-full max-w-[1600px] mt-6 flex overflow-x-auto pb-2 scrollbar-hide gap-2 justify-center">
               {[
                 { href: "/admin", label: "Dashboard" },
                 { href: "/admin/messages", label: "Messaggi" },
@@ -99,17 +98,7 @@ export function AdminLayout({ children, reviewNeedsAttentionCount, unreadMessage
           {/* Content */}
           <main className="relative flex-1 px-5 py-6 md:px-8 md:py-8">
             <div className="mx-auto w-full max-w-[1600px]">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={pathname}
-                  initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
-                  transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  {children}
-                </motion.div>
-              </AnimatePresence>
+              {children}
             </div>
           </main>
         </div>

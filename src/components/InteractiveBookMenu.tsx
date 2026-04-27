@@ -645,6 +645,20 @@ export default function InteractiveBookMenu() {
   }) ?? contentPages[0] ?? null;
   const currentMobilePage = contentPages[mobilePageIndex] ?? contentPages[0] ?? null;
 
+  useEffect(() => {
+    if (!isMobile || mobilePageIndex === -1) return;
+    const currentId = currentMobilePage?.id;
+    if (!currentId) return;
+    const tocEl = mobileTocItemRefs.current[currentId];
+    const container = mobileTocContainerRef.current;
+    if (tocEl && container) {
+      const elRect = tocEl.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      const targetScroll = container.scrollLeft + (elRect.left - contRect.left) - (contRect.width / 2) + (elRect.width / 2);
+      container.scrollTo({ left: targetScroll, behavior: "smooth" });
+    }
+  }, [mobilePageIndex, isMobile, currentMobilePage]);
+
   /* Listen for the global "open-menu-popup" event dispatched by the
      hero "Zobacz menu" button so it can open the popup from anywhere. */
   useEffect(() => {

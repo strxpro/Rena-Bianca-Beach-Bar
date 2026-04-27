@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink, ImageIcon, Save } from "lucide-react";
+import { ImageIcon, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -147,12 +148,6 @@ export default function AdminContentEditorClient() {
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/?edit=1" target="_blank" className="inline-flex">
-              <Button variant="secondary" className="rounded-2xl px-5">
-                <ExternalLink className="h-4 w-4" />
-                Apri anteprima live
-              </Button>
-            </Link>
             <Button variant="glow" className="rounded-2xl px-5" onClick={() => void saveOverrides()} disabled={isSaving}>
               <Save className="h-4 w-4" />
               {isSaving ? "Salvataggio…" : "Salva modifiche"}

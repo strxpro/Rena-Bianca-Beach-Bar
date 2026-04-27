@@ -40,7 +40,7 @@ function getFrameSrc(i: number) {
   return `/wyspa/WYSPA${String(i).padStart(FRAME_PAD, "0")}.png`;
 }
 
-export default function LocationContactTransition({ isEditMode = false }: { isEditMode?: boolean }) {
+export default function LocationContactTransition() {
   const { t, locale, overrides, setOverride } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
