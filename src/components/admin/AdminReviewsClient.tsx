@@ -8,14 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import type { AdminReviewRecord, ReviewSource, ReviewStatus } from "@/lib/review-types";
 
 const statusOptions: Array<ReviewStatus | "all"> = ["all", "visible", "hidden", "flagged"];

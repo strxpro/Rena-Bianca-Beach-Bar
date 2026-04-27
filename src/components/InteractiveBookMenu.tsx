@@ -210,7 +210,7 @@ export default function InteractiveBookMenu() {
   const getPage = useCallback((idx: number) => {
     if (idx < 0 || idx >= totalPages) return null;
     return bookData[idx];
-  }, [totalPages]);
+  }, [totalPages, bookData]);
 
   /* ── updateFold — exact port from vanilla JS ── */
   const updateFold = useCallback((X: number, Y: number) => {

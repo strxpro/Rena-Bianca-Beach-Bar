@@ -208,7 +208,6 @@ export default function HeroSection() {
 
       const emPx = parseFloat(getComputedStyle(heading).fontSize);
       const baseHoleRadius = emPx * 0.175;
-      const yellowRadius = emPx * 0.175;
 
       const peekVideo = root.querySelector("[data-peek-video]") as HTMLVideoElement | null;
 
@@ -217,7 +216,6 @@ export default function HeroSection() {
 
       // ── CACHE PREV VALUES ──
       let lastHoleR = -1;
-      let lastYellowR = -1;
 
       const applyMasks = (hr: number) => {
         if (hr === lastHoleR) return;
