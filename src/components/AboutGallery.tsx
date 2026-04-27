@@ -35,11 +35,8 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: isMobile ? "+=80%" : "+=100%",
-          pin: true,
-          pinSpacing: true,
+          end: "bottom bottom",
           scrub: isMobile ? (isLowEndMobile ? 1.2 : 0.8) : 0.6,
-          anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
@@ -64,40 +61,44 @@ export default function AboutGallery({ isEditMode: _isEditMode = false }: { isEd
     <section
       ref={sectionRef}
       id="about"
-      className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-[#0A192F]"
+      className="relative w-full bg-[#0A192F]"
       style={{
+        height: "200vh", // 100vh for normal view + 100vh for scrub duration
         background:
           "linear-gradient(180deg, #0A192F 0%, #0d2240 50%, #0A192F 100%)",
       }}
     >
-      <h2
-        ref={textRef}
-        className="absolute top-[10%] left-0 w-full text-center text-5xl md:text-7xl font-light text-sand tracking-wide uppercase z-30 pointer-events-none"
-        style={{ textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}
-      >
-        {t("video.welcome")}
-      </h2>
-      <div
-        ref={videoWrapRef}
-        className="relative overflow-hidden z-20"
-        style={{
-          width: "75%",
-          height: "70vh",
-          borderRadius: 24,
-          boxShadow:
-            "0 30px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)",
-        }}
-      >
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="pointer-events-none absolute inset-0 block h-full w-full bg-black object-cover"
+      <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden">
+        <h2
+          ref={textRef}
+          className="absolute top-[10%] left-0 w-full text-center text-5xl md:text-7xl font-light text-sand tracking-wide uppercase z-30 pointer-events-none"
+          style={{ textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}
         >
-          <source src="/0426.mp4" type="video/mp4" />
-        </video>
+          {t("video.welcome")}
+        </h2>
+        <div
+          ref={videoWrapRef}
+          className="relative overflow-hidden z-20"
+          style={{
+            width: "75%",
+            height: "70vh",
+            borderRadius: 24,
+            boxShadow:
+              "0 30px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)",
+          }}
+        >
+          <video
+            autoPlay
+            muted
+            defaultMuted
+            loop
+            playsInline
+            preload="auto"
+            className="pointer-events-none absolute inset-0 block h-full w-full bg-black object-cover"
+          >
+            <source src="/0426.mp4" type="video/mp4" />
+          </video>
+        </div>
       </div>
     </section>
   );

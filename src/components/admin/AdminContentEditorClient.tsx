@@ -123,17 +123,27 @@ const italianTranslations = translations.it as Record<string, string>;
 export default function AdminContentEditorClient() {
   const { overrides, setOverride, saveOverrides, isSaving, hasUnsaved } = useI18n();
 
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+
   const resolveValue = (field: EditorField) => overrides[field.key] ?? field.fallback ?? italianTranslations[field.key] ?? "";
 
   return (
     <div className="space-y-6">
+      {activeSection ? (
+        <div className="flex items-center gap-2 font-body text-sm text-sand/60">
+          <button onClick={() => setActiveSection(null)} className="hover:text-sand transition-colors">Contenuti</button>
+          <span>/</span>
+          <span className="text-sand">{activeSection}</span>
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <Badge variant="outline">CMS pagina principale</Badge>
-            <CardTitle className="mt-3 text-2xl">Editor contenuti</CardTitle>
+            <CardTitle className="mt-3 text-2xl">{activeSection ? `Modifica ${activeSection}` : "Seleziona sezione"}</CardTitle>
             <CardDescription>
-              Qui puoi modificare testi, titoli e immagini principali della home. Le sezioni <strong>Recensioni/Commenti</strong> e <strong>Instagram Gallery</strong> sono escluse intenzionalmente.
+              {activeSection ? "Modifica i testi di questa specifica sezione." : "Seleziona quale sezione della pagina principale vuoi modificare. Le sezioni Recensioni/Commenti e Instagram Gallery sono escluse intenzionalmente."}
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -155,56 +165,69 @@ export default function AdminContentEditorClient() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        {contentBlocks.map((block) => (
-          <Card key={block.title} className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-xl">{block.title}</CardTitle>
-              <CardDescription>{block.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {block.fields.map((field) => {
-                const value = resolveValue(field);
-                const isImage = field.kind === "image";
-                const isTextarea = field.kind === "textarea";
+      {!activeSection ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {contentBlocks.map((block) => (
+            <Card key={block.title} className="cursor-pointer hover:border-ocean/40 transition-colors bg-white/5 border-white/10" onClick={() => setActiveSection(block.title)}>
+              <CardHeader>
+                <CardTitle className="text-xl text-sand">{block.title}</CardTitle>
+                <CardDescription className="line-clamp-2">{block.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          {contentBlocks.filter(b => b.title === activeSection).map((block) => (
+            <Card key={block.title} className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-xl">{block.title}</CardTitle>
+                <CardDescription>{block.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {block.fields.map((field) => {
+                  const value = resolveValue(field);
+                  const isImage = field.kind === "image";
+                  const isTextarea = field.kind === "textarea";
 
-                return (
-                  <div key={field.key} className="space-y-2 rounded-[22px] border border-white/8 bg-white/[0.03] p-4">
-                    <div className="flex items-center gap-2 text-sand/55">
-                      {isImage && <ImageIcon className="h-4 w-4 text-ocean-light" />}
-                      <label className="font-body text-[11px] uppercase tracking-[0.18em]">{field.label}</label>
-                    </div>
-
-                    {isTextarea ? (
-                      <Textarea
-                        value={value}
-                        onChange={(event) => setOverride(field.key, event.target.value)}
-                        rows={field.rows ?? 4}
-                        className="min-h-[120px]"
-                        placeholder={field.placeholder}
-                      />
-                    ) : (
-                      <Input
-                        value={value}
-                        onChange={(event) => setOverride(field.key, event.target.value)}
-                        placeholder={field.placeholder}
-                      />
-                    )}
-
-                    <p className="font-body text-xs text-sand/35">Chiave: {field.key}</p>
-
-                    {isImage && value && (
-                      <div className="overflow-hidden rounded-[20px] border border-white/8 bg-white/5">
-                        <img src={value} alt={field.label} className="aspect-[16/10] w-full object-cover" loading="lazy" />
+                  return (
+                    <div key={field.key} className="space-y-2 rounded-[22px] border border-white/8 bg-white/[0.03] p-4">
+                      <div className="flex items-center gap-2 text-sand/55">
+                        {isImage && <ImageIcon className="h-4 w-4 text-ocean-light" />}
+                        <label className="font-body text-[11px] uppercase tracking-[0.18em]">{field.label}</label>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+
+                      {isTextarea ? (
+                        <Textarea
+                          value={value}
+                          onChange={(event) => setOverride(field.key, event.target.value)}
+                          rows={field.rows ?? 4}
+                          className="min-h-[120px]"
+                          placeholder={field.placeholder}
+                        />
+                      ) : (
+                        <Input
+                          value={value}
+                          onChange={(event) => setOverride(field.key, event.target.value)}
+                          placeholder={field.placeholder}
+                        />
+                      )}
+
+                      <p className="font-body text-xs text-sand/35">Chiave: {field.key}</p>
+
+                      {isImage && value && (
+                        <div className="overflow-hidden rounded-[20px] border border-white/8 bg-white/5">
+                          <img src={value} alt={field.label} className="aspect-[16/10] w-full object-cover" loading="lazy" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

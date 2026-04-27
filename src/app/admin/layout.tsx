@@ -1,9 +1,17 @@
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import { AdminLayout } from "@/components/ui/AdminLayout";
+import { AdminLogin } from "@/components/ui/AdminLogin";
 import { loadAdminMessages } from "@/lib/admin-messages-data";
 import { loadAdminReviewsFresh } from "@/lib/reviews-data";
 
 export default async function AdminRouteLayout({ children }: { children: ReactNode }) {
+  const isAuthenticated = cookies().get("admin_session")?.value === "authenticated";
+
+  if (!isAuthenticated) {
+    return <AdminLogin />;
+  }
+
   const [reviews, messages] = await Promise.all([loadAdminReviewsFresh(), loadAdminMessages()]);
   const reviewNeedsAttentionCount = reviews.filter((review) => review.status !== "visible").length;
   const unreadMessagesCount = messages.reduce((sum, thread) => sum + thread.unreadCount, 0);

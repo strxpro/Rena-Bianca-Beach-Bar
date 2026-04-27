@@ -114,8 +114,19 @@ export default function AdminMessagesPage() {
     }
   };
 
+  const markAsRead = (id: string) => {
+    setThreads((cur) =>
+      cur.map((t) => {
+        if (t.id === id) {
+          return { ...t, unreadCount: 0, status: t.status === "new" ? "open" : t.status };
+        }
+        return t;
+      }),
+    );
+  };
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+    <div className="grid gap-6 xl:grid-cols-[400px_minmax(0,1fr)]">
       {/* Thread list */}
       <Card className="overflow-hidden">
         <CardHeader>
@@ -147,54 +158,72 @@ export default function AdminMessagesPage() {
             <Input value={query} onChange={(e) => setQuery(e.target.value)} className="pl-11" placeholder="Cerca per nome, email, oggetto…" />
           </div>
 
-          <ScrollArea className="max-h-[700px] rounded-[20px] border border-white/8">
+          <ScrollArea className="max-h-[700px] rounded-[20px] border border-white/8 p-2">
             {isLoading ? (
-              <div className="space-y-3 p-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+              <div className="space-y-3 p-2">
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-20 w-full rounded-xl" />
               </div>
             ) : filteredThreads.length === 0 ? (
               <p className="py-8 text-center font-body text-sm text-sand/40">Nessun messaggio trovato.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Numero</TableHead>
-                    <TableHead>Messaggio</TableHead>
-                    <TableHead>Paese</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Fonte</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredThreads.map((thread) => {
-                    const active = selectedThread?.id === thread.id;
-                    return (
-                      <TableRow key={thread.id} className={active ? "bg-ocean/10" : "cursor-pointer"} onClick={() => { setSelectedId(thread.id); setSendState("idle"); }}>
-                        <TableCell>{thread.name}</TableCell>
-                        <TableCell>{thread.email || "—"}</TableCell>
-                        <TableCell>{(thread as MessageThread & { phone?: string }).phone || "—"}</TableCell>
-                        <TableCell className="max-w-[260px]">
-                          <p className="line-clamp-2 text-xs text-sand/70">{thread.messages[0]?.content || thread.subject}</p>
-                        </TableCell>
-                        <TableCell>{thread.location || "—"}</TableCell>
-                        <TableCell>{formatTime(thread.updatedAt)}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <p className="text-xs text-sand/70">{(thread as MessageThread & { sourceLabel?: string }).sourceLabel || "Modulo contatto"}</p>
-                            <Badge variant={thread.status === "new" ? "warning" : thread.status === "replied" ? "success" : "secondary"}>
-                              {STATUS_LABELS[thread.status] || thread.status}
-                            </Badge>
+              <div className="space-y-2">
+                {filteredThreads.map((thread) => {
+                  const active = selectedThread?.id === thread.id;
+                  const isUnread = thread.unreadCount > 0 || thread.status === "new";
+                  return (
+                    <div
+                      key={thread.id}
+                      className={`flex flex-col gap-3 rounded-xl border p-4 transition cursor-pointer ${
+                        active ? "border-ocean/40 bg-ocean/10" : "border-white/10 bg-white/5 hover:bg-white/10"
+                      }`}
+                      onClick={() => {
+                        setSelectedId(thread.id);
+                        setSendState("idle");
+                        markAsRead(thread.id);
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className={`truncate text-sm ${isUnread ? "font-bold text-sand" : "font-medium text-sand/80"}`}>
+                              {thread.name}
+                            </h4>
+                            {isUnread && <span className="h-2 w-2 rounded-full bg-blue-500" />}
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          <p className="mt-1 truncate text-xs text-sand/60">{thread.email || "Nessuna email"}</p>
+                          <p className="mt-0.5 truncate text-[11px] text-sand/40">
+                            {(thread as MessageThread & { phone?: string }).phone || "Nessun telefono"} • {formatTime(thread.updatedAt)}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge variant={isUnread ? "default" : "secondary"} className="text-[10px]">
+                            {isUnread ? "Da leggere" : "Letto"}
+                          </Badge>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-7 px-3 text-[10px] uppercase tracking-wider"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(thread.id);
+                              window.open("https://webmail.ovh.net/", "_blank");
+                            }}
+                          >
+                            Zimbra
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="border-t border-white/10 pt-2">
+                        <p className={`line-clamp-2 text-xs leading-5 ${isUnread ? "text-sand/90 font-medium" : "text-sand/60"}`}>
+                          {thread.messages[0]?.content || thread.subject}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </ScrollArea>
         </CardContent>

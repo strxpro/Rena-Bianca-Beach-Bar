@@ -219,17 +219,14 @@ export default function HeroSection() {
       let lastHoleR = -1;
       let lastYellowR = -1;
 
-      const applyMasks = (hr: number, yr: number) => {
-        if (hr === lastHoleR && yr === lastYellowR) return;
+      const applyMasks = (hr: number) => {
+        if (hr === lastHoleR) return;
         setHoleMaskVars(maskGroup, hr, holeCX, holeCY);
-        setHoleMaskVars(yellow, yr);
         lastHoleR = hr;
-        lastYellowR = yr;
       };
 
       // ── INITIAL STATE (No CSS conflicts, all GSAP) ──
       const hole = { r: 0 };
-      const yellowHole = { r: 0 };
       let holeCX = "50%";
       let holeCY = "50%";
 
@@ -299,16 +296,10 @@ export default function HeroSection() {
         window.dispatchEvent(new CustomEvent("header-show"));
       }, transitionStart + WAVE_TRANSITION_DUR * 0.9);
 
-      tl.to(yellowHole, {
-        r: yellowRadius,
-        duration: 0.6,
-        onUpdate: () => applyMasks(hole.r, yellowHole.r),
-      }, ">");
-
       tl.to(hole, {
         r: baseHoleRadius,
         duration: 0.5,
-        onUpdate: () => applyMasks(hole.r, yellowHole.r),
+        onUpdate: () => applyMasks(hole.r),
       }, "<+0.1");
 
       const HOLE_BOOST = isMobile ? 1.25 : 1.1;
@@ -317,7 +308,7 @@ export default function HeroSection() {
         duration: isMobile ? ZOOM_DUR * 0.8 : ZOOM_DUR,
         onUpdate: () => {
           const s = gsap.getProperty(zoomTarget, "scaleX") as number;
-          applyMasks(baseHoleRadius * s * HOLE_BOOST, yellowRadius * s * HOLE_BOOST);
+          applyMasks(baseHoleRadius * s * HOLE_BOOST);
         },
       }, ">+0.1");
 
@@ -350,7 +341,7 @@ export default function HeroSection() {
         autoPlay
         className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
         style={{ opacity: 0, backgroundColor: COLOR_NAVY, visibility: "hidden" }}
-        muted playsInline preload="metadata"
+        muted defaultMuted playsInline preload="metadata"
         src={VIDEO_SRC}
         onEnded={handleVideoEnded}
       />
@@ -360,7 +351,7 @@ export default function HeroSection() {
           data-peek-video
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ zIndex: 0 }}
-          muted playsInline preload="auto"
+          muted defaultMuted playsInline preload="auto" autoPlay
           src={VIDEO_SRC}
         />
 
@@ -428,13 +419,11 @@ export default function HeroSection() {
                     <div className="relative flex items-center justify-center" style={{ minWidth: "1em", width: "100%", height: "100%" }}>
                       <div
                         data-yellow
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FFD12D]"
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-[clamp(2px,0.4em,6px)] border-[#FFD12D]"
                         style={{ 
                           width: "35%", 
                           height: "35%", 
                           zIndex: 1,
-                          maskImage: "radial-gradient(circle var(--hole-r) at 50% 50%, transparent 0px, transparent var(--hole-r), black var(--hole-r))",
-                          WebkitMaskImage: "radial-gradient(circle var(--hole-r) at 50% 50%, transparent 0px, transparent var(--hole-r), black var(--hole-r))"
                         }}
                       />
                       <img

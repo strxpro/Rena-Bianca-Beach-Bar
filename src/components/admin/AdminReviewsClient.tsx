@@ -178,67 +178,84 @@ export default function AdminReviewsClient({ initialReviews }: { initialReviews:
               </div>
             </div>
 
-            <ScrollArea className="max-h-[620px] rounded-[24px] border border-white/8">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ospite</TableHead>
-                    <TableHead>Fonte</TableHead>
-                    <TableHead>Voto</TableHead>
-                    <TableHead>Stato</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="w-[320px]">Commento</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredReviews.length > 0 ? (
-                    filteredReviews.map((review) => (
-                      <TableRow
-                        key={review.id}
-                        className={selectedReview?.id === review.id ? "bg-white/4" : "cursor-pointer"}
-                        onClick={() => setSelectedId(review.id)}
-                      >
-                        <TableCell>
-                          <div>
-                            <p className="font-medium text-sand">{review.author}</p>
-                            <p className="text-xs text-sand/45">{review.email || "Nessuna email nel foglio"}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={review.source === "google" ? "default" : "secondary"}>{review.source}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-amber-200">
-                            <Star className="h-4 w-4 fill-current" />
-                            <span>{review.rating.toFixed(1)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <Badge variant={getStatusBadge(review.status)}>{review.status}</Badge>
-                            <p className="text-xs text-sand/40">{review.sheetStatus}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p>{formatDate(review.date)}</p>
-                            <p className="text-xs text-sand/45">{review.country || "Nessun paese"}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <p className="line-clamp-2 max-w-[320px] text-sm leading-6 text-sand/65">{review.comment || "Nessun testo commento"}</p>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6}>
-                        <div className="px-4 py-8 text-center text-sm text-sand/50">Nessuna recensione corrisponde ai filtri correnti.</div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+            <ScrollArea className="h-[620px] rounded-[24px] border border-white/8 p-4">
+              {filteredReviews.length > 0 ? (
+                <div className="space-y-8">
+                  {["google", "local"].map((currentSource) => {
+                    const sourceReviews = filteredReviews.filter((r) => r.source === currentSource);
+                    if (sourceReviews.length === 0) return null;
+
+                    return (
+                      <div key={currentSource} className="space-y-4">
+                        <h3 className="font-heading text-xl text-sand capitalize border-b border-white/10 pb-2">
+                          Recensioni {currentSource}
+                        </h3>
+                        <div className="grid gap-3">
+                          {sourceReviews.map((review) => (
+                            <div
+                              key={review.id}
+                              onClick={() => setSelectedId(review.id)}
+                              className={`flex flex-col sm:flex-row gap-4 p-4 rounded-xl border transition cursor-pointer ${
+                                selectedReview?.id === review.id
+                                  ? "border-ocean/40 bg-white/10"
+                                  : "border-white/10 bg-white/5 hover:bg-white/10"
+                              }`}
+                            >
+                              <div className="flex-shrink-0">
+                                {review.avatar ? (
+                                  <img
+                                    src={review.avatar}
+                                    alt={review.author}
+                                    className="h-12 w-12 rounded-full object-cover border border-white/10"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ocean/20 font-bold text-sand border border-white/10">
+                                    {getInitials(review.author)}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div>
+                                    <h4 className="font-semibold text-sand truncate text-base">{review.author}</h4>
+                                    <div className="flex items-center gap-1 text-amber-200 text-xs mt-0.5">
+                                      <Star className="h-3 w-3 fill-current" />
+                                      <span>{review.rating.toFixed(1)}</span>
+                                      <span className="text-sand/40 ml-2">• {formatDate(review.date)}</span>
+                                    </div>
+                                  </div>
+                                  <Badge variant={getStatusBadge(review.status)}>{review.status}</Badge>
+                                </div>
+                                <p className="mt-2 text-sm text-sand/70 line-clamp-2">
+                                  {review.comment || "Nessun testo"}
+                                </p>
+                                {review.source === "local" && review.photos.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mt-3">
+                                    {review.photos.map((photo, i) => (
+                                      <img
+                                        key={i}
+                                        src={photo}
+                                        alt="Review photo"
+                                        className="h-16 w-16 rounded-md object-cover border border-white/10"
+                                        loading="lazy"
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex h-full items-center justify-center p-8 text-center text-sm text-sand/50">
+                  Nessuna recensione corrisponde ai filtri correnti.
+                </div>
+              )}
             </ScrollArea>
           </CardContent>
         </Card>
