@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useState } from "react";
-import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/I18nProvider";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -63,12 +62,8 @@ export default function LocationContactTransition() {
   const [shouldShowTurnstile, setShouldShowTurnstile] = useState(false);
   const [honeypot, setHoneypot] = useState("");
   const turnstileAnchorRef = useRef<HTMLDivElement>(null);
-  const [turnstilePortalRoot, setTurnstilePortalRoot] = useState<HTMLDivElement | null>(null);
-  const [turnstileRect, setTurnstileRect] = useState<{ top: number; left: number; width: number; scale: number } | null>(null);
-  const [isTurnstileAnchorVisible, setIsTurnstileAnchorVisible] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const formOpenTimeRef = useRef<number>(Date.now());
-  const turnstileDebugLastAtRef = useRef<number>(0);
   const emailDebugOnceRef = useRef<boolean>(false);
   const isEditMode = process.env.NEXT_PUBLIC_ENABLE_CONTENT_EDIT === "true";
   const [locEditOpen, setLocEditOpen] = useState(false);
@@ -165,124 +160,6 @@ export default function LocationContactTransition() {
     });
     // #endregion
   }, [isMobileViewport]);
-
-  useEffect(() => {
-    if (!isMobileViewport) {
-      setTurnstilePortalRoot(null);
-      return;
-    }
-    const root = document.createElement("div");
-    root.style.position = "fixed";
-    root.style.left = "0";
-    root.style.top = "0";
-    root.style.width = "0";
-    root.style.height = "0";
-    root.style.zIndex = "1200";
-    document.body.appendChild(root);
-    setTurnstilePortalRoot(root);
-    return () => {
-      document.body.removeChild(root);
-      setTurnstilePortalRoot(null);
-    };
-  }, [isMobileViewport]);
-
-  useEffect(() => {
-    if (!isMobileViewport || !shouldShowTurnstile) return;
-    let raf = 0;
-    const updatePosition = () => {
-      const anchor = turnstileAnchorRef.current;
-      if (anchor) {
-        const rect = anchor.getBoundingClientRect();
-        const viewport = window.visualViewport;
-        const viewportTop = viewport?.offsetTop ?? 0;
-        const viewportLeft = viewport?.offsetLeft ?? 0;
-        const viewportHeight = viewport?.height ?? window.innerHeight;
-        const viewportWidth = viewport?.width ?? window.innerWidth;
-        if (rect.bottom < -40 || rect.top > viewportHeight + 40) {
-          if (Date.now() - turnstileDebugLastAtRef.current > 1000) {
-            turnstileDebugLastAtRef.current = Date.now();
-            // #region agent log
-            fetch("/api/debug-log", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
-              body: JSON.stringify({
-                sessionId: "84a28c",
-                runId: "pre-fix",
-                hypothesisId: "H4",
-                location: "src/components/LocationContactTransition.tsx:updatePosition",
-                message: "Turnstile anchor out of viewport range",
-                data: { anchorTop: rect.top, anchorBottom: rect.bottom, innerH: viewportHeight },
-                timestamp: Date.now(),
-              }),
-            }).catch(() => {});
-            console.log("[debug:H4] turnstile_out_of_range", { anchorTop: rect.top, anchorBottom: rect.bottom, innerH: viewportHeight });
-            // #endregion
-          }
-          setTurnstileRect((prev) => (prev ? null : prev));
-          setIsTurnstileAnchorVisible(false);
-          return;
-        }
-        const next = {
-          top: rect.top + viewportTop,
-          left: rect.left + viewportLeft,
-          width: Math.max(0, Math.min(rect.width, viewportWidth - 12)),
-          scale: Math.min(1, Math.max(0.82, Math.min(rect.width, viewportWidth - 12) / 300)),
-        };
-        if (Date.now() - turnstileDebugLastAtRef.current > 750) {
-          turnstileDebugLastAtRef.current = Date.now();
-          // #region agent log
-          fetch("/api/debug-log", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
-            body: JSON.stringify({
-              sessionId: "84a28c",
-              runId: "pre-fix",
-              hypothesisId: "H4",
-              location: "src/components/LocationContactTransition.tsx:updatePosition",
-              message: "Turnstile anchor -> portalRect mapping",
-              data: {
-                anchorTop: rect.top,
-                anchorLeft: rect.left,
-                anchorWidth: rect.width,
-                nextTop: next.top,
-                nextLeft: next.left,
-                nextWidth: next.width,
-              },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          console.log("[debug:H4] turnstile_mapping", {
-            anchorTop: rect.top,
-            anchorLeft: rect.left,
-            anchorWidth: rect.width,
-            nextTop: next.top,
-            nextLeft: next.left,
-            nextWidth: next.width,
-          });
-          // #endregion
-        }
-        setTurnstileRect((prev) => {
-          if (
-            prev &&
-            Math.abs(prev.top - next.top) < 0.5 &&
-            Math.abs(prev.left - next.left) < 0.5 &&
-            Math.abs(prev.width - next.width) < 0.5 &&
-            Math.abs(prev.scale - next.scale) < 0.01
-          ) {
-            return prev;
-          }
-          return next;
-        });
-        setIsTurnstileAnchorVisible(rect.width > 0 && rect.height > 0);
-      }
-      raf = requestAnimationFrame(updatePosition);
-    };
-    updatePosition();
-    return () => {
-      cancelAnimationFrame(raf);
-      setIsTurnstileAnchorVisible(false);
-    };
-  }, [isMobileViewport, shouldShowTurnstile]);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1043,7 +920,7 @@ export default function LocationContactTransition() {
                   <div>
                     <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("contact.email")}</span>
                     <p>
-                      <span data-location-email className="block break-all text-left text-sm sm:text-base">
+                      <span data-location-email className="block whitespace-nowrap text-left text-sm sm:text-base">
                         {overrides["location.email"] ?? "info@renabiancabeachbar.com"}
                       </span>
                     </p>
@@ -1266,7 +1143,7 @@ export default function LocationContactTransition() {
                   className="lct-turnstile-wrap"
                   ref={turnstileAnchorRef}
                   style={{
-                    transform: "scale(1)",
+                    transform: isMobileViewport ? "scale(0.9)" : "scale(1)",
                     transformOrigin: "left center",
                     marginBottom: "6px",
                     minHeight: "72px",
@@ -1274,15 +1151,13 @@ export default function LocationContactTransition() {
                     opacity: 1,
                   }}
                 >
-                  {!isMobileViewport && (
-                    <Turnstile
-                      id="contact-turnstile"
-                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                      onSuccess={setTurnstileToken}
-                      onError={() => setTurnstileToken("")}
-                      options={{ theme: "dark", size: "normal", language: turnstileLanguage }}
-                    />
-                  )}
+                  <Turnstile
+                    id="contact-turnstile"
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                    onSuccess={setTurnstileToken}
+                    onError={() => setTurnstileToken("")}
+                    options={{ theme: "dark", size: "normal", language: turnstileLanguage }}
+                  />
                 </div>
               )}
               <button
@@ -1478,30 +1353,6 @@ export default function LocationContactTransition() {
           </div>
         </div>
       )}
-      {isMobileViewport && turnstilePortalRoot && turnstileRect && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && shouldShowTurnstile && isTurnstileAnchorVisible &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              top: `${turnstileRect.top}px`,
-              left: `${turnstileRect.left}px`,
-              width: `${turnstileRect.width}px`,
-              minHeight: `${Math.round(72 * turnstileRect.scale)}px`,
-              pointerEvents: "auto",
-            }}
-          >
-            <div style={{ transform: `scale(${turnstileRect.scale})`, transformOrigin: "left top" }}>
-              <Turnstile
-                id="contact-turnstile-mobile-portal"
-                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                onSuccess={setTurnstileToken}
-                onError={() => setTurnstileToken("")}
-                options={{ theme: "dark", size: "normal", language: turnstileLanguage }}
-              />
-            </div>
-          </div>,
-          turnstilePortalRoot
-        )}
     </section>
   );
 }

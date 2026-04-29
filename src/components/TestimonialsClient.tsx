@@ -1768,6 +1768,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                       <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
                         {visibleReviews.map((review, i) => {
                           const parsedText = parseReviewText(review.text);
+                          const reviewPhotos = (review.photos || []).map((url) => normalizeReviewImageUrl(url)).filter(Boolean);
                           return (
                             <motion.div
                               key={getReviewId(review)}
@@ -1791,6 +1792,13 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                               <p className="mt-3 font-body text-sm leading-relaxed text-sand/70">
                                 &ldquo;{parsedText.displayText}&rdquo;
                               </p>
+                              {reviewPhotos.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {reviewPhotos.slice(0, 3).map((url, idx) => (
+                                    <img key={`${getReviewId(review)}-showall-photo-${idx}`} src={url} alt="" className="h-12 w-12 rounded-lg border border-white/10 object-cover" />
+                                  ))}
+                                </div>
+                              )}
                             </motion.div>
                           );
                         })}

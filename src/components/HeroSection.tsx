@@ -303,11 +303,12 @@ export default function HeroSection() {
         onUpdate: () => applyMasks(hole.r),
       }, "<+0.1");
 
-      // Fade out the yellow center while the hole opens.
-      // Keep it borderless to avoid a visible yellow outline artifact.
+      // Turn the filled yellow dot into a ring while mask opens.
       tl.to(yellow, {
-        opacity: 0,
-        duration: 0.35,
+        backgroundColor: "transparent",
+        borderColor: "#FFD12D",
+        borderWidth: 3,
+        duration: 0.32,
         ease: "power2.inOut",
       }, "<+0.02");
 
@@ -428,7 +429,7 @@ export default function HeroSection() {
                     <div className="relative flex items-center justify-center" style={{ minWidth: "1em", width: "100%", height: "100%" }}>
                       <div
                         data-yellow
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-0 border-transparent"
                         style={{ 
                           width: "35%", 
                           height: "35%", 
