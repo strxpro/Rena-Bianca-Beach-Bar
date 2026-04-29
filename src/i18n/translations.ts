@@ -61,7 +61,7 @@ export const translations = {
     "nav.panorama": "Panorama",
 
     // Hero
-    "hero.subtitle": "Śródziemnomorska kuchnia i koktajle nad brzegiem morza",
+    "hero.subtitle": "Śniadania i aperitify z widokiem na Rena Bianca",
     "hero.reservation": "Rezerwacja",
     "hero.menu": "Menu",
     "hero.scroll": "Scroll",
@@ -204,7 +204,7 @@ export const translations = {
     "nav.home": "Inizio",
     "nav.testimonials": "Recensioni",
     "nav.panorama": "Panorama",
-    "hero.subtitle": "Cucina mediterranea e cocktail in riva al mare",
+    "hero.subtitle": "Colazioni e aperitivi fronte Rena Bianca",
     "hero.reservation": "Prenotazione",
     "hero.menu": "Menu",
     "hero.scroll": "Scorri",
@@ -310,7 +310,7 @@ export const translations = {
   },
   es: {
     "nav.menu": "Menú", "nav.about": "Nosotros", "nav.gallery": "Galería", "nav.contact": "Contacto", "nav.reservation": "Reserva", "nav.changeLang": "Cambiar idioma", "nav.home": "Inicio", "nav.testimonials": "Opiniones", "nav.panorama": "Panorama",
-    "hero.subtitle": "Cocina mediterránea y cócteles junto al mar", "hero.reservation": "Reserva", "hero.menu": "Menú", "hero.scroll": "Desliza",
+    "hero.subtitle": "Desayunos y aperitivos frente a Rena Bianca", "hero.reservation": "Reserva", "hero.menu": "Menú", "hero.scroll": "Desliza",
     "about.title": "Sobre nosotros", "about.description": "Rena Bianca es un beach bar con cocina ligera, prosecco y cócteles pensados para el sol de Cerdeña.",
     "about.descriptionSecondary": "Unimos el ambiente relajado del almuerzo frente al mar con un aperitivo cuidado, producto fresco y una vista que invita a quedarse hasta la noche.",
     "about.quote": "\"EL SABOR DEL VERANO QUE SE QUEDA HASTA EL ATARDECER\"",
@@ -360,7 +360,7 @@ export const translations = {
   },
   fr: {
     "nav.menu": "Menu", "nav.about": "À propos", "nav.gallery": "Galerie", "nav.contact": "Contact", "nav.reservation": "Réservation", "nav.changeLang": "Changer de langue", "nav.home": "Accueil", "nav.testimonials": "Avis", "nav.panorama": "Panorama",
-    "hero.subtitle": "Cuisine méditerranéenne et cocktails au bord de la mer", "hero.reservation": "Réservation", "hero.menu": "Menu", "hero.scroll": "Défiler",
+    "hero.subtitle": "Petits-déjeuners et apéritifs face à Rena Bianca", "hero.reservation": "Réservation", "hero.menu": "Menu", "hero.scroll": "Défiler",
     "about.title": "À propos", "about.description": "Rena Bianca est un beach bar à la cuisine légère, au prosecco et aux cocktails pensés pour le soleil de Sardaigne.",
     "about.descriptionSecondary": "Nous réunissons l'ambiance détendue d'un déjeuner face à la mer, un aperitivo soigné, des produits frais et une vue qui donne envie de rester jusqu'au soir.",
     "about.quote": "\"LE GOÛT DE L'ÉTÉ QUI RESTE JUSQU'AU COUCHER DU SOLEIL\"",
@@ -410,7 +410,7 @@ export const translations = {
   },
   de: {
     "nav.menu": "Speisekarte", "nav.about": "Über uns", "nav.gallery": "Galerie", "nav.contact": "Kontakt", "nav.reservation": "Reservierung", "nav.changeLang": "Sprache ändern", "nav.home": "Start", "nav.testimonials": "Rezensionen", "nav.panorama": "Panorama",
-    "hero.subtitle": "Mediterrane Küche und Cocktails am Meer", "hero.reservation": "Reservierung", "hero.menu": "Speisekarte", "hero.scroll": "Scrollen",
+    "hero.subtitle": "Frühstück und Aperitifs mit Blick auf Rena Bianca", "hero.reservation": "Reservierung", "hero.menu": "Speisekarte", "hero.scroll": "Scrollen",
     "about.title": "Über uns", "about.description": "Rena Bianca ist eine Beach Bar mit leichter Küche, Prosecco und Cocktails für die Sonne Sardiniens.",
     "about.descriptionSecondary": "Wir verbinden das entspannte Gefühl eines Lunchs am Meer mit liebevollem Aperitivo, frischen Produkten und einem Ausblick, der bis in den Abend hält.",
     "about.quote": "\"DER GESCHMACK DES SOMMERS, DER BIS ZUM SONNENUNTERGANG BLEIBT\"",
@@ -460,7 +460,7 @@ export const translations = {
   },
   en: {
     "nav.menu": "Menu", "nav.about": "About Us", "nav.gallery": "Gallery", "nav.contact": "Contact", "nav.reservation": "Reservation", "nav.changeLang": "Change language", "nav.home": "Home", "nav.testimonials": "Reviews", "nav.panorama": "Panorama",
-    "hero.subtitle": "Mediterranean cuisine and cocktails by the sea", "hero.reservation": "Reservation", "hero.menu": "Menu", "hero.scroll": "Scroll",
+    "hero.subtitle": "Breakfasts and aperitifs facing Rena Bianca", "hero.reservation": "Reservation", "hero.menu": "Menu", "hero.scroll": "Scroll",
     "about.title": "About Us", "about.description": "Rena Bianca is a beach bar with light Mediterranean plates, prosecco, and cocktails made for Sardinian sunshine.",
     "about.descriptionSecondary": "We blend the ease of a seaside lunch with polished aperitivo moments, fresh ingredients, and a view that makes you want to stay until evening.",
     "about.quote": "\"THE TASTE OF SUMMER THAT STAYS UNTIL SUNSET\"",
