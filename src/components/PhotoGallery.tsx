@@ -114,6 +114,7 @@ const INTRO_ACTIVE = 0;
 const SPEED_DRAG = -0.3;
 const GALLERY_SCROLL_PROGRESS_MAX = 100;
 const GALLERY_SCROLL_STEP_PERCENT = 64;
+const AUTO_REVEAL_CARD_COUNT = 3;
 
 const getInstagramUrl = (username?: string) => {
   return username ? `https://www.instagram.com/${username}/` : DEFAULT_INSTAGRAM_URL;
@@ -199,7 +200,7 @@ export default function PhotoGallery() {
     }
 
     const clampedProgress = Math.max(0, Math.min(progressRef.current, 100));
-    const activeSpan = Math.max(count - 1, 0);
+    const activeSpan = Math.max(Math.min(AUTO_REVEAL_CARD_COUNT - 1, count - 1), 0);
     const active = INTRO_ACTIVE + (clampedProgress / 100) * activeSpan;
     const teaserIndex = Math.max(count - 1, 0);
     const shouldShowInstagramPopup = active >= teaserIndex - 0.02;
@@ -322,30 +323,25 @@ export default function PhotoGallery() {
 
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       const { isLowEndMobile } = getMobilePerformanceProfile();
-      const autoRevealSpan = Math.max(galleryItemsRef.current.length - 1, 1);
+      const autoRevealSpan = Math.max(
+        Math.min(AUTO_REVEAL_CARD_COUNT - 1, galleryItemsRef.current.length - 1),
+        1
+      );
       const st = ScrollTrigger.create({
         trigger: section,
         start: isMob ? "top top" : "top 80px",
         end: () => `+=${Math.max(
-          window.innerWidth < 768 ? 280 : 220,
+          window.innerWidth < 768 ? 180 : 140,
           autoRevealSpan * GALLERY_SCROLL_STEP_PERCENT
         )}%`,
         pin: true,
         pinSpacing: true,
-        scrub: isMob ? (isLowEndMobile ? 0.95 : 0.75) : 0.65,
+        scrub: isMob ? (isLowEndMobile ? 0.28 : 0.18) : 0.14,
         anticipatePin: 1,
         invalidateOnRefresh: true,
-        /* Clamp fast swipes + join the shared `"pinned"` group
-           so the gallery carousel can't be skipped in a single
-           fling gesture on mobile. */
-        fastScrollEnd: true,
-        preventOverlaps: "pinned",
         onUpdate: (self) => {
           progressRef.current = mapGalleryScrollProgress(self.progress);
-          // #region agent log
-          // #endregion
-          cancelAnimationFrame(rafRef.current);
-          rafRef.current = requestAnimationFrame(applyLayout);
+          applyLayout();
         },
       });
 

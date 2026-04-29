@@ -300,6 +300,14 @@ export default function HeroSection() {
         onUpdate: () => applyMasks(hole.r),
       }, "<+0.1");
 
+      // Fade out the yellow center while the hole opens.
+      // Keep it borderless to avoid a visible yellow outline artifact.
+      tl.to(yellow, {
+        opacity: 0,
+        duration: 0.35,
+        ease: "power2.inOut",
+      }, "<+0.02");
+
       const HOLE_BOOST = isMobile ? 1.25 : 1.1;
       tl.to(zoomTarget, {
         scale: zoomScale,
@@ -349,7 +357,7 @@ export default function HeroSection() {
           data-peek-video
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ zIndex: 0 }}
-          muted playsInline preload="auto"
+          muted playsInline preload="auto" autoPlay
           src={VIDEO_SRC}
         />
 
@@ -364,7 +372,7 @@ export default function HeroSection() {
             WebkitMaskImage: "radial-gradient(circle var(--hole-r) at var(--hole-cx) var(--hole-cy), transparent 0px, transparent var(--hole-r), black var(--hole-r))"
           }}
         >
-          <div data-overlay-bg className="absolute inset-0 bg-white" style={{ zIndex: 1 }} />
+          <div data-overlay-bg className="absolute inset-0 bg-sand" style={{ zIndex: 1 }} />
           <div data-waves className="absolute inset-0" style={{ zIndex: 2 }}>
             {WAVES.map((w, i) => (
               <div
@@ -417,11 +425,11 @@ export default function HeroSection() {
                     <div className="relative flex items-center justify-center" style={{ minWidth: "1em", width: "100%", height: "100%" }}>
                       <div
                         data-yellow
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-[clamp(2px,0.4em,6px)] border-[#FFD12D]"
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
                         style={{ 
                           width: "35%", 
                           height: "35%", 
-                          backgroundColor: "transparent",
+                          backgroundColor: "#FFD12D",
                           zIndex: 1,
                         }}
                       />

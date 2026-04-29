@@ -65,6 +65,7 @@ export default function LocationContactTransition() {
   const turnstileAnchorRef = useRef<HTMLDivElement>(null);
   const [turnstilePortalRoot, setTurnstilePortalRoot] = useState<HTMLDivElement | null>(null);
   const [turnstileRect, setTurnstileRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [isTurnstileAnchorVisible, setIsTurnstileAnchorVisible] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const formOpenTimeRef = useRef<number>(Date.now());
   const turnstileDebugLastAtRef = useRef<number>(0);
@@ -72,6 +73,7 @@ export default function LocationContactTransition() {
   const isEditMode = process.env.NEXT_PUBLIC_ENABLE_CONTENT_EDIT === "true";
   const [locEditOpen, setLocEditOpen] = useState(false);
   const [locDraft, setLocDraft] = useState({ addressLine1: "", addressLine2: "", hours: "", phone: "", email: "" });
+  const turnstileLanguage = locale === "pl" || locale === "it" || locale === "de" || locale === "fr" || locale === "es" ? locale : "en";
 
   useEffect(() => {
     // #region agent log
@@ -212,6 +214,7 @@ export default function LocationContactTransition() {
             // #endregion
           }
           setTurnstileRect((prev) => (prev ? null : prev));
+          setIsTurnstileAnchorVisible(false);
           return;
         }
         const next = {
@@ -263,12 +266,14 @@ export default function LocationContactTransition() {
           }
           return next;
         });
+        setIsTurnstileAnchorVisible(rect.width > 0 && rect.height > 0);
       }
       raf = requestAnimationFrame(updatePosition);
     };
     updatePosition();
     return () => {
       cancelAnimationFrame(raf);
+      setIsTurnstileAnchorVisible(false);
     };
   }, [isMobileViewport, shouldShowTurnstile]);
 
@@ -1031,7 +1036,7 @@ export default function LocationContactTransition() {
                   <div>
                     <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("contact.email")}</span>
                     <p>
-                      <span data-location-email className="block break-all text-center text-[11px] sm:text-left sm:text-base">
+                      <span data-location-email className="block break-all text-left text-sm sm:text-base">
                         {overrides["location.email"] ?? "info@renabiancabeachbar.com"}
                       </span>
                     </p>
@@ -1268,7 +1273,7 @@ export default function LocationContactTransition() {
                       siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
                       onSuccess={setTurnstileToken}
                       onError={() => setTurnstileToken("")}
-                      options={{ theme: "dark", size: "normal" }}
+                      options={{ theme: "dark", size: "normal", language: turnstileLanguage }}
                     />
                   )}
                 </div>
@@ -1466,7 +1471,7 @@ export default function LocationContactTransition() {
           </div>
         </div>
       )}
-      {isMobileViewport && turnstilePortalRoot && turnstileRect && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && shouldShowTurnstile &&
+      {isMobileViewport && turnstilePortalRoot && turnstileRect && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && shouldShowTurnstile && isTurnstileAnchorVisible &&
         createPortal(
           <div
             style={{
@@ -1483,7 +1488,7 @@ export default function LocationContactTransition() {
               siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
               onSuccess={setTurnstileToken}
               onError={() => setTurnstileToken("")}
-              options={{ theme: "dark", size: "normal" }}
+              options={{ theme: "dark", size: "normal", language: turnstileLanguage }}
             />
           </div>,
           turnstilePortalRoot
