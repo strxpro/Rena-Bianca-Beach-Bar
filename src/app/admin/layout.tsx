@@ -6,7 +6,8 @@ import { loadAdminMessages } from "@/lib/admin-messages-data";
 import { loadAdminReviewsFresh } from "@/lib/reviews-data";
 
 export default async function AdminRouteLayout({ children }: { children: ReactNode }) {
-  const isAuthenticated = cookies().get("admin_session")?.value === "authenticated";
+  const cookieStore = await cookies();
+  const isAuthenticated = cookieStore.get("admin_session")?.value === "authenticated";
 
   if (!isAuthenticated) {
     return <AdminLogin />;

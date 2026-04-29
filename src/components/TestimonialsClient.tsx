@@ -57,6 +57,7 @@ const CARD_DRAG_LONG_PRESS_MS = 280;
 const CARD_DRAG_CANCEL_DISTANCE = 16;
 const ROW_DRAG_SCROLL_THRESHOLD = 6;
 const PHOTO_UPLOAD_LIMIT_BYTES = 10 * 1024 * 1024;
+const LOCAL_REVIEWS_STORAGE_KEY = "rena_local_reviews_v1";
 
 const TESTIMONIALS_UI_COPY = {
   pl: {
@@ -756,6 +757,30 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   const [formText, setFormText] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
+  const persistLocalReviews = useCallback((nextReviews: Review[]) => {
+    try {
+      window.localStorage.setItem(LOCAL_REVIEWS_STORAGE_KEY, JSON.stringify(nextReviews));
+    } catch {
+      // no-op (private mode / quota)
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(LOCAL_REVIEWS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Review[];
+      if (!Array.isArray(parsed) || !parsed.length) return;
+      setLocalReviews((prev) => {
+        const unique = new Map<string, Review>();
+        [...parsed, ...prev].forEach((review) => unique.set(getReviewId(review), review));
+        return Array.from(unique.values()).sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
+      });
+    } catch {
+      // no-op on malformed storage
+    }
+  }, []);
+
   const getAnonymizedName = (name: string) => {
     if (!name.trim()) return "";
     return name
@@ -1270,7 +1295,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error("api failed");
-      setLocalReviews(prev => [{
+      const newlySubmittedReview: Review = {
         name: finalName,
         role: "",
         date: new Date().toISOString().split("T")[0],
@@ -1281,7 +1306,12 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
         isLocal: true,
         countryCode: typeof data?.countryCode === "string" ? data.countryCode : undefined,
         countryName: typeof data?.countryName === "string" ? data.countryName : undefined,
-      }, ...prev]);
+      };
+      setLocalReviews(prev => {
+        const next = [newlySubmittedReview, ...prev];
+        persistLocalReviews(next);
+        return next;
+      });
       setFormStatus("sent");
       setTurnstileToken("");
       setFormName("");
@@ -1297,7 +1327,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
     } catch {
       setFormStatus("error");
     }
-  }, [formName, formRating, formText, getAvatarUrl, isAnonymous, closeWrite, turnstileToken, honeypot, photos]);
+  }, [formName, formRating, formText, getAvatarUrl, isAnonymous, closeWrite, turnstileToken, honeypot, photos, persistLocalReviews]);
 
   useEffect(() => {
     const host = window.location.hostname.toLowerCase();
