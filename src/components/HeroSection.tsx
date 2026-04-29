@@ -227,6 +227,7 @@ export default function HeroSection() {
       const hole = { r: 0 };
       let holeCX = "50%";
       let holeCY = "50%";
+      applyMasks(0);
 
       if (wavesWrap) {
         gsap.set(wavesWrap, { force3D: true, willChange: "transform" });
@@ -294,9 +295,11 @@ export default function HeroSection() {
         window.dispatchEvent(new CustomEvent("header-show"));
       }, transitionStart + WAVE_TRANSITION_DUR * 0.9);
 
-      tl.to(hole, {
-        r: baseHoleRadius,
-        duration: 0.5,
+      tl.fromTo(hole, {
+        r: 0,
+      }, {
+        r: baseHoleRadius * 1.05,
+        duration: 0.62,
         onUpdate: () => applyMasks(hole.r),
       }, "<+0.1");
 

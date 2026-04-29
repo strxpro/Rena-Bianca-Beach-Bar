@@ -490,6 +490,7 @@ function ReviewCard({
   const parsedText = parseReviewText(review.text);
   const imgHover = lightMode ? "" : "transition-transform duration-500 group-hover/review:scale-[1.04]";
   const coverImageSrc = getReviewPrimaryImage(review);
+  const reviewPhotos = (review.photos || []).map((url) => normalizeReviewImageUrl(url)).filter(Boolean);
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
   const dragRotate = useMotionValue(tilt);
@@ -669,26 +670,35 @@ function ReviewCard({
         />
 
         {/* Photo/background */}
-        <div className="relative h-[42%] w-full overflow-hidden rounded-[4px] bg-navy/5 sm:h-[44%]">
-          <img
-            src={coverImageSrc}
-            alt={review.name}
-            className={`h-full w-full object-cover ${imgHover}`}
-            loading="lazy"
-            decoding="async"
-          />
+        <div className="relative h-[42%] w-full rounded-[4px] bg-navy/5 sm:h-[44%]">
+          <div className="absolute inset-0 overflow-hidden rounded-[4px]">
+            <img
+              src={coverImageSrc}
+              alt={review.name}
+              className={`h-full w-full object-cover ${imgHover}`}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.18),transparent_60%)]" />
           {/* Avatar bubble stays visible above the background image */}
-          <div className="absolute -bottom-6 left-4 z-10 rounded-full border-2 border-[#FDFBF7] bg-[#FDFBF7] p-0.5 shadow-lg">
-            <SafeReviewImage review={review} alt={review.name} className="h-11 w-11 rounded-full object-cover" />
+          <div className="absolute -bottom-8 left-4 z-10 rounded-full border-2 border-[#FDFBF7] bg-[#FDFBF7] p-0.5 shadow-lg">
+            <SafeReviewImage review={review} alt={review.name} className="h-14 w-14 rounded-full object-cover" />
           </div>
         </div>
-        <div className="relative flex flex-1 flex-col justify-between px-1 pb-1 pt-9 sm:px-2 sm:pt-10">
+        <div className="relative flex flex-1 flex-col justify-between px-1 pb-1 pt-11 sm:px-2 sm:pt-12">
           <div>
             <Stars count={review.rating} />
             <p className="mt-2 line-clamp-5 font-body text-[12.5px] leading-snug text-navy/80 sm:line-clamp-7 sm:text-[13.5px]">
               &ldquo;{parsedText.displayText}&rdquo;
             </p>
+            {reviewPhotos.length > 0 && (
+              <div className="mt-2 flex gap-2">
+                {reviewPhotos.slice(0, 3).map((url, idx) => (
+                  <img key={`${review.name}-inline-photo-${idx}`} src={url} alt="" className="h-8 w-8 rounded-md border border-navy/15 object-cover" />
+                ))}
+              </div>
+            )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {review.isLocal && (
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-50/80 px-2 py-0.5 shadow-[inset_0_0_8px_rgba(251,191,36,0.3)]">
@@ -735,7 +745,8 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [showWrite, setShowWrite] = useState(false);
-  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+  const [selectedPhotoList, setSelectedPhotoList] = useState<string[]>([]);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">(DEFAULT_SHOW_ALL_SORT);
   const [mounted, setMounted] = useState(false);
   const [visibleCount, setVisibleCount] = useState(REVIEWS_BATCH_SIZE);
@@ -1084,6 +1095,12 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   const handleRowPointerMove = useCallback((row: RowId, e: React.PointerEvent<HTMLDivElement>) => {
     const state = rowDragStateRef.current[row];
     if (state.pointerId !== e.pointerId) return;
+    if ((e.buttons & 1) !== 1) {
+      state.active = false;
+      state.pointerId = null;
+      state.moved = false;
+      return;
+    }
 
     const deltaX = e.clientX - state.startX;
 
@@ -1100,10 +1117,10 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
 
   const finishRowPointer = useCallback((row: RowId, e: React.PointerEvent<HTMLDivElement>) => {
     const state = rowDragStateRef.current[row];
-    if (!state.active || state.pointerId !== e.pointerId) return;
+    if (state.pointerId !== e.pointerId) return;
 
     const pointerId = state.pointerId;
-    if (pointerId !== null && e.currentTarget.hasPointerCapture(pointerId)) {
+    if (pointerId !== null && state.active && e.currentTarget.hasPointerCapture(pointerId)) {
       e.currentTarget.releasePointerCapture(pointerId);
     }
 
@@ -1203,7 +1220,8 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   }, []);
 
   const closeReview = useCallback(() => {
-    setSelectedPhotoUrl(null);
+    setSelectedPhotoIndex(null);
+    setSelectedPhotoList([]);
     setSelectedReview(null);
   }, []);
 
@@ -1278,7 +1296,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
 
   const activeReviewId = selectedReview ? getReviewId(selectedReview) : "";
   const activeParsedReview = selectedReview ? parseReviewText(selectedReview.text) : null;
-  const activeReviewPhotoLinks = selectedReview
+  const activeReviewPhotos = selectedReview
     ? (selectedReview.photos || []).map((url) => normalizeReviewImageUrl(url)).filter(Boolean)
     : [];
   const activeTranslatedText = activeReviewId ? translatedReviews[activeReviewId] : undefined;
@@ -1402,6 +1420,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                 onPointerMove={(e) => handleRowPointerMove(1, e)}
                 onPointerUp={(e) => finishRowPointer(1, e)}
                 onPointerCancel={(e) => finishRowPointer(1, e)}
+                onPointerLeave={(e) => finishRowPointer(1, e)}
                 onClickCapture={(e) => handleRowClickCapture(1, e)}
                 onScroll={(e) => handleInfiniteRowScroll(1, e.currentTarget)}
               >
@@ -1444,6 +1463,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                 onPointerMove={(e) => handleRowPointerMove(2, e)}
                 onPointerUp={(e) => finishRowPointer(2, e)}
                 onPointerCancel={(e) => finishRowPointer(2, e)}
+                onPointerLeave={(e) => finishRowPointer(2, e)}
                 onClickCapture={(e) => handleRowClickCapture(2, e)}
                 onScroll={(e) => handleInfiniteRowScroll(2, e.currentTarget)}
               >
@@ -1486,6 +1506,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                 onPointerMove={(e) => handleRowPointerMove(3, e)}
                 onPointerUp={(e) => finishRowPointer(3, e)}
                 onPointerCancel={(e) => finishRowPointer(3, e)}
+                onPointerLeave={(e) => finishRowPointer(3, e)}
                 onClickCapture={(e) => handleRowClickCapture(3, e)}
                 onScroll={(e) => handleInfiniteRowScroll(3, e.currentTarget)}
               >
@@ -1608,13 +1629,16 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                     <p className="mt-4 font-body text-base leading-relaxed text-sand/80">
                       &ldquo;{activeReviewText}&rdquo;
                     </p>
-                    {selectedReview.photos && selectedReview.photos.length > 0 && (
+                    {activeReviewPhotos.length > 0 && (
                       <div className="mt-6 flex flex-wrap gap-2.5">
-                        {selectedReview.photos.map((url, idx) => (
+                        {activeReviewPhotos.map((url, idx) => (
                           <div
                             key={`${activeReviewId}-p-${idx}`}
                             className="group relative h-20 w-20 flex-shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-white/10 bg-white/5 transition-all hover:scale-[1.04] hover:shadow-xl sm:h-24 sm:w-24"
-                            onClick={() => setSelectedPhotoUrl(url)}
+                            onClick={() => {
+                              setSelectedPhotoList(activeReviewPhotos);
+                              setSelectedPhotoIndex(idx);
+                            }}
                           >
                             <img
                               src={url}
@@ -1626,21 +1650,6 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                         ))}
                       </div>
                     )}
-                    {activeReviewPhotoLinks.length > 0 && (
-                      <div className="mt-3 space-y-1">
-                        {activeReviewPhotoLinks.map((url, idx) => (
-                          <a
-                            key={`${activeReviewId}-url-${idx}`}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block truncate font-body text-xs text-sand/55 underline decoration-sand/30 underline-offset-2 hover:text-sand/80"
-                          >
-                            {`Link do zdjęcia ${idx + 1}`}
-                          </a>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </motion.div>
               </motion.div>
@@ -1648,19 +1657,45 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
           </AnimatePresence>
 
           <AnimatePresence>
-            {selectedPhotoUrl && (
+            {selectedPhotoIndex !== null && selectedPhotoList.length > 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[145] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
-                onClick={() => setSelectedPhotoUrl(null)}
+                className="fixed inset-0 z-[145] flex items-start justify-center bg-black/80 p-4 pt-24 backdrop-blur-md sm:pt-28"
+                onClick={() => setSelectedPhotoIndex(null)}
               >
-                <img
-                  src={selectedPhotoUrl}
-                  alt=""
-                  className="max-h-[90dvh] max-w-[92vw] rounded-xl object-contain shadow-2xl"
-                />
+                <div className="relative flex w-full max-w-4xl items-center justify-center gap-3" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/85 hover:bg-white/20 sm:flex"
+                    onClick={() => setSelectedPhotoIndex((prev) => (prev === null ? 0 : (prev - 1 + selectedPhotoList.length) % selectedPhotoList.length))}
+                    aria-label="Previous photo"
+                  >
+                    ‹
+                  </button>
+                  <img
+                    src={selectedPhotoList[selectedPhotoIndex]}
+                    alt=""
+                    className="max-h-[calc(100dvh-8rem)] max-w-[92vw] rounded-xl object-contain shadow-2xl"
+                  />
+                  <button
+                    type="button"
+                    className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/85 hover:bg-white/20 sm:flex"
+                    onClick={() => setSelectedPhotoIndex((prev) => (prev === null ? 0 : (prev + 1) % selectedPhotoList.length))}
+                    aria-label="Next photo"
+                  >
+                    ›
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white/90 hover:bg-black/60"
+                    onClick={() => setSelectedPhotoIndex(null)}
+                    aria-label={uiCopy.close}
+                  >
+                    ✕
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
