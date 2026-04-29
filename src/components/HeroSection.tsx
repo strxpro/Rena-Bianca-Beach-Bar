@@ -339,7 +339,7 @@ export default function HeroSection() {
         autoPlay
         className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
         style={{ opacity: 0, backgroundColor: COLOR_NAVY, visibility: "hidden" }}
-        muted defaultMuted playsInline preload="metadata"
+        muted playsInline preload="metadata"
         src={VIDEO_SRC}
         onEnded={handleVideoEnded}
       />
@@ -349,7 +349,7 @@ export default function HeroSection() {
           data-peek-video
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ zIndex: 0 }}
-          muted defaultMuted playsInline preload="auto" autoPlay
+          muted playsInline preload="auto"
           src={VIDEO_SRC}
         />
 
@@ -364,7 +364,7 @@ export default function HeroSection() {
             WebkitMaskImage: "radial-gradient(circle var(--hole-r) at var(--hole-cx) var(--hole-cy), transparent 0px, transparent var(--hole-r), black var(--hole-r))"
           }}
         >
-          <div data-overlay-bg className="absolute inset-0 bg-sand" style={{ zIndex: 1 }} />
+          <div data-overlay-bg className="absolute inset-0 bg-white" style={{ zIndex: 1 }} />
           <div data-waves className="absolute inset-0" style={{ zIndex: 2 }}>
             {WAVES.map((w, i) => (
               <div
@@ -421,6 +421,7 @@ export default function HeroSection() {
                         style={{ 
                           width: "35%", 
                           height: "35%", 
+                          backgroundColor: "transparent",
                           zIndex: 1,
                         }}
                       />

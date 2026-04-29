@@ -43,6 +43,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
     if (stored && stored in translations) {
+      // #region agent log
+      fetch("/api/debug-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+        body: JSON.stringify({
+          sessionId: "84a28c",
+          runId: "pre-fix",
+          hypothesisId: "H1",
+          location: "src/i18n/I18nProvider.tsx:locale_localStorage",
+          message: "Locale initialized from localStorage",
+          data: { stored },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      console.log("[debug:H1] locale_localStorage", { stored });
+      // #endregion
       setLocaleState(stored);
       setInitialized(true);
       return;
@@ -54,6 +70,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         const countryCode = (data?.country_code || "").toUpperCase();
         const detected = COUNTRY_TO_LOCALE[countryCode];
         if (detected) {
+          // #region agent log
+          fetch("/api/debug-log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+            body: JSON.stringify({
+              sessionId: "84a28c",
+              runId: "pre-fix",
+              hypothesisId: "H1",
+              location: "src/i18n/I18nProvider.tsx:locale_geo",
+              message: "Locale initialized from geolocation",
+              data: { countryCode, detected },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          console.log("[debug:H1] locale_geo", { countryCode, detected });
+          // #endregion
           setLocaleState(detected);
           localStorage.setItem(STORAGE_KEY, detected);
         }
@@ -76,6 +108,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const setLocale = useCallback((l: Locale) => {
+    // #region agent log
+    fetch("/api/debug-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+      body: JSON.stringify({
+        sessionId: "84a28c",
+        runId: "pre-fix",
+        hypothesisId: "H1",
+        location: "src/i18n/I18nProvider.tsx:setLocale_call",
+        message: "setLocale invoked",
+        data: { nextLocale: l },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    console.log("[debug:H1] setLocale_call", { nextLocale: l });
+    // #endregion
     const el = wrapRef.current;
     if (el) {
       el.style.transition = "opacity 0.18s ease-out";

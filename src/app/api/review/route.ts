@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
 
 if (process.env.CLOUDINARY_CLOUD_NAME) {
   cloudinary.config({
@@ -12,6 +14,21 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
 }
 
 const RATE_LIMIT = new Map<string, { count: number; reset: number }>();
+const LOCAL_REVIEWS_PATH = path.join(process.cwd(), "src/data/local-reviews.json");
+
+type LocalStoredReview = {
+  Nome: string;
+  Voto: number;
+  Commento: string;
+  Avatar: string;
+  Foto1: string;
+  Foto2: string;
+  Foto3: string;
+  Stato: string;
+  Data: string;
+  Paese: string;
+  CountryCode: string;
+};
 
 async function verifyTurnstile(token: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
@@ -136,24 +153,37 @@ export async function POST(req: NextRequest) {
     }
 
     const webhook = process.env.REVIEW_WEBHOOK || process.env.NEXT_PUBLIC_REVIEW_WEBHOOK;
+    const reviewPayload: LocalStoredReview = {
+      Nome: name,
+      Voto: rating ?? 5,
+      Commento: text,
+      Avatar: typeof avatar === "string" ? avatar : "",
+      Foto1: photoUrls[0] || "",
+      Foto2: photoUrls[1] || "",
+      Foto3: photoUrls[2] || "",
+      Stato: "Accettato",
+      Data: new Date().toISOString().split("T")[0],
+      Paese: countryName,
+      CountryCode: normalizedCountryCode,
+    };
+
     if (webhook) {
       await fetch(webhook, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          Nome: name,
-          Voto: rating ?? 5,
-          Commento: text,
-          Avatar: typeof avatar === "string" ? avatar : "",
-          Foto1: photoUrls[0] || "",
-          Foto2: photoUrls[1] || "",
-          Foto3: photoUrls[2] || "",
-          Stato: "Accettato",
-          Data: new Date().toISOString().split("T")[0],
-          Paese: countryName,
-          CountryCode: normalizedCountryCode,
-        }),
+        body: JSON.stringify(reviewPayload),
       });
+    }
+
+    // Persist locally so freshly submitted reviews survive reloads
+    // even when external webhook delivery is delayed/unavailable.
+    try {
+      const existingRaw = fs.existsSync(LOCAL_REVIEWS_PATH) ? fs.readFileSync(LOCAL_REVIEWS_PATH, "utf8") : "[]";
+      const existing = JSON.parse(existingRaw) as LocalStoredReview[];
+      existing.unshift(reviewPayload);
+      fs.writeFileSync(LOCAL_REVIEWS_PATH, JSON.stringify(existing, null, 2), "utf8");
+    } catch (writeErr) {
+      console.error("[api/review] local persist failed", writeErr);
     }
 
     revalidatePath("/");

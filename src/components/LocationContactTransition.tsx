@@ -60,14 +60,37 @@ export default function LocationContactTransition() {
   const [selectedPhoneCountry, setSelectedPhoneCountry] = useState<Country | null>(null);
   const [formStatus, setFormStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [shouldShowTurnstile, setShouldShowTurnstile] = useState(false);
   const [honeypot, setHoneypot] = useState("");
   const turnstileAnchorRef = useRef<HTMLDivElement>(null);
   const [turnstilePortalRoot, setTurnstilePortalRoot] = useState<HTMLDivElement | null>(null);
   const [turnstileRect, setTurnstileRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const formOpenTimeRef = useRef<number>(Date.now());
+  const turnstileDebugLastAtRef = useRef<number>(0);
+  const emailDebugOnceRef = useRef<boolean>(false);
+  const isEditMode = process.env.NEXT_PUBLIC_ENABLE_CONTENT_EDIT === "true";
   const [locEditOpen, setLocEditOpen] = useState(false);
   const [locDraft, setLocDraft] = useState({ addressLine1: "", addressLine2: "", hours: "", phone: "", email: "" });
+
+  useEffect(() => {
+    // #region agent log
+    fetch("/api/debug-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+      body: JSON.stringify({
+        sessionId: "84a28c",
+        runId: "pre-fix",
+        hypothesisId: "H3",
+        location: "src/components/LocationContactTransition.tsx:mount",
+        message: "LocationContactTransition mounted",
+        data: { locale, viewportW: typeof window !== "undefined" ? window.innerWidth : null },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    console.log("[debug:H3] mount", { locale, viewportW: typeof window !== "undefined" ? window.innerWidth : null });
+    // #endregion
+  }, [locale]);
 
   const openLocEdit = () => {
     setLocDraft({
@@ -97,6 +120,51 @@ export default function LocationContactTransition() {
   }, []);
 
   useEffect(() => {
+    if (!isMobileViewport) return;
+    if (emailDebugOnceRef.current) return;
+    emailDebugOnceRef.current = true;
+
+    const emailEl = sectionRef.current?.querySelector("[data-location-email]") as HTMLElement | null;
+    const phoneEl = sectionRef.current?.querySelector("[data-location-phone]") as HTMLElement | null;
+    const sectionEl = sectionRef.current;
+    const emailRect = emailEl?.getBoundingClientRect();
+    const phoneRect = phoneEl?.getBoundingClientRect();
+    const sectionRect = sectionEl?.getBoundingClientRect();
+
+    // #region agent log
+    fetch("/api/debug-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+      body: JSON.stringify({
+        sessionId: "84a28c",
+        runId: "pre-fix",
+        hypothesisId: "H3",
+        location: "src/components/LocationContactTransition.tsx:mobile_email_measure",
+        message: "Mobile contact email bounding box",
+        data: {
+          viewportW: window.innerWidth,
+          viewportH: window.innerHeight,
+          phonePresent: Boolean(phoneEl),
+          emailRect: emailRect
+            ? { top: emailRect.top, bottom: emailRect.bottom, height: emailRect.height, width: emailRect.width }
+            : null,
+          phoneRect: phoneRect ? { top: phoneRect.top, bottom: phoneRect.bottom, height: phoneRect.height } : null,
+          sectionRect: sectionRect ? { top: sectionRect.top, bottom: sectionRect.bottom, height: sectionRect.height } : null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    console.log("[debug:H3] mobile_email_measure", {
+      viewportW: window.innerWidth,
+      viewportH: window.innerHeight,
+      phonePresent: Boolean(phoneEl),
+      emailRect: emailRect ? { top: emailRect.top, bottom: emailRect.bottom, height: emailRect.height, width: emailRect.width } : null,
+      phoneRect: phoneRect ? { top: phoneRect.top, bottom: phoneRect.bottom, height: phoneRect.height } : null,
+    });
+    // #endregion
+  }, [isMobileViewport]);
+
+  useEffect(() => {
     if (!isMobileViewport) {
       setTurnstilePortalRoot(null);
       return;
@@ -117,12 +185,32 @@ export default function LocationContactTransition() {
   }, [isMobileViewport]);
 
   useEffect(() => {
-    if (!isMobileViewport) return;
+    if (!isMobileViewport || !shouldShowTurnstile) return;
+    let raf = 0;
     const updatePosition = () => {
       const anchor = turnstileAnchorRef.current;
       if (anchor) {
         const rect = anchor.getBoundingClientRect();
         if (rect.bottom < -40 || rect.top > window.innerHeight + 40) {
+          if (Date.now() - turnstileDebugLastAtRef.current > 1000) {
+            turnstileDebugLastAtRef.current = Date.now();
+            // #region agent log
+            fetch("/api/debug-log", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+              body: JSON.stringify({
+                sessionId: "84a28c",
+                runId: "pre-fix",
+                hypothesisId: "H4",
+                location: "src/components/LocationContactTransition.tsx:updatePosition",
+                message: "Turnstile anchor out of viewport range",
+                data: { anchorTop: rect.top, anchorBottom: rect.bottom, innerH: window.innerHeight },
+                timestamp: Date.now(),
+              }),
+            }).catch(() => {});
+            console.log("[debug:H4] turnstile_out_of_range", { anchorTop: rect.top, anchorBottom: rect.bottom, innerH: window.innerHeight });
+            // #endregion
+          }
           setTurnstileRect((prev) => (prev ? null : prev));
           return;
         }
@@ -131,6 +219,39 @@ export default function LocationContactTransition() {
           left: rect.left,
           width: Math.max(rect.width, 280),
         };
+        if (Date.now() - turnstileDebugLastAtRef.current > 750) {
+          turnstileDebugLastAtRef.current = Date.now();
+          // #region agent log
+          fetch("/api/debug-log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+            body: JSON.stringify({
+              sessionId: "84a28c",
+              runId: "pre-fix",
+              hypothesisId: "H4",
+              location: "src/components/LocationContactTransition.tsx:updatePosition",
+              message: "Turnstile anchor -> portalRect mapping",
+              data: {
+                anchorTop: rect.top,
+                anchorLeft: rect.left,
+                anchorWidth: rect.width,
+                nextTop: next.top,
+                nextLeft: next.left,
+                nextWidth: next.width,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          console.log("[debug:H4] turnstile_mapping", {
+            anchorTop: rect.top,
+            anchorLeft: rect.left,
+            anchorWidth: rect.width,
+            nextTop: next.top,
+            nextLeft: next.left,
+            nextWidth: next.width,
+          });
+          // #endregion
+        }
         setTurnstileRect((prev) => {
           if (
             prev &&
@@ -143,17 +264,13 @@ export default function LocationContactTransition() {
           return next;
         });
       }
+      raf = requestAnimationFrame(updatePosition);
     };
-    const onScroll = () => requestAnimationFrame(updatePosition);
-    const onResize = () => requestAnimationFrame(updatePosition);
     updatePosition();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(raf);
     };
-  }, [isMobileViewport]);
+  }, [isMobileViewport, shouldShowTurnstile]);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,6 +280,34 @@ export default function LocationContactTransition() {
     try {
       const phoneValue = formPhone?.replace(/[\s()-]+/g, "").trim() || "";
       const phoneDisplay = phoneValue || "Numero non fornito";
+      // #region agent log
+      fetch("/api/debug-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+        body: JSON.stringify({
+          sessionId: "84a28c",
+          runId: "pre-fix",
+          hypothesisId: "H2",
+          location: "src/components/LocationContactTransition.tsx:handleContactSubmit",
+          message: "Contact submit payload (locale + phone presence)",
+          data: {
+            localeSent: locale,
+            phoneProvided: Boolean(phoneValue),
+            phoneLength: phoneValue.length,
+            phoneDisplay,
+            countrySelected: Boolean(selectedPhoneCountry),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      console.log("[debug:H2] handleContactSubmit", {
+        localeSent: locale,
+        phoneProvided: Boolean(phoneValue),
+        phoneLength: phoneValue.length,
+        phoneDisplay,
+        countrySelected: Boolean(selectedPhoneCountry),
+      });
+      // #endregion
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -878,16 +1023,17 @@ export default function LocationContactTransition() {
 
                 <div className="h-px w-16" style={{ background: "linear-gradient(90deg, rgba(59,130,196,0.3), transparent)" }} />
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
                     <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("location.hours.label")}</span>
                     <p>{t("location.hours.value")}<br />{overrides["location.hours.times"] ?? "7:30 – 20:30"}</p>
                   </div>
                   <div>
-                    <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("location.phone.label")}</span>
+                    <span className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-sand/30 sm:text-xs">{t("contact.email")}</span>
                     <p>
-                      {overrides["location.phone.value"] ?? "+39 0789 123 456"}<br />
-                      {overrides["location.email"] ?? "info@renabiancabeachbar.com"}
+                      <span data-location-email className="block break-all text-center text-[11px] sm:text-left sm:text-base">
+                        {overrides["location.email"] ?? "info@renabiancabeachbar.com"}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -1017,6 +1163,7 @@ export default function LocationContactTransition() {
                     required
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
+                    onFocus={() => setShouldShowTurnstile(true)}
                     placeholder={t("contact.namePlaceholder")}
                     className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-body text-sm text-sand placeholder-sand/25 outline-none transition-colors focus:border-ocean/40 focus:bg-white/8"
                   />
@@ -1030,6 +1177,7 @@ export default function LocationContactTransition() {
                     required
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
+                    onFocus={() => setShouldShowTurnstile(true)}
                     placeholder={t("contact.emailPlaceholder")}
                     className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-body text-sm text-sand placeholder-sand/25 outline-none transition-colors focus:border-ocean/40 focus:bg-white/8"
                   />
@@ -1048,6 +1196,7 @@ export default function LocationContactTransition() {
                   required
                   value={formMessage}
                   onChange={(e) => setFormMessage(e.target.value)}
+                  onFocus={() => setShouldShowTurnstile(true)}
                   placeholder={t("contact.messagePlaceholder")}
                   className="resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-body text-sm text-sand placeholder-sand/25 outline-none transition-colors focus:border-ocean/40 focus:bg-white/8"
                 />
@@ -1075,6 +1224,7 @@ export default function LocationContactTransition() {
                 <div
                   data-phone-box
                   className="rena-phone-wrap"
+                  onFocusCapture={() => setShouldShowTurnstile(true)}
                 >
                   <PhoneCountrySelect
                     defaultCountry={locale === "pl" ? "PL" : locale === "de" ? "DE" : locale === "fr" ? "FR" : locale === "es" ? "ES" : "IT"}
@@ -1098,7 +1248,7 @@ export default function LocationContactTransition() {
                 aria-hidden="true"
                 style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
               />
-              {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+              {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && shouldShowTurnstile && (
                 <div
                   data-turnstile-wrap
                   className="lct-turnstile-wrap"
@@ -1316,7 +1466,7 @@ export default function LocationContactTransition() {
           </div>
         </div>
       )}
-      {isMobileViewport && turnstilePortalRoot && turnstileRect && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY &&
+      {isMobileViewport && turnstilePortalRoot && turnstileRect && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && shouldShowTurnstile &&
         createPortal(
           <div
             style={{

@@ -112,9 +112,8 @@ const MAX_GALLERY_POSTS = 6;
 const DEFAULT_INSTAGRAM_URL = "https://www.instagram.com/renabiancabeachbar/";
 const INTRO_ACTIVE = 0;
 const SPEED_DRAG = -0.3;
-const INSTAGRAM_POPUP_THRESHOLD = 106;
-const GALLERY_SCROLL_PROGRESS_MAX = 72;
-const GALLERY_SCROLL_STEP_PERCENT = 72;
+const GALLERY_SCROLL_PROGRESS_MAX = 100;
+const GALLERY_SCROLL_STEP_PERCENT = 64;
 
 const getInstagramUrl = (username?: string) => {
   return username ? `https://www.instagram.com/${username}/` : DEFAULT_INSTAGRAM_URL;
@@ -202,7 +201,8 @@ export default function PhotoGallery() {
     const clampedProgress = Math.max(0, Math.min(progressRef.current, 100));
     const activeSpan = Math.max(count - 1, 0);
     const active = INTRO_ACTIVE + (clampedProgress / 100) * activeSpan;
-    const shouldShowInstagramPopup = progressRef.current > INSTAGRAM_POPUP_THRESHOLD;
+    const teaserIndex = Math.max(count - 1, 0);
+    const shouldShowInstagramPopup = active >= teaserIndex - 0.02;
 
     if (popupVisibleRef.current !== shouldShowInstagramPopup) {
       popupVisibleRef.current = shouldShowInstagramPopup;
@@ -225,7 +225,9 @@ export default function PhotoGallery() {
       const opacity = Math.max(0, Math.min(1, 1 - Math.max(0, Math.abs(distance) - 1.25) * 0.55));
       const isTeaserCard = i === teaserCardIndexRef.current;
       const hoverReveal = hoveredCardIndexRef.current === i ? 1 : 0;
-      const overscrollReveal = isTeaserCard ? Math.min(Math.max(progressRef.current - (INSTAGRAM_POPUP_THRESHOLD - 4), 0) / 10, 0.78) : 0;
+      const overscrollReveal = isTeaserCard
+        ? Math.min(Math.max(active - (teaserIndex - 0.35), 0) / 0.65, 0.85)
+        : 0;
       const teaserReveal = isTeaserCard ? Math.max(hoverReveal, overscrollReveal) : 0;
 
       card.style.zIndex = String(zi);
@@ -320,16 +322,17 @@ export default function PhotoGallery() {
 
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       const { isLowEndMobile } = getMobilePerformanceProfile();
+      const autoRevealSpan = Math.max(galleryItemsRef.current.length - 1, 1);
       const st = ScrollTrigger.create({
         trigger: section,
         start: isMob ? "top top" : "top 80px",
         end: () => `+=${Math.max(
-          window.innerWidth < 768 ? 380 : 260,
-          Math.max(galleryItemsRef.current.length - 1, 1) * GALLERY_SCROLL_STEP_PERCENT
+          window.innerWidth < 768 ? 280 : 220,
+          autoRevealSpan * GALLERY_SCROLL_STEP_PERCENT
         )}%`,
         pin: true,
         pinSpacing: true,
-        scrub: isMob ? (isLowEndMobile ? 1.45 : 1.2) : 1,
+        scrub: isMob ? (isLowEndMobile ? 0.95 : 0.75) : 0.65,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         /* Clamp fast swipes + join the shared `"pinned"` group
@@ -510,7 +513,7 @@ export default function PhotoGallery() {
                 background: "#0A192F",
                 pointerEvents: "all",
                 userSelect: "none",
-                transition: "transform 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)",
+                transition: "none",
               }}
               onClick={() => onCardClick(i)}
               onMouseEnter={() => {

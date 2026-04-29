@@ -61,6 +61,23 @@ export async function POST(req: NextRequest) {
 
     const webhook = process.env.NEXT_PUBLIC_CONTACT_WEBHOOK || process.env.CONTACT_WEBHOOK;
     if (webhook) {
+      const languageUsed = language || "it";
+      // #region agent log
+      fetch("/api/debug-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+        body: JSON.stringify({
+          sessionId: "84a28c",
+          runId: "pre-fix",
+          hypothesisId: "H2",
+          location: "src/app/api/contact/route.ts:language_used",
+          message: "API received language for contact webhook",
+          data: { languageReceived: language, languageUsed },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      console.log("[debug:H2] language_used", { languageReceived: language, languageUsed });
+      // #endregion
       const res = await fetch(webhook, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,7 +91,7 @@ export async function POST(req: NextRequest) {
           phoneCountry: phoneCountry || "",
           phoneCountryIso: phoneCountryIso || "",
           source: "site_contact",
-          language: language || "it",
+          language: languageUsed,
           date: date || new Date().toISOString().split("T")[0],
         }),
       });

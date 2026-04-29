@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -91,14 +91,13 @@ export default function AboutGallery() {
         >
           {/* Skeleton Loader */}
           {!isVideoLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center z-10 bg-[#0A192F] animate-pulse">
-              <div className="w-12 h-12 border-4 border-ocean/30 border-t-ocean rounded-full animate-spin" />
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0A192F]">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />
             </div>
           )}
           <video
             autoPlay
             muted
-            defaultMuted
             loop
             playsInline
             preload="auto"

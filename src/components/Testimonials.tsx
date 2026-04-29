@@ -1,4 +1,6 @@
 import Papa from "papaparse";
+import fs from "fs";
+import path from "path";
 import TestimonialsClient, { Review } from "./TestimonialsClient";
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiVy_c89F9A3WH0hRzSqwDHUMgSuT5-N-bS39K_KvQnpEiwStiVrUoz47YWqp9yjRXLJUPcJyRUHnt/pub?output=csv";
@@ -75,6 +77,7 @@ const AVATAR_FIELDS = [
   "ZdjęcieGoogle",
 ];
 const REVIEW_PHOTO_FIELDS = ["Foto1", "Foto", "Photo1", "Photo", "ReviewPhoto", "Review Photo", "ReviewImage", "Foto2", "Foto3", "Photo2", "Photo3"];
+const LOCAL_REVIEWS_PATH = path.join(process.cwd(), "src/data/local-reviews.json");
 
 function normalizeFieldName(value: string) {
   return value
@@ -307,6 +310,32 @@ export default async function Testimonials() {
           };
         });
       combinedValidRows = combinedValidRows.concat(localValidRows);
+    }
+
+    // Merge persisted local reviews to keep newly sent comments
+    // visible after refresh, regardless of webhook timing.
+    try {
+      if (fs.existsSync(LOCAL_REVIEWS_PATH)) {
+        const localRaw = fs.readFileSync(LOCAL_REVIEWS_PATH, "utf8");
+        const localRows = JSON.parse(localRaw) as Array<Record<string, string>>;
+        const mappedLocal = localRows
+          .filter((row) => (row["Stato"] || "Accettato").toString().trim().toLowerCase() === "accettato")
+          .map((row) => ({
+            name: row["Nome"] || "Gość",
+            role: "Gość",
+            date: row["Data"] || new Date().toISOString().split("T")[0],
+            text: row["Commento"] || "",
+            rating: typeof row["Voto"] === "number" ? Number(row["Voto"]) : getRatingValue(String(row["Voto"] || "")),
+            photo: normalizeImageValue(row["Avatar"] || ""),
+            photos: [row["Foto1"], row["Foto2"], row["Foto3"]].filter(Boolean),
+            isLocal: true,
+            countryCode: normalizeCountryCode(String(row["CountryCode"] || "")) || undefined,
+            countryName: String(row["Paese"] || "").trim() || undefined,
+          }));
+        combinedValidRows = combinedValidRows.concat(mappedLocal);
+      }
+    } catch (localErr) {
+      console.error("Error reading local reviews store:", localErr);
     }
 
     combinedValidRows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

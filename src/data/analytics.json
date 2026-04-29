@@ -1294,5 +1294,109 @@
     "device": "desktop",
     "sessionId": "1777215780096-gzfue2",
     "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777459126553,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777459440451,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777459541327,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777459678729,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777459829523,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777460280768,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777460288439,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777460530365,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777460555367,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777460578145,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777460685068,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777460693219,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
+  },
+  {
+    "ts": 1777460937082,
+    "path": "/",
+    "country": "XX",
+    "device": "desktop",
+    "sessionId": "1777459125488-y2fwyx",
+    "referrer": "http://localhost:3000/"
   }
 ]

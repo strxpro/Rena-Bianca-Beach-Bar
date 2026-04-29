@@ -1505,8 +1505,8 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
-                style={{ zIndex: 100 }}
+                className="fixed inset-0 flex items-start justify-center bg-black/60 p-4 pt-24 backdrop-blur-md sm:pt-28"
+                style={{ zIndex: 130 }}
                 onClick={closeReview}
               >
                 <motion.div
@@ -1514,7 +1514,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                   animate={{ scale: 1, y: 0, opacity: 1 }}
                   exit={{ scale: 0.9, y: 30, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0d2240] shadow-2xl"
+                  className="relative flex max-h-[calc(100dvh-7rem)] w-full max-w-lg flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0d2240] shadow-2xl sm:max-h-[calc(100dvh-8rem)]"
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
                   <div className="relative h-40 w-full overflow-hidden">
@@ -1589,12 +1589,12 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/70 p-3 backdrop-blur-lg sm:p-6"
-                style={{ zIndex: 90 }}
+                className="fixed inset-0 bg-black/70 p-3 pt-24 backdrop-blur-lg sm:p-6 sm:pt-28"
+                style={{ zIndex: 120 }}
                 onClick={closeShowAll}
               >
-                <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-center" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                  <div className="relative flex h-full max-h-[92dvh] w-full flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[#071a33]/95 shadow-2xl">
+                <div className="mx-auto flex h-full w-full max-w-6xl items-start justify-center" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                  <div className="relative flex h-full max-h-[calc(100dvh-7rem)] w-full flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[#071a33]/95 shadow-2xl sm:max-h-[calc(100dvh-8rem)]">
                     <button
                       onClick={closeShowAll}
                       aria-label={uiCopy.close}

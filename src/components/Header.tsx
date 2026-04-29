@@ -161,7 +161,26 @@ export default function Header() {
                 {ALL_LOCALES.map((loc) => (
                   <button
                     key={loc}
-                    onClick={() => { setLocale(loc); setLangOpen(false); }}
+                    onClick={() => {
+                      // #region agent log
+                      fetch("/api/debug-log", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "84a28c" },
+                        body: JSON.stringify({
+                          sessionId: "84a28c",
+                          runId: "pre-fix",
+                          hypothesisId: "H1",
+                          location: "src/components/Header.tsx:langDropdown_onClick",
+                          message: "User selected locale from dropdown",
+                          data: { selectedLocale: loc },
+                          timestamp: Date.now(),
+                        }),
+                      }).catch(() => {});
+                      console.log("[debug:H1] langDropdown_onClick", { selectedLocale: loc });
+                      // #endregion
+                      setLocale(loc);
+                      setLangOpen(false);
+                    }}
                     className={`flex w-full items-center gap-3 px-4 py-2.5 font-body text-sm transition-colors
                                ${locale === loc ? "bg-ocean/20 text-sand" : "text-sand/60 hover:bg-white/10 hover:text-sand"}`}
                   >
