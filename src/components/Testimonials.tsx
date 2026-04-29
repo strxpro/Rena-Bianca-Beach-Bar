@@ -250,9 +250,11 @@ export default async function Testimonials() {
   try {
     const LOCAL_CSV_URL = process.env.NEXT_PUBLIC_LOCAL_CSV || "";
 
-    const fetchOps = [fetch(CSV_URL, { next: { revalidate: 3600 } }).catch(() => null)];
+    // Always read fresh sheet rows so newly accepted comments appear
+    // without waiting for a long ISR cache window.
+    const fetchOps = [fetch(CSV_URL, { cache: "no-store" }).catch(() => null)];
     if (LOCAL_CSV_URL) {
-      fetchOps.push(fetch(LOCAL_CSV_URL, { next: { revalidate: 3600 } }).catch(() => null));
+      fetchOps.push(fetch(LOCAL_CSV_URL, { cache: "no-store" }).catch(() => null));
     }
 
     const responses = await Promise.all(fetchOps);

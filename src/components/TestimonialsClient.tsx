@@ -1278,6 +1278,9 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
 
   const activeReviewId = selectedReview ? getReviewId(selectedReview) : "";
   const activeParsedReview = selectedReview ? parseReviewText(selectedReview.text) : null;
+  const activeReviewPhotoLinks = selectedReview
+    ? (selectedReview.photos || []).map((url) => normalizeReviewImageUrl(url)).filter(Boolean)
+    : [];
   const activeTranslatedText = activeReviewId ? translatedReviews[activeReviewId] : undefined;
   const activeShowingOriginal = activeReviewId ? Boolean(showOriginalMap[activeReviewId]) : false;
   const activeReviewText = !selectedReview || !activeParsedReview
@@ -1620,6 +1623,21 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                             />
                             <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
                           </div>
+                        ))}
+                      </div>
+                    )}
+                    {activeReviewPhotoLinks.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        {activeReviewPhotoLinks.map((url, idx) => (
+                          <a
+                            key={`${activeReviewId}-url-${idx}`}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block truncate font-body text-xs text-sand/55 underline decoration-sand/30 underline-offset-2 hover:text-sand/80"
+                          >
+                            {`Link do zdjęcia ${idx + 1}`}
+                          </a>
                         ))}
                       </div>
                     )}
