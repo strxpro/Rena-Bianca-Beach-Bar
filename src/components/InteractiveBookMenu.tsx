@@ -1096,6 +1096,13 @@ export default function InteractiveBookMenu() {
             data-lenis-prevent
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.closest("[data-menu-popup-scroll]")) {
+                const el = e.currentTarget as HTMLDivElement & { _swipeX?: number | null; _swipeY?: number | null };
+                el._swipeX = null;
+                el._swipeY = null;
+                return;
+              }
               const t = e.touches[0];
               const el = e.currentTarget as HTMLDivElement & { _swipeX?: number | null; _swipeY?: number | null };
               el._swipeX = t.clientX;
@@ -1109,8 +1116,10 @@ export default function InteractiveBookMenu() {
               const endX = e.changedTouches[0].clientX;
               const endY = e.changedTouches[0].clientY;
               const dx = endX - startX;
-              const dy = Math.abs(endY - startY);
-              if (Math.abs(dx) > 50 && dy < 100) {
+              const dy = endY - startY;
+              const absDx = Math.abs(dx);
+              const absDy = Math.abs(dy);
+              if (absDx > 60 && absDx > absDy * 1.35 && absDy < 42) {
                 if (dx < 0 && popupIdx < contentPages.length - 1) setPopupIdx((p) => p + 1);
                 if (dx > 0 && popupIdx > 0) setPopupIdx((p) => p - 1);
               }
@@ -1150,7 +1159,14 @@ export default function InteractiveBookMenu() {
                 </button>
               </div>
 
-              <div data-menu-popup-scroll data-lenis-prevent className="flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-5 md:px-8 md:pb-10" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
+              <div
+                data-menu-popup-scroll
+                data-lenis-prevent
+                className="menu-mobile-scrollbar flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-5 md:px-8 md:pb-10"
+                style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y pinch-zoom", scrollbarWidth: "thin", scrollbarColor: "rgba(10,25,47,0.38) rgba(10,25,47,0.12)" }}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
+              >
                 {(() => {
                   const page = contentPages[popupIdx];
                   if (!page) return null;
@@ -1461,10 +1477,10 @@ function PageView({
       <div
         data-mobile-menu-scroll
         data-no-card-swipe
-        className={`${mobileCard ? "flex min-h-0 flex-1 flex-col justify-start gap-3 overflow-y-auto pr-1 pb-2" : "flex min-h-0 flex-1 flex-col justify-start gap-1 overflow-y-auto md:gap-2"}`}
+        className={`${mobileCard ? "menu-mobile-scrollbar flex min-h-0 flex-1 flex-col justify-start gap-3 overflow-y-auto pr-2 pb-2" : "flex min-h-0 flex-1 flex-col justify-start gap-1 overflow-y-auto md:gap-2"}`}
         style={
           mobileCard
-            ? { WebkitOverflowScrolling: "touch", touchAction: "pan-y", overflowY: "auto" }
+            ? { WebkitOverflowScrolling: "touch", touchAction: "pan-y pinch-zoom", overflowY: "auto", scrollbarWidth: "thin", scrollbarColor: "rgba(10,25,47,0.35) rgba(10,25,47,0.12)" }
             : { WebkitOverflowScrolling: "touch", touchAction: "pan-y", minHeight: 0 }
         }
       >
@@ -1502,6 +1518,20 @@ function PageView({
           — {page.id} —
         </span>
       </div>
+
+      <style>{`
+        .menu-mobile-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .menu-mobile-scrollbar::-webkit-scrollbar-track {
+          background: rgba(10, 25, 47, 0.1);
+          border-radius: 999px;
+        }
+        .menu-mobile-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(10, 25, 47, 0.35);
+          border-radius: 999px;
+        }
+      `}</style>
     </div>
   );
 }
