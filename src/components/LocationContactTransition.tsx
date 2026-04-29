@@ -64,7 +64,7 @@ export default function LocationContactTransition() {
   const [honeypot, setHoneypot] = useState("");
   const turnstileAnchorRef = useRef<HTMLDivElement>(null);
   const [turnstilePortalRoot, setTurnstilePortalRoot] = useState<HTMLDivElement | null>(null);
-  const [turnstileRect, setTurnstileRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [turnstileRect, setTurnstileRect] = useState<{ top: number; left: number; width: number; scale: number } | null>(null);
   const [isTurnstileAnchorVisible, setIsTurnstileAnchorVisible] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const formOpenTimeRef = useRef<number>(Date.now());
@@ -193,7 +193,12 @@ export default function LocationContactTransition() {
       const anchor = turnstileAnchorRef.current;
       if (anchor) {
         const rect = anchor.getBoundingClientRect();
-        if (rect.bottom < -40 || rect.top > window.innerHeight + 40) {
+        const viewport = window.visualViewport;
+        const viewportTop = viewport?.offsetTop ?? 0;
+        const viewportLeft = viewport?.offsetLeft ?? 0;
+        const viewportHeight = viewport?.height ?? window.innerHeight;
+        const viewportWidth = viewport?.width ?? window.innerWidth;
+        if (rect.bottom < -40 || rect.top > viewportHeight + 40) {
           if (Date.now() - turnstileDebugLastAtRef.current > 1000) {
             turnstileDebugLastAtRef.current = Date.now();
             // #region agent log
@@ -206,11 +211,11 @@ export default function LocationContactTransition() {
                 hypothesisId: "H4",
                 location: "src/components/LocationContactTransition.tsx:updatePosition",
                 message: "Turnstile anchor out of viewport range",
-                data: { anchorTop: rect.top, anchorBottom: rect.bottom, innerH: window.innerHeight },
+                data: { anchorTop: rect.top, anchorBottom: rect.bottom, innerH: viewportHeight },
                 timestamp: Date.now(),
               }),
             }).catch(() => {});
-            console.log("[debug:H4] turnstile_out_of_range", { anchorTop: rect.top, anchorBottom: rect.bottom, innerH: window.innerHeight });
+            console.log("[debug:H4] turnstile_out_of_range", { anchorTop: rect.top, anchorBottom: rect.bottom, innerH: viewportHeight });
             // #endregion
           }
           setTurnstileRect((prev) => (prev ? null : prev));
@@ -218,9 +223,10 @@ export default function LocationContactTransition() {
           return;
         }
         const next = {
-          top: rect.top,
-          left: rect.left,
-          width: Math.max(rect.width, 280),
+          top: rect.top + viewportTop,
+          left: rect.left + viewportLeft,
+          width: Math.max(0, Math.min(rect.width, viewportWidth - 12)),
+          scale: Math.min(1, Math.max(0.82, Math.min(rect.width, viewportWidth - 12) / 300)),
         };
         if (Date.now() - turnstileDebugLastAtRef.current > 750) {
           turnstileDebugLastAtRef.current = Date.now();
@@ -260,7 +266,8 @@ export default function LocationContactTransition() {
             prev &&
             Math.abs(prev.top - next.top) < 0.5 &&
             Math.abs(prev.left - next.left) < 0.5 &&
-            Math.abs(prev.width - next.width) < 0.5
+            Math.abs(prev.width - next.width) < 0.5 &&
+            Math.abs(prev.scale - next.scale) < 0.01
           ) {
             return prev;
           }
@@ -1479,17 +1486,19 @@ export default function LocationContactTransition() {
               top: `${turnstileRect.top}px`,
               left: `${turnstileRect.left}px`,
               width: `${turnstileRect.width}px`,
-              minHeight: "72px",
+              minHeight: `${Math.round(72 * turnstileRect.scale)}px`,
               pointerEvents: "auto",
             }}
           >
-            <Turnstile
-              id="contact-turnstile-mobile-portal"
-              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-              onSuccess={setTurnstileToken}
-              onError={() => setTurnstileToken("")}
-              options={{ theme: "dark", size: "normal", language: turnstileLanguage }}
-            />
+            <div style={{ transform: `scale(${turnstileRect.scale})`, transformOrigin: "left top" }}>
+              <Turnstile
+                id="contact-turnstile-mobile-portal"
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                onSuccess={setTurnstileToken}
+                onError={() => setTurnstileToken("")}
+                options={{ theme: "dark", size: "normal", language: turnstileLanguage }}
+              />
+            </div>
           </div>,
           turnstilePortalRoot
         )}
