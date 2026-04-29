@@ -265,6 +265,14 @@ function getReviewAvatarFallback(review: Pick<Review, "name" | "date" | "text">)
   return getGeneratedAvatarUrl(`${review.name}|${review.date}|${review.text.slice(0, 48)}`);
 }
 
+function getReviewPrimaryImage(review: Review) {
+  const uploaded = review.photos?.find((url) => normalizeReviewImageUrl(url));
+  if (uploaded) return normalizeReviewImageUrl(uploaded);
+  const avatar = normalizeReviewImageUrl(review.photo);
+  if (avatar) return avatar;
+  return getReviewAvatarFallback(review);
+}
+
 type LoopedReviewItem = {
   review: Review;
   copyIndex: number;
@@ -481,6 +489,7 @@ function ReviewCard({
   const { locale, t } = useI18n();
   const parsedText = parseReviewText(review.text);
   const imgHover = lightMode ? "" : "transition-transform duration-500 group-hover/review:scale-[1.04]";
+  const coverImageSrc = getReviewPrimaryImage(review);
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
   const dragRotate = useMotionValue(tilt);
@@ -659,16 +668,22 @@ function ReviewCard({
           }}
         />
 
-        {/* Photo */}
+        {/* Photo/background */}
         <div className="relative h-[42%] w-full overflow-hidden rounded-[4px] bg-navy/5 sm:h-[44%]">
-          <SafeReviewImage
-            review={review}
+          <img
+            src={coverImageSrc}
             alt={review.name}
             className={`h-full w-full object-cover ${imgHover}`}
+            loading="lazy"
+            decoding="async"
           />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.18),transparent_60%)]" />
+          {/* Avatar bubble stays visible above the background image */}
+          <div className="absolute -bottom-6 left-4 z-10 rounded-full border-2 border-[#FDFBF7] bg-[#FDFBF7] p-0.5 shadow-lg">
+            <SafeReviewImage review={review} alt={review.name} className="h-11 w-11 rounded-full object-cover" />
+          </div>
         </div>
-        <div className="relative flex flex-1 flex-col justify-between px-1 pb-1 pt-3 sm:px-2 sm:pt-4">
+        <div className="relative flex flex-1 flex-col justify-between px-1 pb-1 pt-9 sm:px-2 sm:pt-10">
           <div>
             <Stars count={review.rating} />
             <p className="mt-2 line-clamp-5 font-body text-[12.5px] leading-snug text-navy/80 sm:line-clamp-7 sm:text-[13.5px]">
@@ -720,6 +735,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [showWrite, setShowWrite] = useState(false);
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">(DEFAULT_SHOW_ALL_SORT);
   const [mounted, setMounted] = useState(false);
   const [visibleCount, setVisibleCount] = useState(REVIEWS_BATCH_SIZE);
@@ -1187,6 +1203,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
   }, []);
 
   const closeReview = useCallback(() => {
+    setSelectedPhotoUrl(null);
     setSelectedReview(null);
   }, []);
 
@@ -1548,7 +1565,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
                   <div className="relative h-40 w-full overflow-hidden">
-                    <SafeReviewImage review={selectedReview} alt={selectedReview.name} className="h-full w-full object-cover" />
+                    <img src={getReviewPrimaryImage(selectedReview)} alt={selectedReview.name} className="h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-linear-to-t from-[#0d2240] via-transparent to-transparent" />
                   </div>
                   <button
@@ -1594,7 +1611,7 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                           <div
                             key={`${activeReviewId}-p-${idx}`}
                             className="group relative h-20 w-20 flex-shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-white/10 bg-white/5 transition-all hover:scale-[1.04] hover:shadow-xl sm:h-24 sm:w-24"
-                            onClick={() => window.open(url, "_blank")}
+                            onClick={() => setSelectedPhotoUrl(url)}
                           >
                             <img
                               src={url}
@@ -1608,6 +1625,24 @@ export default function TestimonialsClient({ initialReviews = [] }: { initialRev
                     )}
                   </div>
                 </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {selectedPhotoUrl && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[145] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+                onClick={() => setSelectedPhotoUrl(null)}
+              >
+                <img
+                  src={selectedPhotoUrl}
+                  alt=""
+                  className="max-h-[90dvh] max-w-[92vw] rounded-xl object-contain shadow-2xl"
+                />
               </motion.div>
             )}
           </AnimatePresence>
