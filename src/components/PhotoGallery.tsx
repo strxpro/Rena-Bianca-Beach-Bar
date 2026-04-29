@@ -122,11 +122,7 @@ const getInstagramUrl = (username?: string) => {
 
 const mapGalleryScrollProgress = (scrollProgress: number) => {
   const clampedProgress = Math.max(0, Math.min(scrollProgress, 1));
-  const { isLowEndMobile } = getMobilePerformanceProfile();
-  const mobileMax = typeof window !== "undefined" && window.innerWidth < 768
-    ? (isLowEndMobile ? 58 : 64)
-    : GALLERY_SCROLL_PROGRESS_MAX;
-  return clampedProgress * mobileMax;
+  return clampedProgress * GALLERY_SCROLL_PROGRESS_MAX;
 };
 
 const getPostImage = (post: BeholdPost, variant: "large" | "full") => {
@@ -331,12 +327,12 @@ export default function PhotoGallery() {
         trigger: section,
         start: isMob ? "top top" : "top 80px",
         end: () => `+=${Math.max(
-          window.innerWidth < 768 ? 180 : 140,
+          window.innerWidth < 768 ? 110 : 140,
           autoRevealSpan * GALLERY_SCROLL_STEP_PERCENT
         )}%`,
         pin: true,
         pinSpacing: true,
-        scrub: isMob ? (isLowEndMobile ? 0.28 : 0.18) : 0.14,
+        scrub: isMob ? (isLowEndMobile ? 0.16 : 0.1) : 0.14,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
@@ -344,41 +340,6 @@ export default function PhotoGallery() {
           applyLayout();
         },
       });
-
-      if (isMob) {
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchStartProgress = 0;
-        let isHorizontal: boolean | null = null;
-        const onTouchStart = (e: TouchEvent) => {
-          touchStartX = e.touches[0].clientX;
-          touchStartY = e.touches[0].clientY;
-          touchStartProgress = progressRef.current;
-          isHorizontal = null;
-        };
-        const onTouchMove = (e: TouchEvent) => {
-          const dx = e.touches[0].clientX - touchStartX;
-          const dy = e.touches[0].clientY - touchStartY;
-
-          if (isHorizontal === null) {
-            isHorizontal = Math.abs(dx) > Math.abs(dy);
-          }
-
-          if (!isHorizontal) return;
-          const dragFactor = isLowEndMobile ? 0.42 : 0.5;
-          const newProgress = Math.max(0, Math.min(120, touchStartProgress - dx * dragFactor));
-          progressRef.current = newProgress;
-          cancelAnimationFrame(rafRef.current);
-          rafRef.current = requestAnimationFrame(applyLayout);
-        };
-        section.addEventListener("touchstart", onTouchStart, { passive: true });
-        section.addEventListener("touchmove", onTouchMove, { passive: true });
-        return () => {
-          section.removeEventListener("touchstart", onTouchStart);
-          section.removeEventListener("touchmove", onTouchMove);
-          st.kill();
-        };
-      }
 
       return () => {
         st.kill();
