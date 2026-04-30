@@ -115,15 +115,11 @@ export default function HeroSection() {
 
   useEffect(() => {
     const vid = fullVideoRef.current;
-    const root = rootRef.current;
     if (!vid) return;
 
     const revealVideo = () => {
       if (videoDismissedRef.current) return;
-      gsap.killTweensOf(vid);
-      vid.classList.add("video-ready");
-      vid.style.visibility = "visible";
-      gsap.to(vid, { opacity: 1, duration: 0.35, ease: "power2.out", overwrite: true });
+      gsap.to(vid, { opacity: 1, duration: 0.5, ease: "power2.out", overwrite: "auto" });
     };
 
     if (window.scrollY > 100) {
@@ -134,52 +130,27 @@ export default function HeroSection() {
       return;
     }
 
-    // Lock scroll on mount
     document.documentElement.classList.add("intro-locked");
     document.body.classList.add("intro-locked");
-
-    const peek = root?.querySelector("[data-peek-video]") as HTMLVideoElement | null;
-    const isMobileDevice = window.innerWidth < 768;
-    if (peek) {
-      peek.src = VIDEO_SRC;
-      peek.load();
-      peek.style.display = "";
-    }
 
     const playVideo = () => {
       if (introFinishedRef.current) return;
       vid.play().catch(() => {});
-      if (peek?.src) {
-        peek.play().catch(() => {});
-      }
     };
 
-    const revealVideoOnLoadedData = () => revealVideo();
-    vid.addEventListener("loadeddata", revealVideoOnLoadedData);
     vid.addEventListener("playing", revealVideo);
-
     playVideo();
-    if (!isMobileDevice && vid.readyState >= 2) {
-      requestAnimationFrame(revealVideo);
-    }
-    const retry = setTimeout(playVideo, 800);
+    
+    const retry = setTimeout(playVideo, 500);
     const fallback = setTimeout(() => {
       if (!introFinishedRef.current) {
         completeIntro({ hideVideo: true, hideOverlay: true, revealHeader: true });
       }
     }, 8000);
 
-    const safetyUnlock = setTimeout(() => {
-      const overlay = root?.querySelector("[data-overlay]") as HTMLElement | null;
-      if (!introFinishedRef.current && overlay && overlay.style.display !== "none") {
-        completeIntro({ hideOverlay: true, revealHeader: true });
-      }
-    }, 6000);
     return () => {
       clearTimeout(retry);
       clearTimeout(fallback);
-      clearTimeout(safetyUnlock);
-      vid.removeEventListener("loadeddata", revealVideoOnLoadedData);
       vid.removeEventListener("playing", revealVideo);
     };
   }, [completeIntro]);
@@ -209,21 +180,16 @@ export default function HeroSection() {
       const emPx = parseFloat(getComputedStyle(heading).fontSize);
       const baseHoleRadius = emPx * 0.175;
 
-      const peekVideo = root.querySelector("[data-peek-video]") as HTMLVideoElement | null;
-
       const isMobile = window.innerWidth < 768;
       const zoomScale = isMobile ? ZOOM_SCALE_MOBILE : ZOOM_SCALE_DESKTOP;
 
-      // ── CACHE PREV VALUES ──
       let lastHoleR = -1;
-
       const applyMasks = (hr: number) => {
         if (hr === lastHoleR) return;
         setHoleMaskVars(maskGroup, hr, holeCX, holeCY);
         lastHoleR = hr;
       };
 
-      // ── INITIAL STATE (No CSS conflicts, all GSAP) ──
       const hole = { r: 0 };
       let holeCX = "50%";
       let holeCY = "50%";
@@ -233,7 +199,6 @@ export default function HeroSection() {
         gsap.set(wavesWrap, { force3D: true, willChange: "transform" });
       }
 
-      // gsps.set is no longer needed for letters as they start from 110% via inline styles
       gsap.set(zoomTarget, { color: COLOR_NAVY, scale: 1, x: 0, y: 0, force3D: true });
       gsap.set([start, end, box, flower], { x: 0, width: 0, opacity: 1, force3D: true });
       gsap.set(waves, { y: "150%", force3D: true });
@@ -243,7 +208,6 @@ export default function HeroSection() {
         defaults: { ease: "expo.inOut" }
       });
 
-      /* ── PHASE 1: Entrance ── */
       tl.fromTo(letters, 
         { y: "110%" },
         {
@@ -251,12 +215,11 @@ export default function HeroSection() {
           stagger: LETTER_STAGGER,
           duration: LETTER_DUR,
           ease: "power3.out",
-          force3D: true, // FIX: ensure GPU compositing for letter animations
+          force3D: true,
         }, 
         0
       );
 
-      /* ── PHASE 2: Wave Rise ── */
       const transitionStart = LETTER_DUR - 0.25;
 
       tl.to(waves, {
@@ -277,11 +240,10 @@ export default function HeroSection() {
       }, transitionStart + WAVE_TRANSITION_DUR * 0.5);
 
       tl.to(subLetters,
-        { y: "0%", opacity: 1, stagger: 0.02, duration: 0.8, ease: "expo.out", force3D: true }, // FIX: GPU compositing
+        { y: "0%", opacity: 1, stagger: 0.05, duration: 0.8, ease: "expo.out", force3D: true },
         transitionStart + 0.5
       );
 
-      /* ── PHASE 3: Zoom ── */
       tl.add(() => {
         const rect = yellow.getBoundingClientRect();
         const targetRect = zoomTarget.getBoundingClientRect();
@@ -303,14 +265,12 @@ export default function HeroSection() {
         onUpdate: () => applyMasks(hole.r),
       }, "<+0.1");
 
-      // Turn the filled yellow dot into a ring while mask opens.
       tl.to(yellow, {
-        backgroundColor: "transparent",
-        borderColor: "#FFD12D",
-        borderWidth: 3,
-        duration: 0.32,
-        ease: "power2.inOut",
-      }, "<+0.02");
+        scale: 0,
+        opacity: 0,
+        duration: 0.42,
+        ease: "power2.in",
+      }, "<+0.05");
 
       const HOLE_BOOST = isMobile ? 1.25 : 1.1;
       tl.to(zoomTarget, {
@@ -322,20 +282,12 @@ export default function HeroSection() {
         },
       }, ">+0.1");
 
-      tl.to([flower, yellow, start, end, subLetters], {
+      tl.to([flower, start, end, subLetters], {
         opacity: 0,
         duration: ZOOM_DUR * 0.4,
       }, `<+${ZOOM_DUR * 0.1}`);
 
       tl.set(overlay, { display: "none" });
-      tl.add(() => {
-        // Pause and clean up the hidden background video to save resources
-        if (peekVideo) {
-          peekVideo.pause();
-          peekVideo.removeAttribute("src");
-          peekVideo.load();
-        }
-      });
     },
     { scope: rootRef }
   );
@@ -345,26 +297,20 @@ export default function HeroSection() {
 
   return (
     <div ref={rootRef}>
+      {/* ── SINGLE GLOBAL VIDEO ── */}
       <video
         ref={fullVideoRef}
-        data-hero-video
         autoPlay
-        className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
-        style={{ opacity: 0, backgroundColor: COLOR_NAVY, visibility: "hidden" }}
-        muted playsInline preload="metadata"
+        muted
+        playsInline
+        preload="auto"
         src={VIDEO_SRC}
         onEnded={handleVideoEnded}
+        className="pointer-events-none fixed inset-0 z-10 h-full w-full object-cover"
+        style={{ opacity: 0, backgroundColor: COLOR_NAVY }}
       />
 
       <div data-overlay className="pointer-events-none fixed inset-0 z-50 overflow-hidden" style={{ backfaceVisibility: "hidden", transform: "translateZ(0)" }}>
-        <video
-          data-peek-video
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-          style={{ zIndex: 0 }}
-          muted playsInline preload="auto" autoPlay
-          src={VIDEO_SRC}
-        />
-
         <div 
           data-mask-group 
           className="absolute inset-0" 
